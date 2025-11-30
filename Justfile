@@ -55,6 +55,23 @@ bump-minor:
 bump-major:
     uv version --bump major
 
+# Verify Homebrew formula matches uvbrew output
+verify-formula:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Building package..."
+    uv build --no-sources
+    echo "Generating formula with uvbrew..."
+    uvx uvbrew > /tmp/generated-formula.rb
+    echo "Comparing formulas..."
+    if diff -u Formula/claudectl.rb /tmp/generated-formula.rb > /tmp/formula-diff.txt 2>&1; then
+        echo "✓ Formula matches uvbrew output"
+    else
+        echo "✗ Formula does not match uvbrew output:"
+        cat /tmp/formula-diff.txt
+        exit 1
+    fi
+
 # Create a release (bump version, commit, tag, push)
 release bump:
     #!/usr/bin/env bash
