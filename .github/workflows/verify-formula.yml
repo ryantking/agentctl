@@ -4,14 +4,18 @@ on:
   pull_request:
     paths:
       - 'pyproject.toml'
+      - 'uv.lock'
       - 'src/**'
       - 'Formula/claudectl.rb'
+      - 'scripts/generate_formula.py'
   push:
     branches: [main]
     paths:
       - 'pyproject.toml'
+      - 'uv.lock'
       - 'src/**'
       - 'Formula/claudectl.rb'
+      - 'scripts/generate_formula.py'
 
 jobs:
   verify-formula:
@@ -29,31 +33,5 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Build package
-        run: uv build --no-sources
-
-      - name: Generate formula with uvbrew
-        run: |
-          uvx uvbrew > /tmp/generated-formula.rb
-
-      - name: Compare formulas
-        run: |
-          # Normalize URLs for comparison (URLs vary between local and release builds)
-          # Replace any claudectl URL pattern with PLACEHOLDER for comparison
-          sed -i 's|url ".*claudectl.*"$|url "PLACEHOLDER"|' Formula/claudectl.rb
-          sed -i 's|url ".*claudectl.*"$|url "PLACEHOLDER"|' /tmp/generated-formula.rb
-
-          # Also normalize sha256 since local builds generate different hashes
-          sed -i 's|sha256 "PLACEHOLDER.*"$|sha256 "PLACEHOLDER"|' Formula/claudectl.rb
-          sed -i 's|sha256 "PLACEHOLDER.*"$|sha256 "PLACEHOLDER"|' /tmp/generated-formula.rb
-
-          # Compare the normalized formulas
-          if diff -u Formula/claudectl.rb /tmp/generated-formula.rb; then
-            echo "✓ Formula matches uvbrew output"
-          else
-            echo "✗ Formula does not match uvbrew output"
-            echo ""
-            echo "Generated formula:"
-            cat /tmp/generated-formula.rb
-            exit 1
-          fi
+      - name: Verify formula matches dependencies
+        run: just verify-formula
