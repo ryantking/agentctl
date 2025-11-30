@@ -1,0 +1,54 @@
+name: Verify Homebrew Formula
+
+on:
+  pull_request:
+    paths:
+      - 'pyproject.toml'
+      - 'src/**'
+      - 'Formula/claudectl.rb'
+  push:
+    branches: [main]
+    paths:
+      - 'pyproject.toml'
+      - 'src/**'
+      - 'Formula/claudectl.rb'
+
+jobs:
+  verify-formula:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Build package
+        run: uv build --no-sources
+
+      - name: Generate formula with uvbrew
+        run: |
+          uvx uvbrew > /tmp/generated-formula.rb
+
+      - name: Compare formulas
+        run: |
+          # Remove the URL line since it will have a placeholder in the repo
+          sed -i 's|url "https://github.carelesslisper/claudectl/releases/download.*|url "PLACEHOLDER"|' Formula/claudectl.rb
+          sed -i 's|url ".*dist/claudectl.*|url "PLACEHOLDER"|' /tmp/generated-formula.rb
+
+          # Compare
+          if diff -u Formula/claudectl.rb /tmp/generated-formula.rb; then
+            echo "✓ Formula matches uvbrew output"
+          else
+            echo "✗ Formula does not match uvbrew output"
+            echo ""
+            echo "Generated formula:"
+            cat /tmp/generated-formula.rb
+            exit 1
+          fi
