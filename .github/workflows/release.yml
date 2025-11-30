@@ -73,7 +73,7 @@ jobs:
 
             ### From source
             ```bash
-            git clone https://github.com/carelesslisper/claudectl.git
+            git clone https://github.com/ryantking/claudectl.git
             cd claudectl
             git checkout ${{ github.ref_name }}
             just install
