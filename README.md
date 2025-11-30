@@ -12,22 +12,31 @@ A CLI tool for managing Claude Code configurations, hooks, and isolated workspac
 
 ## Installation
 
-### Via pip
+### Via Homebrew (recommended for macOS)
 
 ```bash
-pip install claudectl
+brew tap carelesslisper/claudectl
+brew install claudectl
 ```
 
-### Via uv (recommended)
+### Via pip from GitHub Release
 
 ```bash
-uv tool install claudectl
+# Latest release
+pip install https://github.com/carelesslisper/claudectl/releases/latest/download/claudectl.tar.gz
+
+# Specific version
+pip install https://github.com/carelesslisper/claudectl/releases/download/v0.1.0/claudectl-0.1.0.tar.gz
 ```
 
-### Via Homebrew (macOS)
+### Via uv from GitHub Release
 
 ```bash
-brew install carelesslisper/claudectl/claudectl
+# Latest release
+uv tool install https://github.com/carelesslisper/claudectl/releases/latest/download/claudectl.tar.gz
+
+# Specific version
+uv tool install https://github.com/carelesslisper/claudectl/releases/download/v0.1.0/claudectl-0.1.0.tar.gz
 ```
 
 ### From source
