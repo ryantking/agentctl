@@ -39,10 +39,15 @@ jobs:
       - name: Compare formulas
         run: |
           # Normalize URLs for comparison (URLs vary between local and release builds)
+          # Replace any claudectl URL pattern with PLACEHOLDER for comparison
           sed -i 's|url ".*claudectl.*"$|url "PLACEHOLDER"|' Formula/claudectl.rb
           sed -i 's|url ".*claudectl.*"$|url "PLACEHOLDER"|' /tmp/generated-formula.rb
 
-          # Compare
+          # Also normalize sha256 since local builds generate different hashes
+          sed -i 's|sha256 "PLACEHOLDER.*"$|sha256 "PLACEHOLDER"|' Formula/claudectl.rb
+          sed -i 's|sha256 "PLACEHOLDER.*"$|sha256 "PLACEHOLDER"|' /tmp/generated-formula.rb
+
+          # Compare the normalized formulas
           if diff -u Formula/claudectl.rb /tmp/generated-formula.rb; then
             echo "✓ Formula matches uvbrew output"
           else
