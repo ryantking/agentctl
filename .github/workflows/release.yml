@@ -57,18 +57,18 @@ jobs:
 
             ### Via Homebrew (recommended for macOS)
             ```bash
-            brew tap carelesslisper/claudectl
+            brew tap ryantking/claudectl
             brew install claudectl
             ```
 
             ### Via pip from GitHub Release
             ```bash
-            pip install https://github.com/carelesslisper/claudectl/releases/download/${{ github.ref_name }}/claudectl-${{ github.ref_name }}.tar.gz
+            pip install https://github.com/ryantking/claudectl/releases/download/${{ github.ref_name }}/claudectl-${{ github.ref_name }}.tar.gz
             ```
 
             ### Via uv from GitHub Release
             ```bash
-            uv tool install https://github.com/carelesslisper/claudectl/releases/download/${{ github.ref_name }}/claudectl-${{ github.ref_name }}.tar.gz
+            uv tool install https://github.com/ryantking/claudectl/releases/download/${{ github.ref_name }}/claudectl-${{ github.ref_name }}.tar.gz
             ```
 
             ### From source
