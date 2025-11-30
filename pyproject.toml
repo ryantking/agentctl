@@ -1,12 +1,24 @@
 [project]
 name = "claudectl"
 version = "0.1.0"
-description = "Add your description here"
+description = "CLI tool for managing Claude Code configurations and workspaces"
 readme = "README.md"
 authors = [
     { name = "Ryan King", email = "ryan@carelesslisper.xyz" }
 ]
 requires-python = ">=3.13"
+license = { text = "MIT" }
+keywords = ["cli", "claude", "ai", "developer-tools", "workspace", "git-worktree"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Tools",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+]
 dependencies = [
     "docker>=7.1.0",
     "gitpython>=3.1.45",
