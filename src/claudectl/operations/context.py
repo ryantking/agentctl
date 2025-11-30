@@ -5,7 +5,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from claudectl.lib.domain.git import get_repo_root
+from claudectl.domain.git import get_repo_root
 
 
 def copy_claude_context(workspace_path: Path, source_root: Path | None = None) -> list[str]:

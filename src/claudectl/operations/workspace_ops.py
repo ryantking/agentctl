@@ -5,15 +5,15 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from claudectl.lib.domain.exceptions import (
+from claudectl.domain.exceptions import (
     BranchInUseError,
     NotInGitRepoError,
     WorkspaceError,
     WorkspaceExistsError,
     WorkspaceNotFoundError,
 )
-from claudectl.lib.domain.git import branch_exists, get_current_branch, get_repo_root
-from claudectl.lib.domain.workspace import (
+from claudectl.domain.git import branch_exists, get_current_branch, get_repo_root
+from claudectl.domain.workspace import (
     Workspace,
     discover_workspaces,
     find_workspace_by_branch,

@@ -12,16 +12,16 @@ from typing import Annotated
 import typer
 
 from claudectl.cli.output import Result, is_json_output, output, print_table
-from claudectl.lib.domain.exceptions import (
+from claudectl.domain.exceptions import (
     BranchInUseError,
     NotInGitRepoError,
     WorkspaceError,
     WorkspaceExistsError,
     WorkspaceNotFoundError,
 )
-from claudectl.lib.operations.context import copy_claude_context
-from claudectl.lib.operations.spawn import spawn_claude_in_shell
-from claudectl.lib.operations.workspace_ops import WorkspaceManager
+from claudectl.operations.context import copy_claude_context
+from claudectl.operations.spawn import spawn_claude_in_shell
+from claudectl.operations.workspace_ops import WorkspaceManager
 
 app = typer.Typer(
     name="workspace",

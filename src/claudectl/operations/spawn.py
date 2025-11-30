@@ -6,7 +6,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from claudectl.lib.operations.mcp_config import generate_mcp_config
+from claudectl.operations.mcp_config import generate_mcp_config
 
 # Type alias for process result (Python 3.12+ style)
 type SpawnedProcess = subprocess.Popen[bytes]
