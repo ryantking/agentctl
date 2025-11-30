@@ -26,7 +26,13 @@ format-check:
 
 # Run tests
 test:
-    uv run pytest tests
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -d tests ]; then
+        uv run pytest tests
+    else
+        echo "No tests directory found, skipping tests"
+    fi
 
 # Run all checks (lint + test)
 ci: lint test
