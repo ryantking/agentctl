@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv --script
 """Generate Homebrew formula from requirements.txt with hashes."""
 
 import re
