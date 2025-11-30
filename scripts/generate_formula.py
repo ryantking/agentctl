@@ -60,7 +60,7 @@ def generate_formula(
   include Language::Python::Virtualenv
 
   desc "CLI tool for managing Claude Code configurations and workspaces"
-  homepage "https://github.com/carelesslisper/claudectl"
+  homepage "https://github.com/ryantking/claudectl"
   url "{url or 'https://github.com/carelesslisper/claudectl/releases/download/v' + version + '/claudectl-' + version + '.tar.gz'}"
   sha256 "{sha256 or 'PLACEHOLDER_UPDATE_AFTER_FIRST_RELEASE'}"
   license "MIT"
