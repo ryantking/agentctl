@@ -21,11 +21,6 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
       - name: Install Just
         uses: extractions/setup-just@v2
 
