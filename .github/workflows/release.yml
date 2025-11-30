@@ -26,8 +26,32 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Install Just
+        uses: extractions/setup-just@v2
+
       - name: Build package
         run: uv build --no-sources
+
+      - name: Generate Homebrew formula
+        run: |
+          echo "Exporting dependencies..."
+          uv export --format requirements.txt --no-dev > /tmp/requirements.txt
+          echo "Generating formula..."
+          python3 scripts/generate_formula.py /tmp/requirements.txt "${{ github.ref_name }}" \
+            "https://github.com/carelesslisper/claudectl/releases/download/${{ github.ref_name }}/claudectl-${{ github.ref_name }}.tar.gz" > Formula/claudectl.rb
+          echo "✓ Formula generated"
+
+      - name: Commit formula
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet Formula/claudectl.rb; then
+            echo "Formula unchanged"
+          else
+            git add Formula/claudectl.rb
+            git commit -m "chore: update Homebrew formula for ${{ github.ref_name }}"
+            git push
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
