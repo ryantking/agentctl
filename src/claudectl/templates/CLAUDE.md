@@ -312,7 +312,7 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 | Find files/code patterns | Explore | Single | "Where is X defined?", "Show structure of Y" |
 | Understand git history | historian | Single | "Why was this changed?", "How did this evolve?" |
 | External research | researcher | Parallel (3-5) | Web docs, API references, best practices |
-| Create implementation plan | Plan | Single | "Plan this feature", "Design approach for X" |
+| Create implementation plan | Plan | Single/Multiple | Explicitly spawn via Task tool for thorough planning analysis |
 | Implement code changes | engineer | Single/Parallel | Code work, file modifications |
 
 ### Workflow Patterns
