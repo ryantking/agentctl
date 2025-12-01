@@ -99,7 +99,8 @@ Files not intended to be loaded into context, but rather used within the output 
 - Frontend builder: HTML/React boilerplate project directories
 - Typography: Font files (.ttf, .woff2)
 
-**Appropriate for:** Templates, boilerplate code, document templates, images, icons, fonts, or any files meant to be copied or used in the final output.
+**Appropriate for:** Templates, boilerplate code, document templates, images, icons, fonts, or any
+files meant to be copied or used in the final output.
 
 ---
 
