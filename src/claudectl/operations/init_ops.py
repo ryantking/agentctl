@@ -339,6 +339,10 @@ class InitManager:
                     lines.append(f"    • {f}")
             if "indexed" in results:
                 lines.append("  Repository indexed with Claude CLI")
+            if "warnings" in results and results["warnings"]:
+                lines.append("\n  Warnings:")
+                for warning in results["warnings"]:
+                    lines.append(f"    ⚠ {warning}")
             return "\n".join(lines)
         else:
             # Summary message
