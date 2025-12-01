@@ -94,7 +94,7 @@ def init(
         result = Result(success=False, message=msg)
         output(result)
         raise typer.Exit(1) from None
-    except InitError as e:
+    except ImportDirNotFoundError as e:
         result = Result(success=False, message=str(e))
         output(result)
         raise typer.Exit(1) from None
