@@ -64,4 +64,3 @@ release bump:
     git tag "v${NEW_VERSION}"
     echo "✓ Created tag v${NEW_VERSION}"
     echo "Run 'git push && git push --tags' to trigger release workflow"
-    echo "After release is published, update Formula/claudectl.rb with new version and SHA256"
