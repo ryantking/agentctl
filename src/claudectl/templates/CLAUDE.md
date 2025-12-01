@@ -163,141 +163,143 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 
 ### Workflow
 
-- When committing
-    - When working on the default branch (main/master)
-        - Look at the git status and figure out which changes to commit based on user instructions
-        - Manually manage the staging area
-        - When dealing with a lot of changes, group related changes into their own commits
-        - Follow conventional commits
-    - When working on a feature branch
-        - Commits for new/modified files should be added automatically by hooks
-        - Manually commit deletions or user changes:
-          ```bash
-          git add file-to-delete.py
-          git commit -m "Remove deprecated file"
-          ```
-        - Use simple, single line, non-conventional commit messages, like "Changed 3 files" or "Deleted 2 files"
-- When creating branches
-    - Use the Linear generated branch name if using a Linear ticket
-    - Use a conventional branch name like `feat/area/some-feature` when not using linear tickets
-- When merging branches
-    - Check `<context-refresh>` for workspace status before merging
-    - Ensure you're on the default branch main/master unless otherwise specified
-    - Delete workspace if it exists:
-      ```bash
-      claudectl workspace delete <branch-name>
-      ```
-    - Switch to main and update:
-      ```bash
-      git checkout main && git pull origin main
-      ```
-    - Review changes before merging:
-      ```bash
-      git log main..<branch-name> --oneline
-      git diff main...<branch-name> --stat
-      ```
-    - Squash merge and create conventional commit:
-      ```bash
-      git merge --squash <branch-name>
-      git commit -m "$(cat <<'EOF'
-      feat(scope): description of changes
+#### Committing Changes
 
-      Detailed explanation of what changed and why.
+**On the default branch (main/master):**
+- Look at the git status and figure out which changes to commit based on user instructions
+- Manually manage the staging area
+- When dealing with a lot of changes, group related changes into their own commits
+- Follow conventional commits specification
 
-      - Key change 1
-      - Key change 2
+**On a feature branch:**
+- Commits for new/modified files should be added automatically by hooks
+- Manually commit deletions or user changes:
+  ```bash
+  git add file-to-delete.py
+  git commit -m "Remove deprecated file"
+  ```
+- Use simple, single line, non-conventional commit messages, like "Changed 3 files" or "Deleted 2 files"
 
-      Co-Authored-By: Claude <noreply@anthropic.com>
-      EOF
-      )"
-      ```
-    - Push and cleanup:
-      ```bash
-      git push origin main
-      git branch -D <branch-name>
-      ```
-      (Use `-D` not `-d` because squash merges don't create merge references)
-- When creating pull requests
-    - Verify auto-commits:
-      ```bash
-      git log -1
-      ```
-    - Check for uncommitted changes:
-      ```bash
-      git status -sb
-      ```
-    - Analyze changes and ask user if needed about what to include
-    - Push branch with upstream tracking:
-      ```bash
-      git push -u origin <branch-name>
-      ```
-    - Create PR using gh CLI:
-      ```bash
-      gh pr create --title "feat(scope): description" --body "$(cat <<'EOF'
-      ## Summary
-      Brief explanation of the changes
+#### Creating Branches
 
-      ## Changes
-      - Change 1
-      - Change 2
+- Use the Linear generated branch name if using a Linear ticket
+- Use a conventional branch name like `feat/area/some-feature` when not using linear tickets
 
-      ## Test Plan
-      - [ ] Test scenario 1
-      - [ ] Test scenario 2
-      EOF
-      )"
-      ```
-- When merging pull requests
-    - Ensure you're on the default branch main/master unless otherwise specified
-    - Analyze the description, commits, and PR changes to understand the context
-    - Check PR details and reviews:
-      ```bash
-      gh pr view <number>
-      gh pr view <number> --json reviews
-      ```
-    - Check PR checks status:
-      ```bash
-      gh pr checks <number>
-      ```
-    - If checks failed, view logs and fix issues:
-      ```bash
-      gh pr checks <number> --web
-      ```
-    - If there are review comments, address them and push updates:
-      ```bash
-      git add <files>
-      git commit -m "Address review comments"
-      git push
-      ```
-    - Delete workspace before merging:
-      ```bash
-      claudectl workspace delete <branch-name>
-      ```
-    - Switch to main and update:
-      ```bash
-      git checkout main && git pull origin main
-      ```
-    - Perform squash merge with conventional commit:
-      ```bash
-      git merge --squash <branch-name>
-      git commit -m "$(cat <<'EOF'
-      feat(scope): description of changes
+#### Merging LOCAL Branches (without PRs)
 
-      Detailed explanation of changes and reasoning.
+**IMPORTANT:** Only use this workflow when merging a local branch directly. For pull requests, see "Merging Pull Requests" section below.
 
-      - Key change 1
-      - Key change 2
+1. Check `<context-refresh>` for workspace status before merging
+2. Ensure you're on the default branch main/master unless otherwise specified
+3. Delete workspace if it exists:
+   ```bash
+   claudectl workspace delete <branch-name>
+   ```
+4. Switch to main and update:
+   ```bash
+   git checkout main && git pull origin main
+   ```
+5. Review changes before merging:
+   ```bash
+   git log main..<branch-name> --oneline
+   git diff main...<branch-name> --stat
+   ```
+6. Squash merge and create conventional commit:
+   ```bash
+   git merge --squash <branch-name>
+   git commit -m "$(cat <<'EOF'
+   feat(scope): description of changes
 
-      Co-Authored-By: Claude <noreply@anthropic.com>
-      EOF
-      )"
-      ```
-    - Push and cleanup:
-      ```bash
-      git push origin main
-      git branch -D <branch-name>
-      ```
-      (Use `-D` not `-d` because squash merges don't create merge references)
+   Detailed explanation of what changed and why.
+
+   - Key change 1
+   - Key change 2
+
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   EOF
+   )"
+   ```
+7. Push and cleanup:
+   ```bash
+   git push origin main
+   git branch -D <branch-name>
+   ```
+   (Use `-D` not `-d` because squash merges don't create merge references)
+
+#### Creating Pull Requests
+
+1. Verify auto-commits:
+   ```bash
+   git log -1
+   ```
+2. Check for uncommitted changes:
+   ```bash
+   git status -sb
+   ```
+3. Analyze changes and ask user if needed about what to include
+4. Push branch with upstream tracking:
+   ```bash
+   git push -u origin <branch-name>
+   ```
+5. Create PR using gh CLI:
+   ```bash
+   gh pr create --title "feat(scope): description" --body "$(cat <<'EOF'
+   ## Summary
+   Brief explanation of the changes
+
+   ## Changes
+   - Change 1
+   - Change 2
+
+   ## Test Plan
+   - [ ] Test scenario 1
+   - [ ] Test scenario 2
+   EOF
+   )"
+   ```
+
+#### Merging Pull Requests
+
+**IMPORTANT:** Use `gh pr merge` for pull requests, NOT `git merge`. This workflow is for when the user says "merge PR #123" or "merge pull request".
+
+1. Ensure you're on the default branch main/master unless otherwise specified
+2. Analyze the PR to understand the context:
+   ```bash
+   gh pr view <number>
+   gh pr view <number> --json reviews
+   ```
+3. Check PR checks status:
+   ```bash
+   gh pr checks <number>
+   ```
+4. If checks failed, view logs and fix issues:
+   ```bash
+   gh pr checks <number> --web
+   ```
+5. If there are review comments, address them and push updates:
+   ```bash
+   git add <files>
+   git commit -m "Address review comments"
+   git push
+   ```
+6. Delete workspace before merging (if applicable):
+   ```bash
+   claudectl workspace delete <branch-name>
+   ```
+7. Merge the pull request using gh CLI with squash merge:
+   ```bash
+   gh pr merge <number> --squash --delete-branch --body "$(cat <<'EOF'
+   feat(scope): description of changes
+
+   Detailed explanation of changes and reasoning.
+
+   - Key change 1
+   - Key change 2
+
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   EOF
+   )"
+   ```
 
 ## Agent Orchestration
 
