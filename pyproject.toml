@@ -28,6 +28,9 @@ dependencies = [
 [project.scripts]
 claudectl = "claudectl.cli.main:main"
 
+[tool.uv]
+package = true
+
 [project.urls]
 Homepage = "https://github.com/ryantking/claudectl"
 Repository = "https://github.com/ryantking/claudectl"

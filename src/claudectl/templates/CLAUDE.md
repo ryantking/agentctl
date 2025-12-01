@@ -367,3 +367,9 @@ Example: "Implement authentication system"
 - **Wave 2 is conditional** (skip if no research/history needed)
 - **Always plan before Wave 3** for complex tasks
 - **Never spawn agents from agents** - main orchestrates only
+
+## Repository Context
+
+<!-- REPOSITORY_INDEX_START -->
+<!-- This section will be populated during initialization with repository-specific context -->
+<!-- REPOSITORY_INDEX_END -->

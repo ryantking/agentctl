@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "cleanupPeriodDays": 30,
   "env": {
     "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "8000",
@@ -16,6 +15,8 @@
   "includeCoAuthoredBy": true,
   "permissions": {
     "allow": [
+      "Edit",
+      "Write",
       "WebSearch",
       "WebFetch",
       "Bash(git:*)",
@@ -23,6 +24,8 @@
       "Bash(python:*)",
       "Bash(uv:*)",
       "Bash(just:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
       "Bash(git status)",
       "Bash(git diff:*)",
       "Bash(git add:*)",
@@ -37,10 +40,12 @@
       "Bash(gh pr diff:*)",
       "Bash(gh pr create:*)",
       "Bash(gh pr merge:*)",
+      "Bash(gh pr edit:*)",
       "Bash(gh pr comment:*)",
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
       "Bash(gh issue status:*)",
+      "Bash(gh run view:*)",
       "Bash(gh repo view:*)",
       "Bash(gh api:*)",
       "Bash(gh browse:*)",
@@ -63,20 +68,17 @@
       "mcp__linear__get_project",
       "mcp__linear__list_teams",
       "mcp__linear__get_team",
-      "mcp__linear__add_comment",
-      "Edit",
-      "Write"
+      "mcp__linear__add_comment"
     ],
-    "deny": [
+    "ask": [
       "Bash(sudo:*)"
     ],
-    "ask": [],
     "defaultMode": "default",
     "additionalDirectories": [
-      "~/.claude/workspaces"
+      "~/.claude/workspaces",
+      "/tmp"
     ]
   },
-  "model": "haiku",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -143,9 +145,5 @@
     "type": "command",
     "command": "npx -y ccstatusline@latest",
     "padding": 0
-  },
-  "enabledPlugins": {
-    "python-development@claude-code-workflows": true
-  },
-  "alwaysThinkingEnabled": false
+  }
 }

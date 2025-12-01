@@ -14,7 +14,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-from quick_validate import validate_skill
+from quick_validate import validate_skill  # type: ignore[import-not-found]
 
 
 def package_skill(skill_path, output_dir=None):
