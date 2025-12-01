@@ -87,7 +87,18 @@ class InitManager:
         )
         self._track_result(results, settings_result)
 
-        # 5. Index repository with claude CLI
+        # 5. Configure MCP servers
+        mcp_result = self._configure_mcp(
+            self.target / ".mcp.json",
+            force,
+        )
+        self._track_result(results, mcp_result)
+
+        # Track MCP warnings if any
+        if hasattr(mcp_result, 'warnings') and mcp_result.warnings:
+            results["warnings"] = mcp_result.warnings
+
+        # 6. Index repository with claude CLI
         if not skip_index:
             index_result = self._index_repository()
             if verbose and index_result:
