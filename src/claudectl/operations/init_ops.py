@@ -30,11 +30,11 @@ class InitManager:
         self.import_dir = self._find_import_dir()
 
     def _find_import_dir(self) -> Path:
-        """Locate bundled import/ directory."""
+        """Locate bundled templates directory."""
         # Check relative to package
-        package_import = Path(__file__).parent.parent.parent / "import"
-        if package_import.exists():
-            return package_import
+        package_templates = Path(__file__).parent.parent / "templates"
+        if package_templates.exists():
+            return package_templates
         raise ImportDirNotFoundError()
 
     def install(
