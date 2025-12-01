@@ -143,7 +143,9 @@ class InitManager:
             for item in source.iterdir():
                 if item.is_dir():
                     dest_item = dest / item.name
-                    if dest_item.exists() and not force:
+                    existed = dest_item.exists()
+
+                    if existed and not force:
                         results.append(
                             FileResult(
                                 str(dest_item.relative_to(self.target)),
@@ -153,7 +155,7 @@ class InitManager:
                         continue
 
                     shutil.copytree(item, dest_item, dirs_exist_ok=force)
-                    status = "overwritten" if dest_item.exists() else "created"
+                    status = "overwritten" if existed else "created"
                     results.append(
                         FileResult(
                             str(dest_item.relative_to(self.target)),
