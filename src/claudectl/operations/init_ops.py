@@ -292,7 +292,8 @@ class InitManager:
 - Main purpose and key technologies
 - Directory structure (2-3 levels max)
 - Entry points and main files
-- Build/run commands if applicable
+- Build/run commands (check for package.json scripts, Makefile targets, Justfile recipes, etc.)
+- Available scripts and automation tools
 
 Format as clean markdown, keep it brief (under 500 words)."""
 
