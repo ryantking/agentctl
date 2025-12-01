@@ -31,9 +31,6 @@ claudectl = "claudectl.cli.main:main"
 [tool.uv]
 package = true
 
-[tool.uv.package-data]
-claudectl = ["templates/**/*"]
-
 [project.urls]
 Homepage = "https://github.com/ryantking/claudectl"
 Repository = "https://github.com/ryantking/claudectl"
