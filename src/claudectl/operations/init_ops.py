@@ -295,7 +295,7 @@ class InitManager:
 - Build/run commands (check for package.json scripts, Makefile targets, Justfile recipes, etc.)
 - Available scripts and automation tools
 
-Format as clean markdown, keep it brief (under 500 words)."""
+Format as clean markdown starting at heading level 3 (###), keep it brief (under 500 words)."""
 
         try:
             result = subprocess.run(
