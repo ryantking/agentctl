@@ -335,6 +335,8 @@ Explore (parallel 1-3 agents) + historian + researcher (parallel 3-5 agents) →
 ```
 Example: "Implement authentication system"
 
+**Note:** "Plan" in workflow patterns refers to spawning Plan agent(s) explicitly via Task tool with `subagent_type="Plan"`, NOT entering Plan Mode with Shift+Tab.
+
 ### Workflow Details
 
 1. **Discovery Phase** (Wave 1)
