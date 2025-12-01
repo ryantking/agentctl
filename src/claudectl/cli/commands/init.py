@@ -64,6 +64,10 @@ def init(
         claudectl init --force
         claudectl init --no-index --verbose
     """
+    # Skip if subcommand invoked
+    if ctx.invoked_subcommand is not None:
+        return
+
     try:
         # Determine target directory
         if global_install:
