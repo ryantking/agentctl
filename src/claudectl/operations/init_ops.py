@@ -240,6 +240,8 @@ class InitManager:
 
         # Add Context7 MCP with HTTP transport
         context7_api_key = os.environ.get("CONTEXT7_API_KEY", "")
+        warnings = []
+
         if context7_api_key:
             mcp_config["mcpServers"]["context7"] = {
                 "type": "http",
@@ -254,9 +256,7 @@ class InitManager:
                 "type": "http",
                 "url": "https://mcp.context7.com/mcp"
             }
-            # Store warning to show to user
-            result = FileResult(str(dest.relative_to(self.target)), "created")
-            result.warnings = ["Context7 configured without API key (CONTEXT7_API_KEY not found in environment)"]
+            warnings.append("Context7 configured without API key (CONTEXT7_API_KEY not found in environment)")
 
         # Add Linear MCP with SSE transport
         mcp_config["mcpServers"]["linear"] = {
@@ -266,16 +266,20 @@ class InitManager:
 
         # Write MCP configuration
         dest.parent.mkdir(parents=True, exist_ok=True)
+
+        # Determine status before writing
+        file_existed = dest.exists()
+
         with open(dest, "w") as f:
             json.dump(mcp_config, f, indent=2)
             f.write("\n")  # Add trailing newline
 
-        status = "overwritten" if dest.exists() else "created"
-        result = FileResult(str(dest.relative_to(self.target)), status)
-
-        # Add warning if no Context7 API key
-        if not context7_api_key:
-            result.warnings = ["Context7 configured without API key (CONTEXT7_API_KEY not found in environment)"]
+        status = "overwritten" if file_existed else "created"
+        result = FileResult(
+            str(dest.relative_to(self.target)),
+            status,
+            warnings=warnings if warnings else None
+        )
 
         return result
 
