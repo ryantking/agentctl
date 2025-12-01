@@ -7,7 +7,6 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from claudectl.cli.output import Result
 from claudectl.domain.exceptions import ImportDirNotFoundError
@@ -28,9 +27,9 @@ class InitManager:
 
     def __init__(self, target_dir: Path) -> None:
         self.target = target_dir
-        self.import_dir = self._find_import_dir()
+        self.template_dir = self._find_template_dir()
 
-    def _find_import_dir(self) -> Path:
+    def _find_template_dir(self) -> Path:
         """Locate bundled templates directory."""
         # Check relative to package
         package_templates = Path(__file__).parent.parent / "templates"
@@ -346,7 +345,7 @@ class InitManager:
                     lines.append(f"    • {f}")
             if "indexed" in results:
                 lines.append("  Repository indexed with Claude CLI")
-            if "warnings" in results and results["warnings"]:
+            if results.get("warnings"):
                 lines.append("\n  Warnings:")
                 for warning in results["warnings"]:
                     lines.append(f"    ⚠ {warning}")
