@@ -74,7 +74,8 @@ Executable code (Python/Bash/etc.) that can be run directly to perform specific 
 - PDF skill: `fill_fillable_fields.py`, `extract_form_field_info.py` - utilities for PDF manipulation
 - DOCX skill: `document.py`, `utilities.py` - Python modules for document processing
 
-**Appropriate for:** Python scripts, shell scripts, or any executable code that performs automation, data processing, or specific operations.
+**Appropriate for:** Python scripts, shell scripts, or any executable code that performs
+automation, data processing, or specific operations.
 
 **Note:** Scripts may be executed without loading into context, but can still be read by Claude for patching or environment adjustments.
 
