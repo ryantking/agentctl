@@ -18,8 +18,9 @@ app = typer.Typer(
 )
 
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def init(
+    ctx: typer.Context,
     global_install: Annotated[
         bool,
         typer.Option(
