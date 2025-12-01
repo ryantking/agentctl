@@ -317,6 +317,38 @@ Format as clean markdown, keep it brief (under 500 words)."""
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return False
 
+    def _insert_repository_index(self, index_content: str) -> bool:
+        """Insert generated repository index into CLAUDE.md."""
+        claude_md_path = self.target / "CLAUDE.md"
+
+        if not claude_md_path.exists():
+            return False
+
+        with open(claude_md_path, 'r') as f:
+            content = f.read()
+
+        # Find placeholder markers
+        start_marker = "<!-- REPOSITORY_INDEX_START -->"
+        end_marker = "<!-- REPOSITORY_INDEX_END -->"
+
+        if start_marker not in content or end_marker not in content:
+            return False
+
+        # Replace content between markers
+        start_idx = content.find(start_marker) + len(start_marker)
+        end_idx = content.find(end_marker)
+
+        updated_content = (
+            content[:start_idx] +
+            "\n" + index_content + "\n" +
+            content[end_idx:]
+        )
+
+        with open(claude_md_path, 'w') as f:
+            f.write(updated_content)
+
+        return True
+
     def _track_result(self, results: dict[str, list[str]], file_result: FileResult) -> None:
         """Track file operation result."""
         # Map status to result key
