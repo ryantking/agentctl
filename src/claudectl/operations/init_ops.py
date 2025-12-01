@@ -231,8 +231,6 @@ class InitManager:
         force: bool,
     ) -> FileResult:
         """Configure MCP servers (.mcp.json) with Context7 and Linear."""
-        import os
-
         # Check if file exists and we shouldn't force
         if dest.exists() and not force:
             return FileResult(str(dest.relative_to(self.target)), "skipped")
