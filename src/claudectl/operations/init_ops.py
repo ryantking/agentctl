@@ -20,7 +20,6 @@ class FileResult:
 
     path: str
     status: str  # "created", "skipped", "overwritten", "merged"
-    warnings: list[str] | None = None
 
 
 class InitManager:
