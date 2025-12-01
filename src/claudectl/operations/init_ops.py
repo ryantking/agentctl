@@ -236,32 +236,19 @@ class InitManager:
             return FileResult(str(dest.relative_to(self.target)), "skipped")
 
         # Build MCP configuration
-        mcp_config = {"mcpServers": {}}
-
-        # Add Context7 MCP with HTTP transport
-        context7_api_key = os.environ.get("CONTEXT7_API_KEY", "")
-        warnings = []
-
-        if context7_api_key:
-            mcp_config["mcpServers"]["context7"] = {
-                "type": "http",
-                "url": "https://mcp.context7.com/mcp",
-                "headers": {
-                    "CONTEXT7_API_KEY": context7_api_key
+        mcp_config = {
+            "mcpServers": {
+                # Context7 automatically loads CONTEXT7_API_KEY from environment
+                "context7": {
+                    "type": "http",
+                    "url": "https://mcp.context7.com/mcp"
+                },
+                # Linear with SSE transport
+                "linear": {
+                    "type": "sse",
+                    "url": "https://mcp.linear.app/sse"
                 }
             }
-        else:
-            # Configure without API key but add a warning
-            mcp_config["mcpServers"]["context7"] = {
-                "type": "http",
-                "url": "https://mcp.context7.com/mcp"
-            }
-            warnings.append("Context7 configured without API key (CONTEXT7_API_KEY not found in environment)")
-
-        # Add Linear MCP with SSE transport
-        mcp_config["mcpServers"]["linear"] = {
-            "type": "sse",
-            "url": "https://mcp.linear.app/sse"
         }
 
         # Write MCP configuration
@@ -275,13 +262,7 @@ class InitManager:
             f.write("\n")  # Add trailing newline
 
         status = "overwritten" if file_existed else "created"
-        result = FileResult(
-            str(dest.relative_to(self.target)),
-            status,
-            warnings=warnings if warnings else None
-        )
-
-        return result
+        return FileResult(str(dest.relative_to(self.target)), status)
 
     def _index_repository(self) -> bool:
         """Generate repository index using Claude CLI with prompt."""
