@@ -12,13 +12,6 @@ A CLI tool for managing Claude Code configurations, hooks, and isolated workspac
 
 ## Installation
 
-### Via Homebrew (recommended for macOS)
-
-```bash
-brew tap carelesslisper/claudectl
-brew install claudectl
-```
-
 ### Via pip from GitHub Release
 
 ```bash
@@ -143,7 +136,6 @@ just build
 
 3. GitHub Actions automatically:
    - Builds the package
-   - Publishes to PyPI
    - Creates GitHub Release
 
 ## License
