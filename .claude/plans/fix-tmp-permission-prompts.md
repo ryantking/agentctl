@@ -1,14 +1,42 @@
-# Fix /tmp Permission Prompt Madness
+# Fix Permission Prompt Madness
 
 ## Problem Statement
 
-Claude Code agents are triggering excessive permission prompts when performing testing and temporary file operations. The root cause is that agents default to using `/tmp` for temporary files, and each unique bash command path requires a separate permission prompt due to Claude's prefix-based approval system.
+Claude Code agents are triggering excessive permission prompts, making testing and development workflows unusable. Research reveals **two primary root causes**:
+
+### Root Cause #1: Command Chaining Breaks Permission Matching (PRIMARY ISSUE)
+
+Claude Code uses **prefix matching** for bash permission approval. When agents chain commands with `&&`, `||`, `;`, or `|`, the entire command string fails to match pre-approved patterns.
+
+**Example:**
+```
+Pre-approved: Bash(git status:*)
+Agent runs:   git status && git diff
+Result:       "git status && git diff" does NOT prefix-match "git status" → PROMPT
+```
+
+**Why This Happens:**
+- Permission system does literal string prefix matching on the entire command
+- Chained commands contain additional content after the approved prefix
+- Even though individual components may be pre-approved, the full string is not
+- Research shows 97-100% of shell operator bypass attempts work (GitHub Issue #4956)
+
+**Current Agent Behavior:**
+- Agents frequently chain commands: `mkdir /tmp/test && cd /tmp/test && python script.py`
+- Each chained operation triggers a permission prompt
+- CLAUDE.md template contains ZERO guidance on when to chain vs split commands
+
+### Root Cause #2: /tmp Usage Compounds the Problem (SECONDARY ISSUE)
+
+Agents default to using `/tmp` for temporary files, which:
+- Each unique bash command path requires a separate permission prompt
+- Even with `/tmp` in `additionalDirectories`, bash commands still require approval
+- Testing workflows create/read/delete temp files, multiplying prompt count
 
 **Current Pain Points:**
-- Agents create temp directories in `/tmp` via bash commands
-- Each unique bash command (mkdir, cat, rm) triggers a permission prompt
-- Even with `/tmp` in `additionalDirectories`, bash commands still require approval
-- Testing workflows become unusable due to prompt fatigue
+- Single test operation triggers 4+ prompts (mkdir, run test, read output, cleanup)
+- No guidance on using project-local directories vs `/tmp`
+- Agents chain temp operations, combining both root causes
 
 ## Root Cause Analysis
 
