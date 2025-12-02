@@ -49,7 +49,7 @@ class InitManager:
         force: bool = False,
         skip_index: bool = False,
         verbose: bool = False,
-        console: Console | None = None,
+        console: Console,
     ) -> Result:
         """Execute full initialization."""
         results: dict[str, list[str]] = {
@@ -60,8 +60,7 @@ class InitManager:
         }
 
         # 1. Install CLAUDE.md
-        if console:
-            console.print("Installing CLAUDE.md...")
+        console.print("Installing CLAUDE.md...")
         claude_md = self._install_file(
             self.template_dir / "CLAUDE.md",
             self.target / "CLAUDE.md",
@@ -70,8 +69,7 @@ class InitManager:
         self._track_result(results, claude_md)
 
         # 2. Install agents
-        if console:
-            console.print("Installing agents...")
+        console.print("Installing agents...")
         agents_results = self._install_directory(
             self.template_dir / "agents",
             self.target / ".claude" / "agents",
@@ -80,12 +78,10 @@ class InitManager:
         )
         for r in agents_results:
             self._track_result(results, r)
-        if console:
-            console.print(f"  → Installed {len(agents_results)} agent(s)")
+        console.print(f"  → Installed {len(agents_results)} agent(s)")
 
         # 3. Install skills
-        if console:
-            console.print("Installing skills...")
+        console.print("Installing skills...")
         skills_results = self._install_directory(
             self.template_dir / "skills",
             self.target / ".claude" / "skills",
@@ -94,12 +90,10 @@ class InitManager:
         )
         for r in skills_results:
             self._track_result(results, r)
-        if console:
-            console.print(f"  → Installed {len(skills_results)} skill(s)")
+        console.print(f"  → Installed {len(skills_results)} skill(s)")
 
         # 4. Merge settings
-        if console:
-            console.print("Merging settings.json...")
+        console.print("Merging settings.json...")
         settings_result = self._merge_settings(
             self.template_dir / "settings.json",
             self.target / ".claude" / "settings.json",
@@ -108,8 +102,7 @@ class InitManager:
         self._track_result(results, settings_result)
 
         # 5. Configure MCP servers
-        if console:
-            console.print("Configuring MCP servers...")
+        console.print("Configuring MCP servers...")
         mcp_result = self._configure_mcp(
             self.target / ".mcp.json",
             force,
