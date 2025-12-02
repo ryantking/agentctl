@@ -5,11 +5,15 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 from claudectl.cli.output import Result
 from claudectl.operations.settings_merge import merge_settings_smart
+
+# Type alias for progress callback
+ProgressCallback = Callable[[str], None]
 
 
 class ImportDirNotFoundError(Exception):
