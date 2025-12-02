@@ -77,9 +77,9 @@ def init(
         # Run initialization with progress updates
         manager = InitManager(target)
         manager.install(
+            console=console,
             force=force,
             skip_index=no_index or global_install,
-            console=console,
         )
 
     except NotInGitRepoError as e:
