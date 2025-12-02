@@ -194,7 +194,8 @@ class InitManager:
         self,
         dest: Path,
         force: bool,
-    ) -> FileResult:
+        console: Console,
+    ) -> None:
         """Configure MCP servers (.mcp.json) with Context7 and Linear."""
         # New MCP servers to add
         new_servers = {
@@ -224,7 +225,8 @@ class InitManager:
 
             # If no new servers were added, skip
             if not added_any:
-                return FileResult(str(dest.relative_to(self.target)), "skipped")
+                console.print(f"  • {dest.relative_to(self.target)} (skipped)")
+                return
 
             mcp_config = existing_config
             status = "merged"
@@ -238,7 +240,7 @@ class InitManager:
             json.dump(mcp_config, f, indent=2)
             f.write("\n")  # Add trailing newline
 
-        return FileResult(str(dest.relative_to(self.target)), status)
+        console.print(f"  • {dest.relative_to(self.target)} ({status})")
 
     def _index_repository(self, console: Console) -> bool:
         """Generate repository index using Claude CLI with prompt."""
