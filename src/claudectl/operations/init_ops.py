@@ -117,11 +117,12 @@ class InitManager:
         source: Path,
         dest: Path,
         force: bool,
+        console: Console,
         pattern: str = "*",
         recursive: bool = False,
-    ) -> list[FileResult]:
+    ) -> int:
         """Install files from a directory."""
-        results = []
+        count = 0
         dest.mkdir(parents=True, exist_ok=True)
 
         if recursive:
@@ -132,30 +133,21 @@ class InitManager:
                     existed = dest_item.exists()
 
                     if existed and not force:
-                        results.append(
-                            FileResult(
-                                str(dest_item.relative_to(self.target)),
-                                "skipped",
-                            )
-                        )
+                        console.print(f"  • {dest_item.relative_to(self.target)} (skipped)")
                         continue
 
                     shutil.copytree(item, dest_item, dirs_exist_ok=force)
                     status = "overwritten" if existed else "created"
-                    results.append(
-                        FileResult(
-                            str(dest_item.relative_to(self.target)),
-                            status,
-                        )
-                    )
+                    console.print(f"  • {dest_item.relative_to(self.target)} ({status})")
+                    count += 1
         else:
             # Copy matching files (for agents)
             for item in source.glob(pattern):
                 if item.is_file():
-                    result = self._install_file(item, dest / item.name, force)
-                    results.append(result)
+                    self._install_file(item, dest / item.name, force, console)
+                    count += 1
 
-        return results
+        return count
 
     def _merge_settings(
         self,
