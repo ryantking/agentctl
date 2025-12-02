@@ -471,11 +471,15 @@ Total: 0 prompts (all pre-approved)
 ## Trade-offs and Considerations
 
 ### Pros:
-- **Massive reduction in permission prompts** (70-90% for testing workflows)
+- **Massive reduction in permission prompts** (80-95% across workflows)
+  - Phase 1 alone: ~70% reduction (bash chaining fix)
+  - Phase 2 adds: ~25% additional (temp directory fix)
+- **Addresses root cause** (agents learn correct tool usage patterns)
 - **Better organization** (centralized temp files in known location)
 - **Workspace isolation** (each workspace has own `.claude/` directory)
 - **No breaking changes** (purely additive guidance)
 - **Follows existing patterns** (`.claude/research/`, `.claude/plans/` already exist)
+- **Aligns with Claude's system prompt** (documents what should already be happening)
 
 ### Cons:
 - **Working directory pollution** (`.claude/scratch/` visible in repo)
