@@ -538,18 +538,23 @@ Total: 0 prompts (all pre-approved)
 ## Success Criteria
 
 1. **Quantitative**:
-   - Permission prompts for testing workflows < 2 per session
-   - Agent compliance with `.claude/scratch/` > 80% after guidance update
+   - **Phase 1**: Permission prompts for exploration workflows < 1 per session
+   - **Phase 2**: Permission prompts for testing workflows < 1 per session
+   - **Combined**: 80-95% reduction in total permission prompts
+   - Agent compliance with parallel tool calls > 80% after Phase 1
+   - Agent compliance with `.claude/scratch/` > 80% after Phase 2
 
 2. **Qualitative**:
-   - User reports reduced frustration with prompts
-   - Agents naturally use project-local temp directories
-   - Testing workflows feel "smooth" again
+   - User reports dramatically reduced frustration with prompts
+   - Agents naturally split independent commands into parallel tool calls
+   - Agents use project-local temp directories when appropriate
+   - Testing and exploration workflows feel "smooth" and "fast"
 
 3. **Technical**:
    - All changes backward compatible
    - No new dependencies required
    - gitignore patterns work correctly
+   - Git workflows still use legitimate chaining (not broken by guidance)
 
 ## Next Steps
 
