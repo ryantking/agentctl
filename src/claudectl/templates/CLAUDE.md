@@ -473,8 +473,6 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 7. Merge the pull request using gh CLI with squash merge:
    ```bash
    gh pr merge <number> --squash --delete-branch --body "$(cat <<'EOF'
-   feat(scope): description of changes
-
    Detailed explanation of changes and reasoning.
 
    - Key change 1
