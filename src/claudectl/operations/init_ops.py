@@ -38,81 +38,62 @@ class InitManager:
         self,
         force: bool = False,
         skip_index: bool = False,
-        verbose: bool = False,
         console: Console,
-    ) -> Result:
+    ) -> None:
         """Execute full initialization."""
-        results: dict[str, list[str]] = {
-            "installed": [],
-            "skipped": [],
-            "overwritten": [],
-            "merged": [],
-        }
-
         # 1. Install CLAUDE.md
         console.print("Installing CLAUDE.md...")
-        claude_md = self._install_file(
+        self._install_file(
             self.template_dir / "CLAUDE.md",
             self.target / "CLAUDE.md",
             force,
+            console,
         )
-        self._track_result(results, claude_md)
 
         # 2. Install agents
         console.print("Installing agents...")
-        agents_results = self._install_directory(
+        count = self._install_directory(
             self.template_dir / "agents",
             self.target / ".claude" / "agents",
             force,
+            console,
             pattern="*.md",
         )
-        for r in agents_results:
-            self._track_result(results, r)
-        console.print(f"  → Installed {len(agents_results)} agent(s)")
+        console.print(f"  → Installed {count} agent(s)")
 
         # 3. Install skills
         console.print("Installing skills...")
-        skills_results = self._install_directory(
+        count = self._install_directory(
             self.template_dir / "skills",
             self.target / ".claude" / "skills",
             force,
+            console,
             recursive=True,
         )
-        for r in skills_results:
-            self._track_result(results, r)
-        console.print(f"  → Installed {len(skills_results)} skill(s)")
+        console.print(f"  → Installed {count} skill(s)")
 
         # 4. Merge settings
         console.print("Merging settings.json...")
-        settings_result = self._merge_settings(
+        self._merge_settings(
             self.template_dir / "settings.json",
             self.target / ".claude" / "settings.json",
             force,
+            console,
         )
-        self._track_result(results, settings_result)
 
         # 5. Configure MCP servers
         console.print("Configuring MCP servers...")
-        mcp_result = self._configure_mcp(
+        self._configure_mcp(
             self.target / ".mcp.json",
             force,
+            console,
         )
-        self._track_result(results, mcp_result)
 
         # 6. Index repository with claude CLI
         if not skip_index:
-            index_result = self._index_repository(console)
-            if verbose and index_result:
-                results["indexed"] = ["CLAUDE.md"]
+            self._index_repository(console)
 
-        # Build result message
-        message = self._build_message(results, verbose)
-
-        return Result(
-            success=True,
-            message=message,
-            data=results,
-        )
+        console.print("\n✓ Initialization complete")
 
     def _install_file(
         self,
