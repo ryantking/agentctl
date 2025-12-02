@@ -87,6 +87,85 @@ Use Bash ONLY for operations that have no tool equivalent:
 - **File metadata**: File sizes, permissions (when content isn't enough)
 - **Simple directory listing**: `ls`, `ls -la` (for basic overview)
 
+### Bash Command Sequencing
+
+**CRITICAL**: Chained bash commands break permission matching and trigger prompts.
+
+#### When to Use Multiple Tool Calls (Preferred)
+
+Use **separate parallel Bash tool calls** for independent operations:
+
+✅ **DO THIS:**
+```
+Tool Call 1: Bash(git status)
+Tool Call 2: Bash(git diff HEAD)
+Tool Call 3: Bash(git log --oneline -5)
+```
+
+**Why:** Each command matches pre-approved patterns independently. Zero prompts.
+
+❌ **DON'T DO THIS:**
+```
+Bash(git status && git diff HEAD && git log --oneline -5)
+```
+
+**Why:** Chained command doesn't match `Bash(git status:*)` pattern. Triggers prompt.
+
+#### When Chaining is Acceptable
+
+Use `&&` chaining ONLY when commands are **dependent** (later commands need earlier ones to succeed):
+
+✅ **Acceptable chains:**
+- `mkdir -p dir && cp file dir/` (cp depends on dir existing)
+- `git add . && git commit -m "msg" && git push` (each depends on previous)
+- `cd /path && npm install` (npm needs to be in /path)
+
+✅ **Even better - use single commands when possible:**
+- `cp file dir/` (many tools auto-create parent dirs)
+- Use absolute paths: `npm install --prefix /path`
+
+#### Operator Reference
+
+| Operator | Meaning | When to Use | Example |
+|----------|---------|-------------|---------|
+| `&&` | AND (run next if previous succeeds) | Dependent sequence | `mkdir dir && cd dir` |
+| `\|\|` | OR (run next if previous fails) | Fallback behavior | `npm ci \|\| npm install` |
+| `;` | Sequential (run regardless) | Rarely needed | Avoid - use separate calls |
+| `\|` | Pipe (send output to next) | Data transformation | When specialized tools can't help |
+
+**General Rule:** If commands don't depend on each other, split into multiple tool calls.
+
+### Temporary Files and Directories
+
+**IMPORTANT**: Avoid using `/tmp` for temporary operations as each bash command triggers permission prompts.
+
+Use these alternatives instead:
+
+1. **For Testing Artifacts** → Use `.claude/scratch/` in working directory
+   - Auto-cleaned after session
+   - No permission prompts
+   - Workspace-isolated
+
+2. **For Research/Plans** → Use `.claude/research/` or `.claude/plans/`
+   - Already established pattern
+   - Version controlled
+   - Persistent across sessions
+
+3. **For Build/Runtime Caches** → Use `.cache/claudectl/` (gitignored)
+   - Follows npm/webpack convention
+   - Persists across sessions
+   - Excluded from git
+
+4. **When /tmp is Required** → Use built-in tools, not bash:
+   - ❌ `Bash(mkdir /tmp/test && echo "data" > /tmp/test/file.txt)`
+   - ✅ `Write(file_path="/tmp/test/file.txt", content="data")`
+   - Only use bash for git operations, pipelines, or when absolutely necessary
+
+**Cleanup Rules**:
+- Delete `.claude/scratch/` contents when done
+- Never commit `.claude/scratch/` to git
+- Document any persistent artifacts in `.claude/research/`
+
 ### Anti-Patterns (Will Trigger Permission Prompts)
 
 ❌ **DON'T**: `find . -name "*.py" | xargs grep "pattern"`
