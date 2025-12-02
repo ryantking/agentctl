@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.console import Console
 
 from claudectl.cli.output import Result, output
 from claudectl.core.git import NotInGitRepoError
@@ -44,14 +45,6 @@ def init(
             help="Skip Claude CLI repository indexing",
         ),
     ] = False,
-    verbose: Annotated[
-        bool,
-        typer.Option(
-            "--verbose",
-            "-v",
-            help="Show detailed file operations",
-        ),
-    ] = False,
 ) -> None:
     """Initialize Claude Code configuration.
 
@@ -62,7 +55,7 @@ def init(
         claudectl init
         claudectl init --global
         claudectl init --force
-        claudectl init --no-index --verbose
+        claudectl init --no-index
     """
     # Skip if subcommand invoked
     if ctx.invoked_subcommand is not None:
@@ -77,16 +70,16 @@ def init(
 
             target = get_repo_root()
 
-        # Run initialization
+        # Setup rich console for progress output
+        console = Console()
+
+        # Run initialization with progress updates
         manager = InitManager(target)
-        result = manager.install(
+        manager.install(
+            console=console,
             force=force,
             skip_index=no_index or global_install,
-            verbose=verbose,
         )
-
-        # Output result
-        output(result)
 
     except NotInGitRepoError as e:
         # Suggest --global if not in repo

@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 
-from claudectl.cli.output import Result
+from rich.console import Console
+
 from claudectl.operations.settings_merge import merge_settings_smart
 
 
@@ -17,14 +17,6 @@ class ImportDirNotFoundError(Exception):
 
     def __init__(self) -> None:
         super().__init__("Import directory not found. This may indicate a corrupted installation.")
-
-
-@dataclass
-class FileResult:
-    """Result of a single file operation."""
-
-    path: str
-    status: str  # "created", "skipped", "overwritten", "merged"
 
 
 class InitManager:
@@ -44,104 +36,93 @@ class InitManager:
 
     def install(
         self,
+        console: Console,
         force: bool = False,
         skip_index: bool = False,
-        verbose: bool = False,
-    ) -> Result:
+    ) -> None:
         """Execute full initialization."""
-        results: dict[str, list[str]] = {
-            "installed": [],
-            "skipped": [],
-            "overwritten": [],
-            "merged": [],
-        }
-
         # 1. Install CLAUDE.md
-        claude_md = self._install_file(
+        console.print("Installing CLAUDE.md...")
+        self._install_file(
             self.template_dir / "CLAUDE.md",
             self.target / "CLAUDE.md",
             force,
+            console,
         )
-        self._track_result(results, claude_md)
 
         # 2. Install agents
-        agents_results = self._install_directory(
+        console.print("Installing agents...")
+        count = self._install_directory(
             self.template_dir / "agents",
             self.target / ".claude" / "agents",
             force,
+            console,
             pattern="*.md",
         )
-        for r in agents_results:
-            self._track_result(results, r)
+        console.print(f"  → Installed {count} agent(s)")
 
         # 3. Install skills
-        skills_results = self._install_directory(
+        console.print("Installing skills...")
+        count = self._install_directory(
             self.template_dir / "skills",
             self.target / ".claude" / "skills",
             force,
+            console,
             recursive=True,
         )
-        for r in skills_results:
-            self._track_result(results, r)
+        console.print(f"  → Installed {count} skill(s)")
 
         # 4. Merge settings
-        settings_result = self._merge_settings(
+        console.print("Merging settings.json...")
+        self._merge_settings(
             self.template_dir / "settings.json",
             self.target / ".claude" / "settings.json",
             force,
+            console,
         )
-        self._track_result(results, settings_result)
 
         # 5. Configure MCP servers
-        mcp_result = self._configure_mcp(
+        console.print("Configuring MCP servers...")
+        self._configure_mcp(
             self.target / ".mcp.json",
             force,
+            console,
         )
-        self._track_result(results, mcp_result)
 
         # 6. Index repository with claude CLI
         if not skip_index:
-            index_result = self._index_repository()
-            if verbose and index_result:
-                results["indexed"] = ["CLAUDE.md"]
+            self._index_repository(console)
 
-        # Build result message
-        message = self._build_message(results, verbose)
-
-        return Result(
-            success=True,
-            message=message,
-            data=results,
-        )
+        console.print("\n✓ Initialization complete")
 
     def _install_file(
         self,
         source: Path,
         dest: Path,
         force: bool,
-    ) -> FileResult:
+        console: Console,
+    ) -> None:
         """Install a single file."""
-        status = "created"
-        if dest.exists():
-            if not force:
-                return FileResult(str(dest.relative_to(self.target)), "skipped")
-            status = "overwritten"
+        if dest.exists() and not force:
+            console.print(f"  • {dest.relative_to(self.target)} (skipped)")
+            return
 
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, dest)
-
-        return FileResult(str(dest.relative_to(self.target)), status)
+        status = "overwritten" if dest.exists() else "created"
+        console.print(f"  • {dest.relative_to(self.target)} ({status})")
 
     def _install_directory(
         self,
         source: Path,
         dest: Path,
         force: bool,
+        console: Console,
         pattern: str = "*",
         recursive: bool = False,
-    ) -> list[FileResult]:
+    ) -> int:
         """Install files from a directory."""
-        results = []
+        count = 0
         dest.mkdir(parents=True, exist_ok=True)
 
         if recursive:
@@ -152,37 +133,29 @@ class InitManager:
                     existed = dest_item.exists()
 
                     if existed and not force:
-                        results.append(
-                            FileResult(
-                                str(dest_item.relative_to(self.target)),
-                                "skipped",
-                            )
-                        )
+                        console.print(f"  • {dest_item.relative_to(self.target)} (skipped)")
                         continue
 
                     shutil.copytree(item, dest_item, dirs_exist_ok=force)
                     status = "overwritten" if existed else "created"
-                    results.append(
-                        FileResult(
-                            str(dest_item.relative_to(self.target)),
-                            status,
-                        )
-                    )
+                    console.print(f"  • {dest_item.relative_to(self.target)} ({status})")
+                    count += 1
         else:
             # Copy matching files (for agents)
             for item in source.glob(pattern):
                 if item.is_file():
-                    result = self._install_file(item, dest / item.name, force)
-                    results.append(result)
+                    self._install_file(item, dest / item.name, force, console)
+                    count += 1
 
-        return results
+        return count
 
     def _merge_settings(
         self,
         source: Path,
         dest: Path,
         force: bool,
-    ) -> FileResult:
+        console: Console,
+    ) -> None:
         """Merge settings.json with smart deep merge."""
         dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -195,10 +168,8 @@ class InitManager:
             with open(dest, "w") as f:
                 json.dump(new_settings, f, indent=2)
                 f.write("\n")  # Add trailing newline
-            return FileResult(
-                str(dest.relative_to(self.target)),
-                "created",
-            )
+            console.print(f"  • {dest.relative_to(self.target)} (created)")
+            return
 
         # Existing settings - merge
         with open(dest) as f:
@@ -209,27 +180,22 @@ class InitManager:
             with open(dest, "w") as f:
                 json.dump(new_settings, f, indent=2)
                 f.write("\n")  # Add trailing newline
-            return FileResult(
-                str(dest.relative_to(self.target)),
-                "overwritten",
-            )
+            console.print(f"  • {dest.relative_to(self.target)} (overwritten)")
+            return
 
         # Smart merge
         merged = merge_settings_smart(existing_settings, new_settings)
         with open(dest, "w") as f:
             json.dump(merged, f, indent=2)
             f.write("\n")  # Add trailing newline
-
-        return FileResult(
-            str(dest.relative_to(self.target)),
-            "merged",
-        )
+        console.print(f"  • {dest.relative_to(self.target)} (merged)")
 
     def _configure_mcp(
         self,
         dest: Path,
         force: bool,
-    ) -> FileResult:
+        console: Console,
+    ) -> None:
         """Configure MCP servers (.mcp.json) with Context7 and Linear."""
         # New MCP servers to add
         new_servers = {
@@ -259,7 +225,8 @@ class InitManager:
 
             # If no new servers were added, skip
             if not added_any:
-                return FileResult(str(dest.relative_to(self.target)), "skipped")
+                console.print(f"  • {dest.relative_to(self.target)} (skipped)")
+                return
 
             mcp_config = existing_config
             status = "merged"
@@ -273,12 +240,12 @@ class InitManager:
             json.dump(mcp_config, f, indent=2)
             f.write("\n")  # Add trailing newline
 
-        return FileResult(str(dest.relative_to(self.target)), status)
+        console.print(f"  • {dest.relative_to(self.target)} ({status})")
 
-    def _index_repository(self) -> bool:
+    def _index_repository(self, console: Console) -> None:
         """Generate repository index using Claude CLI with prompt."""
         if not shutil.which("claude"):
-            return False
+            return
 
         prompt = """Analyze this repository and provide a concise overview:
 - Main purpose and key technologies
@@ -290,26 +257,27 @@ class InitManager:
 Format as clean markdown starting at heading level 3 (###), keep it brief (under 500 words)."""
 
         try:
-            result = subprocess.run(
-                [
-                    "claude",
-                    "--print",
-                    "--output-format",
-                    "text",
-                    prompt,
-                ],
-                cwd=self.target,
-                capture_output=True,
-                text=True,
-                timeout=90,
-                check=False,
-            )
+            with console.status("Indexing repository with Claude CLI...", spinner="dots"):
+                result = subprocess.run(
+                    [
+                        "claude",
+                        "--print",
+                        "--output-format",
+                        "text",
+                        prompt,
+                    ],
+                    cwd=self.target,
+                    capture_output=True,
+                    text=True,
+                    timeout=90,
+                    check=False,
+                )
 
-            if result.returncode == 0 and result.stdout.strip():
-                return self._insert_repository_index(result.stdout.strip())
-            return False
+            output = result.stdout.strip()
+            if result.returncode == 0 and output and self._insert_repository_index(output):
+                console.print("  → Repository indexed successfully")
         except (subprocess.TimeoutExpired, FileNotFoundError):
-            return False
+            pass
 
     def _insert_repository_index(self, index_content: str) -> bool:
         """Insert generated repository index into CLAUDE.md."""
@@ -338,59 +306,3 @@ Format as clean markdown starting at heading level 3 (###), keep it brief (under
             f.write(updated_content)
 
         return True
-
-    def _track_result(self, results: dict[str, list[str]], file_result: FileResult) -> None:
-        """Track file operation result."""
-        # Map status to result key
-        status_map = {
-            "created": "installed",
-            "overwritten": "overwritten",
-            "skipped": "skipped",
-            "merged": "merged",
-        }
-        key = status_map.get(file_result.status, file_result.status)
-        results[key].append(file_result.path)
-
-    def _build_message(self, results: dict[str, list[str]], verbose: bool) -> str:
-        """Build user-facing message."""
-        installed = len(results.get("installed", []))
-        skipped = len(results.get("skipped", []))
-        overwritten = len(results.get("overwritten", []))
-        merged = len(results.get("merged", []))
-
-        if verbose:
-            # Detailed message
-            lines = ["Initialized Claude Code configuration\n"]
-            if installed:
-                lines.append(f"  Installed {installed} file(s):")
-                for f in results["installed"]:
-                    lines.append(f"    • {f}")
-            if overwritten:
-                lines.append(f"  Overwritten {overwritten} file(s):")
-                for f in results["overwritten"]:
-                    lines.append(f"    • {f}")
-            if merged:
-                lines.append(f"  Merged {merged} file(s):")
-                for f in results["merged"]:
-                    lines.append(f"    • {f}")
-            if skipped:
-                lines.append(f"  Skipped {skipped} existing file(s):")
-                for f in results["skipped"]:
-                    lines.append(f"    • {f}")
-            if "indexed" in results:
-                lines.append("  Repository indexed with Claude CLI")
-            return "\n".join(lines)
-        else:
-            # Summary message
-            parts = []
-            if installed:
-                parts.append(f"{installed} installed")
-            if overwritten:
-                parts.append(f"{overwritten} overwritten")
-            if merged:
-                parts.append(f"{merged} merged")
-            if skipped:
-                parts.append(f"{skipped} skipped")
-
-            summary = ", ".join(parts) if parts else "nothing to do"
-            return f"Initialized Claude Code configuration ({summary})"

@@ -96,6 +96,7 @@ source = { editable = "." }
 dependencies = [
     { name = "docker" },
     { name = "gitpython" },
+    { name = "rich" },
     { name = "typer" },
 ]
 
@@ -112,6 +113,7 @@ dev = [
 requires-dist = [
     { name = "docker", specifier = ">=7.1.0" },
     { name = "gitpython", specifier = ">=3.1.45" },
+    { name = "rich", specifier = ">=13.0.0" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
 
