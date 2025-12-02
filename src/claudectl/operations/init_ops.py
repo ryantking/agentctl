@@ -5,12 +5,10 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 
 from rich.console import Console
 
-from claudectl.cli.output import Result
 from claudectl.operations.settings_merge import merge_settings_smart
 
 
@@ -19,14 +17,6 @@ class ImportDirNotFoundError(Exception):
 
     def __init__(self) -> None:
         super().__init__("Import directory not found. This may indicate a corrupted installation.")
-
-
-@dataclass
-class FileResult:
-    """Result of a single file operation."""
-
-    path: str
-    status: str  # "created", "skipped", "overwritten", "merged"
 
 
 class InitManager:
