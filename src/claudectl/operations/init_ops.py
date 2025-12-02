@@ -285,7 +285,7 @@ class InitManager:
 
         return FileResult(str(dest.relative_to(self.target)), status)
 
-    def _index_repository(self, console: Console | None = None) -> bool:
+    def _index_repository(self, console: Console) -> bool:
         """Generate repository index using Claude CLI with prompt."""
         if not shutil.which("claude"):
             return False
@@ -300,23 +300,7 @@ class InitManager:
 Format as clean markdown starting at heading level 3 (###), keep it brief (under 500 words)."""
 
         try:
-            if console:
-                with console.status("Indexing repository with Claude CLI...", spinner="dots"):
-                    result = subprocess.run(
-                        [
-                            "claude",
-                            "--print",
-                            "--output-format",
-                            "text",
-                            prompt,
-                        ],
-                        cwd=self.target,
-                        capture_output=True,
-                        text=True,
-                        timeout=90,
-                        check=False,
-                    )
-            else:
+            with console.status("Indexing repository with Claude CLI...", spinner="dots"):
                 result = subprocess.run(
                     [
                         "claude",
@@ -334,7 +318,7 @@ Format as clean markdown starting at heading level 3 (###), keep it brief (under
 
             if result.returncode == 0 and result.stdout.strip():
                 indexed = self._insert_repository_index(result.stdout.strip())
-                if console and indexed:
+                if indexed:
                     console.print("  → Repository indexed successfully")
                 return indexed
             return False
