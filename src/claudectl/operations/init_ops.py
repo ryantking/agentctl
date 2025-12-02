@@ -242,10 +242,10 @@ class InitManager:
 
         console.print(f"  • {dest.relative_to(self.target)} ({status})")
 
-    def _index_repository(self, console: Console) -> bool:
+    def _index_repository(self, console: Console) -> None:
         """Generate repository index using Claude CLI with prompt."""
         if not shutil.which("claude"):
-            return False
+            return
 
         prompt = """Analyze this repository and provide a concise overview:
 - Main purpose and key technologies
@@ -274,13 +274,10 @@ Format as clean markdown starting at heading level 3 (###), keep it brief (under
                 )
 
             if result.returncode == 0 and result.stdout.strip():
-                indexed = self._insert_repository_index(result.stdout.strip())
-                if indexed:
+                if self._insert_repository_index(result.stdout.strip()):
                     console.print("  → Repository indexed successfully")
-                return indexed
-            return False
         except (subprocess.TimeoutExpired, FileNotFoundError):
-            return False
+            pass
 
     def _insert_repository_index(self, index_content: str) -> bool:
         """Insert generated repository index into CLAUDE.md."""
