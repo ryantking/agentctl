@@ -54,6 +54,71 @@ These are global guidelines to ALWAYS take into account when answering user quer
 
 24. **Use Working Directory**: When reading files, implementing changes, and running commands always use paths relevant to the current directory unless explicitly required to use a file outside the repo.
 
+## Tool Selection Guidelines
+
+**APPLIES TO**: Main agent AND all subagents (Explore, Plan, engineer, historian, researcher)
+
+### Mandatory Tool Preferences (Reduce Permission Prompts)
+
+Claude Code provides specialized tools that are pre-approved and don't require permission prompts. **Always prefer these over Bash commands** when possible:
+
+1. **File Reading** → Use `Read` tool
+   - Replaces: `cat`, `head`, `tail`, `less`
+   - Supports: line ranges, images, PDFs, notebooks
+   - Example: `Read(file_path="src/main.py", offset=50, limit=100)`
+
+2. **Content Search** → Use `Grep` tool
+   - Replaces: `grep`, `rg`, `ag`, `ack`
+   - Supports: regex, context lines, multiline, file type filtering
+   - Example: `Grep(pattern="def .*:", type="py", output_mode="content", -A=2)`
+
+3. **File Finding** → Use `Glob` tool
+   - Replaces: `find`, `ls` with patterns
+   - Supports: recursive wildcards, multiple extensions
+   - Example: `Glob(pattern="**/*.{py,pyx}")`
+
+### When Bash is Acceptable
+
+Use Bash ONLY for operations that have no tool equivalent:
+
+- **Git operations**: `git log`, `git show`, `git blame`, `git diff`
+- **Multi-stage pipelines**: When you need `|`, `xargs`, `sort`, `uniq`
+- **Process output**: `npm list`, `docker ps`, package manager queries
+- **File metadata**: File sizes, permissions (when content isn't enough)
+- **Simple directory listing**: `ls`, `ls -la` (for basic overview)
+
+### Anti-Patterns (Will Trigger Permission Prompts)
+
+❌ **DON'T**: `find . -name "*.py" | xargs grep "pattern"`
+✅ **DO**: `Grep(pattern="pattern", glob="**/*.py")`
+
+❌ **DON'T**: `cat src/main.py | grep "import"`
+✅ **DO**: `Grep(pattern="import", path="src/main.py")`
+
+❌ **DON'T**: `find . -name "*.js" -type f`
+✅ **DO**: `Glob(pattern="**/*.js")`
+
+❌ **DON'T**: `head -50 README.md`
+✅ **DO**: `Read(file_path="README.md", limit=50)`
+
+### Why This Matters
+
+- Specialized tools are **pre-approved** in settings.json → no permission prompts
+- Bash commands use **prefix matching only** → hard to pre-approve complex patterns
+- Complex one-liners (`find | xargs | grep | sort`) are impossible to pre-approve
+- Each unique Bash variant requires a new permission prompt
+
+### Tool Capability Reference
+
+| Need | Tool | Bash Equivalent | Notes |
+|------|------|----------------|-------|
+| Find files by name | `Glob(pattern="**/*.py")` | `find . -name "*.py"` | Faster, cleaner |
+| Search in files | `Grep(pattern="TODO", glob="**/*")` | `grep -r "TODO" .` | Supports context, counts |
+| Read file | `Read(file_path="file.txt")` | `cat file.txt` | Supports ranges, images |
+| Git history | `Bash(git log --oneline)` | N/A | No tool equivalent |
+| Count matches | `Grep(pattern="error", output_mode="count")` | `grep -c "error"` | Built-in counting |
+| Multi-line search | `Grep(pattern="class.*:", multiline=True)` | Complex `grep` | Better than bash |
+
 ## Workspaces
 
 Workspaces allow multiple instances of Claude Code or other agents to run on the same repository at the same time. Workspaces are just a wrapper around git branches worktrees.
@@ -307,13 +372,45 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 
 ### Agent Selection
 
-| Task Type | Agent(s) | Execution | When to Use |
-|-----------|----------|-----------|------------|
-| Find files/code patterns | Explore | Single | "Where is X defined?", "Show structure of Y" |
-| Understand git history | historian | Single | "Why was this changed?", "How did this evolve?" |
-| External research | researcher | Parallel (3-5) | Web docs, API references, best practices |
-| Create implementation plan | Plan | Single | "Plan this feature", "Design approach for X" |
-| Implement code changes | engineer | Single/Parallel | Code work, file modifications |
+| Task Type | Agent(s) | Execution | Primary Tools | When to Use |
+|-----------|----------|-----------|---------------|------------|
+| Find files/code patterns | Explore | Single | Read, Grep, Glob | "Where is X defined?", "Show structure of Y" |
+| Understand git history | historian | Single | Bash (git), Read | "Why was this changed?", "How did this evolve?" |
+| External research | researcher | Parallel (3-5) | WebSearch, WebFetch | Web docs, API references, best practices |
+| Create implementation plan | Plan | Single/Multiple | Read, Grep, Glob | Explicitly spawn via Task tool for thorough planning analysis |
+| Implement code changes | engineer | Single/Parallel | Edit, Write, Read, Bash | Code work, file modifications |
+
+### Tool Access Patterns
+
+**Explore Agent** (Read-only specialist):
+- **Primary tools**: Read, Grep, Glob (always prefer these)
+- **Bash fallback**: Git commands, `ls`, pipelines when absolutely necessary
+- **Prohibited**: Any write operations, network calls, destructive commands
+
+**Plan Agent** (Strategy specialist):
+- **Primary tools**: Read, Grep, Glob for code analysis
+- **Bash fallback**: Git history, dependency trees, build tool queries
+- **Prohibited**: Implementation commands (that's engineer's job)
+
+**Engineer Agent** (Implementation specialist):
+- **All tools**: Read, Edit, Write, Grep, Glob, Bash (full access)
+- **Bash usage**: Build commands, tests, git operations, file modifications
+- **Best practice**: Still prefer Read/Grep/Glob for exploration phase
+
+### Tool Selection Decision Tree
+
+```
+Need to explore codebase?
+├─ Finding files by pattern? → Use Glob
+├─ Searching file contents? → Use Grep
+├─ Reading specific files? → Use Read
+└─ Git history/metadata? → Use Bash (git/ls)
+
+Need to implement changes?
+├─ Creating new file? → Use Write
+├─ Modifying existing? → Use Edit (after Read)
+└─ Running builds/tests? → Use Bash
+```
 
 ### Workflow Patterns
 
@@ -335,23 +432,32 @@ Explore (parallel 1-3 agents) + historian + researcher (parallel 3-5 agents) →
 ```
 Example: "Implement authentication system"
 
+**Note:** "Plan" in workflow patterns refers to spawning Plan agent(s) explicitly via Task tool with `subagent_type="Plan"`, NOT entering Plan Mode with Shift+Tab.
+
 ### Workflow Details
 
 1. **Discovery Phase** (Wave 1)
     - Use Explore agents (1-3 in parallel) to understand existing files and codebase structure
     - Use historian to understand past decisions and designs from git history
     - Quality over quantity: Use minimum agents needed (usually just 1 Explore agent)
+    - **Tool Usage**: Explore agents should use Read/Grep/Glob for 95% of operations
+    - Only fall back to Bash for git history or when piping is unavoidable
+    - Example good pattern: `Glob(**/*.py)` → `Grep(pattern="class ", glob="**/*.py")` → `Read(file_path="src/main.py")`
+    - Example bad pattern: `Bash(find . -name "*.py" | xargs grep "class")`
 
 2. **Research Phase** (Wave 2 - if needed)
     - Use researcher agents (3-5 in parallel) for external web searches, API docs, best practices
     - Write findings to `.claude/research/<date>-<topic>.md` (relative path in working directory)
     - Can run parallel to historian
 
-3. **Planning Phase**
-    - Use EnterPlanMode to start planning for complex tasks
-    - Plan agent receives findings from Discovery and Research phases
-    - Plan agent handles writing plan file automatically - do not manually write to ~/.claude/plans/
-    - Use ExitPlanMode when plan is ready for user review and approval
+3. **Planning Phase** (when needed for complex tasks)
+    - Spawn Plan agent(s) explicitly via Task tool: `subagent_type="Plan"`
+    - Provide context from Discovery and Research phases to each Plan agent
+    - Plan agent(s) conduct read-only analysis and return recommendations as text
+    - Main agent synthesizes findings from multiple Plan agents (if used)
+    - Main agent writes consolidated plan to `.claude/plans/<filename>.md` for VCS tracking
+    - Engineer agents later read from `.claude/plans/` during implementation
+    - Can spawn multiple Plan agents for different perspectives on complex problems
 
 4. **Implementation Phase** (Wave 3)
     - Use engineer agent to implement code changes from approved plan
@@ -362,7 +468,11 @@ Example: "Implement authentication system"
 - **Max 10 concurrent agents** across all waves
 - **Pass full context** between agents (agents are stateless)
 - **Agents read from** `.claude/research/` (relative path, local to working directory) for cached knowledge
-- **Plan agent manages plan files** - use EnterPlanMode and ExitPlanMode, do not manually write to ~/.claude/plans/
+- **Plan agents via Task tool** - spawn Plan subagents with `subagent_type="Plan"` for analysis
+- **Main agent writes plans** - after receiving Plan subagent output, write to `.claude/plans/<filename>.md`
+- **Plans tracked in VCS** - `.claude/plans/` directory (local repo) allows version control of planning artifacts
+- **Engineer agents read plans** - they expect plans at `.claude/plans/<filename>.md` during implementation
+- **Plan Mode is optional** - toggle with Shift+Tab for manual read-only exploration if desired
 - **Use relative paths** for files in working directory (known via `<context-refresh>`)
 - **Use absolute paths** only when accessing files outside working directory
 - **Don't skip Wave 1** for non-trivial tasks (need codebase context)
@@ -375,62 +485,52 @@ Example: "Implement authentication system"
 <!-- REPOSITORY_INDEX_START -->
 ### Repository Overview
 
-**claudectl** is a CLI tool for managing Claude Code configurations and workspaces, built with Python 3.13+, Typer, and GitPython.
+**claudectl** is a CLI tool for managing Claude Code configurations, git worktree-based workspaces, and lifecycle hooks. It enables parallel Claude Code sessions through isolated workspaces and provides automated git workflows.
 
-### Main Purpose
-- Manages Claude Code workspaces (git worktree wrappers)
-- Provides hooks for context injection and auto-commit functionality
-- Initializes repositories with Claude Code configurations
-- Orchestrates git workflows for AI-assisted development
-
-### Key Technologies
-- **Python 3.13+** with uv package manager
-- **Typer** for CLI framework
+#### Key Technologies
+- **Python 3.13+** with Typer (CLI framework)
+- **uv** for package management
 - **GitPython** for git operations
-- **Docker SDK** for container operations
-- **Ruff** for linting/formatting, **basedpyright** for type checking
+- **Docker SDK** for container integration
+- **Just** for task automation
 
-### Directory Structure
+#### Directory Structure
 ```
 claudectl/
 ├── src/claudectl/
-│   ├── cli/              # CLI interface and commands
-│   │   ├── commands/     # hook, workspace, init subcommands
-│   │   └── main.py       # Entry point
-│   ├── core/             # Core functionality
-│   │   ├── git.py        # Git operations
-│   │   └── workspaces.py # Workspace management
-│   ├── operations/       # Business logic
-│   │   ├── context.py    # Context injection
-│   │   ├── init_ops.py   # Repository initialization
-│   │   ├── workspace_ops.py
-│   │   └── spawn.py      # Process spawning
-│   └── templates/        # Project templates
-├── hack/                 # Build/config scripts
-├── .claude/             # Claude Code configuration
-└── justfile             # Task automation
+│   ├── cli/
+│   │   ├── main.py              # CLI entry point
+│   │   ├── commands/            # Command modules (hook, init, workspace)
+│   │   └── output.py            # Output formatting
+│   ├── core/
+│   │   ├── git.py               # Git repository utilities
+│   │   └── workspaces.py        # Workspace management
+│   ├── operations/              # Business logic
+│   └── templates/               # Skill/hook templates
+├── hack/                        # Development scripts
+├── justfile                     # Task automation
+└── pyproject.toml               # Project configuration
 ```
 
-### Entry Point
-- **CLI**: `claudectl` command (installed via `project.scripts` in pyproject.toml:29)
-- **Main file**: src/claudectl/cli/main.py:128
+#### Entry Points
+- **CLI**: `claudectl` command (src/claudectl/cli/main.py:main)
+- **Commands**: `workspace`, `hook`, `init` subcommands
+- **Core Operations**: src/claudectl/operations/ for workspace/context/init logic
 
-### Build/Run Commands (from justfile)
+#### Build & Run Commands
 ```bash
-just install      # Install globally in editable mode
-just lint         # Run ruff + basedpyright checks
-just format       # Format code with ruff
-just test         # Run pytest with coverage
-just ci           # Run lint + test
-just build        # Build distributable package
-just clean        # Remove build artifacts
-just release X    # Bump version (X = major|minor|patch)
+just install          # Install globally in editable mode
+just lint            # Run ruff + basedpyright checks
+just format          # Auto-format code
+just test            # Run pytest suite
+just ci              # Run all checks (lint + test)
+just build           # Build distributable package
+just release patch   # Bump version & create tag
 ```
 
-### Available Subcommands
-- `claudectl hook` - Manage Claude Code hooks (context injection, auto-commit)
-- `claudectl workspace` - Create/delete/list git worktrees
-- `claudectl init` - Initialize repositories with Claude configurations
-- `claudectl version` - Show version
-- `claudectl status` - Show Claude Code installation status
+#### Available Scripts
+- **Workspace Management**: Create/delete git worktrees for parallel sessions
+- **Hook Integration**: Auto-commit on Edit/Write, inject context on prompt submit
+- **Notifications**: macOS notifications for Claude Code lifecycle events
+- **Template Tools**: Skill creator scripts in templates/skills/skill-creator/scripts/
 <!-- REPOSITORY_INDEX_END -->
