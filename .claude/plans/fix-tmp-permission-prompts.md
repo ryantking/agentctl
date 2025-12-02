@@ -311,17 +311,40 @@ This pre-approves common safe operations in `.claude/` directories.
 
 ## Implementation Plan
 
-### Phase 1: Update CLAUDE.md Template (High Priority)
+### Phase 1: Add Bash Chaining Guidance (HIGHEST PRIORITY)
 
 **File**: `src/claudectl/templates/CLAUDE.md`
 
 **Tasks**:
-1. Add "Temporary Files and Directories" section after line 88
+1. **Add "Bash Command Sequencing" section after line 88** (detailed above)
+   - Explain when to use multiple tool calls vs chaining
+   - Provide operator reference table
+   - Show clear examples of independent vs dependent commands
+2. **Update "Anti-Patterns" section (lines 90-102)** with chaining examples
+3. **Update existing git workflow examples** to explain why they use `&&`
+   - Add comments to lines showing `git checkout main && git pull` explaining dependency
+4. **Add to Agent Orchestration section** (line ~380-400)
+   - Emphasize parallel tool calls for independent operations
+
+**Impact**:
+- Addresses 70% of permission prompts (primary root cause)
+- Makes agents aware they should split independent commands
+- Immediately improves UX for new `claudectl init` projects
+
+### Phase 2: Add Temp Directory Guidance (High Priority)
+
+**File**: `src/claudectl/templates/CLAUDE.md`
+
+**Tasks**:
+1. Add "Temporary Files and Directories" section after "Bash Command Sequencing"
 2. Update "Anti-Patterns" section with /tmp examples (lines 90-102)
 3. Expand Rule 24 about working directory usage (line 55)
 4. Add temp file guidance to Agent Orchestration Key Rules (after line 481)
 
-**Impact**: Immediately reduces prompt fatigue for new projects initialized with `claudectl init`
+**Impact**:
+- Addresses remaining 25% of prompts (secondary root cause)
+- Improves organization (centralized temp files)
+- Complements Phase 1 (most benefit when combined)
 
 ### Phase 2: Update settings.json Template (Medium Priority)
 
