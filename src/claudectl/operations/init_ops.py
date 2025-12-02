@@ -154,7 +154,8 @@ class InitManager:
         source: Path,
         dest: Path,
         force: bool,
-    ) -> FileResult:
+        console: Console,
+    ) -> None:
         """Merge settings.json with smart deep merge."""
         dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -167,10 +168,8 @@ class InitManager:
             with open(dest, "w") as f:
                 json.dump(new_settings, f, indent=2)
                 f.write("\n")  # Add trailing newline
-            return FileResult(
-                str(dest.relative_to(self.target)),
-                "created",
-            )
+            console.print(f"  • {dest.relative_to(self.target)} (created)")
+            return
 
         # Existing settings - merge
         with open(dest) as f:
@@ -181,21 +180,15 @@ class InitManager:
             with open(dest, "w") as f:
                 json.dump(new_settings, f, indent=2)
                 f.write("\n")  # Add trailing newline
-            return FileResult(
-                str(dest.relative_to(self.target)),
-                "overwritten",
-            )
+            console.print(f"  • {dest.relative_to(self.target)} (overwritten)")
+            return
 
         # Smart merge
         merged = merge_settings_smart(existing_settings, new_settings)
         with open(dest, "w") as f:
             json.dump(merged, f, indent=2)
             f.write("\n")  # Add trailing newline
-
-        return FileResult(
-            str(dest.relative_to(self.target)),
-            "merged",
-        )
+        console.print(f"  • {dest.relative_to(self.target)} (merged)")
 
     def _configure_mcp(
         self,
