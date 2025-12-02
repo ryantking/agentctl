@@ -273,7 +273,8 @@ Format as clean markdown starting at heading level 3 (###), keep it brief (under
                     check=False,
                 )
 
-            if result.returncode == 0 and result.stdout.strip() and self._insert_repository_index(result.stdout.strip()):
+            output = result.stdout.strip()
+            if result.returncode == 0 and output and self._insert_repository_index(output):
                 console.print("  → Repository indexed successfully")
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
