@@ -81,11 +81,31 @@ Claude Code provides specialized tools that are pre-approved and don't require p
 
 Use Bash ONLY for operations that have no tool equivalent:
 
-- **Git operations**: `git log`, `git show`, `git blame`, `git diff`
+- **Git operations**: `git log`, `git show`, `git blame`, `git diff`, `git rm`
 - **Multi-stage pipelines**: When you need `|`, `xargs`, `sort`, `uniq`
 - **Process output**: `npm list`, `docker ps`, package manager queries
 - **File metadata**: File sizes, permissions (when content isn't enough)
 - **Simple directory listing**: `ls`, `ls -la` (for basic overview)
+
+### File Deletion Guidelines
+
+**CRITICAL**: Always use the safest method for file deletion to avoid permission prompts.
+
+**For tracked files (files in git):**
+- ✅ **ALWAYS use**: `git rm <relative-path>`
+- ✅ Example: `git rm src/module.py`
+- **Why**: `git rm` is pre-approved via `Bash(git:*)` pattern
+
+**For untracked files (not in git):**
+- ✅ **ALWAYS use relative paths**: `rm <relative-path>`
+- ✅ Example: `rm .claude/scratch/temp.txt`
+- ❌ **NEVER use absolute paths**: `rm /Users/...`
+- **Why**: Absolute paths starting with `/` cannot be safely pre-approved
+
+**How to determine if a file is tracked:**
+- Run `git ls-files <path>` - if it returns the path, use `git rm`
+- If file is in `.claude/scratch/`, use relative path `rm`
+- If uncertain, prefer `git rm` (safe even for untracked files)
 
 ### Bash Command Sequencing
 
