@@ -54,6 +54,71 @@ These are global guidelines to ALWAYS take into account when answering user quer
 
 24. **Use Working Directory**: When reading files, implementing changes, and running commands always use paths relevant to the current directory unless explicitly required to use a file outside the repo.
 
+## Tool Selection Guidelines
+
+**APPLIES TO**: Main agent AND all subagents (Explore, Plan, engineer, historian, researcher)
+
+### Mandatory Tool Preferences (Reduce Permission Prompts)
+
+Claude Code provides specialized tools that are pre-approved and don't require permission prompts. **Always prefer these over Bash commands** when possible:
+
+1. **File Reading** → Use `Read` tool
+   - Replaces: `cat`, `head`, `tail`, `less`
+   - Supports: line ranges, images, PDFs, notebooks
+   - Example: `Read(file_path="src/main.py", offset=50, limit=100)`
+
+2. **Content Search** → Use `Grep` tool
+   - Replaces: `grep`, `rg`, `ag`, `ack`
+   - Supports: regex, context lines, multiline, file type filtering
+   - Example: `Grep(pattern="def .*:", type="py", output_mode="content", -A=2)`
+
+3. **File Finding** → Use `Glob` tool
+   - Replaces: `find`, `ls` with patterns
+   - Supports: recursive wildcards, multiple extensions
+   - Example: `Glob(pattern="**/*.{py,pyx}")`
+
+### When Bash is Acceptable
+
+Use Bash ONLY for operations that have no tool equivalent:
+
+- **Git operations**: `git log`, `git show`, `git blame`, `git diff`
+- **Multi-stage pipelines**: When you need `|`, `xargs`, `sort`, `uniq`
+- **Process output**: `npm list`, `docker ps`, package manager queries
+- **File metadata**: File sizes, permissions (when content isn't enough)
+- **Simple directory listing**: `ls`, `ls -la` (for basic overview)
+
+### Anti-Patterns (Will Trigger Permission Prompts)
+
+❌ **DON'T**: `find . -name "*.py" | xargs grep "pattern"`
+✅ **DO**: `Grep(pattern="pattern", glob="**/*.py")`
+
+❌ **DON'T**: `cat src/main.py | grep "import"`
+✅ **DO**: `Grep(pattern="import", path="src/main.py")`
+
+❌ **DON'T**: `find . -name "*.js" -type f`
+✅ **DO**: `Glob(pattern="**/*.js")`
+
+❌ **DON'T**: `head -50 README.md`
+✅ **DO**: `Read(file_path="README.md", limit=50)`
+
+### Why This Matters
+
+- Specialized tools are **pre-approved** in settings.json → no permission prompts
+- Bash commands use **prefix matching only** → hard to pre-approve complex patterns
+- Complex one-liners (`find | xargs | grep | sort`) are impossible to pre-approve
+- Each unique Bash variant requires a new permission prompt
+
+### Tool Capability Reference
+
+| Need | Tool | Bash Equivalent | Notes |
+|------|------|----------------|-------|
+| Find files by name | `Glob(pattern="**/*.py")` | `find . -name "*.py"` | Faster, cleaner |
+| Search in files | `Grep(pattern="TODO", glob="**/*")` | `grep -r "TODO" .` | Supports context, counts |
+| Read file | `Read(file_path="file.txt")` | `cat file.txt` | Supports ranges, images |
+| Git history | `Bash(git log --oneline)` | N/A | No tool equivalent |
+| Count matches | `Grep(pattern="error", output_mode="count")` | `grep -c "error"` | Built-in counting |
+| Multi-line search | `Grep(pattern="class.*:", multiline=True)` | Complex `grep` | Better than bash |
+
 ## Workspaces
 
 Workspaces allow multiple instances of Claude Code or other agents to run on the same repository at the same time. Workspaces are just a wrapper around git branches worktrees.
@@ -307,13 +372,45 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 
 ### Agent Selection
 
-| Task Type | Agent(s) | Execution | When to Use |
-|-----------|----------|-----------|------------|
-| Find files/code patterns | Explore | Single | "Where is X defined?", "Show structure of Y" |
-| Understand git history | historian | Single | "Why was this changed?", "How did this evolve?" |
-| External research | researcher | Parallel (3-5) | Web docs, API references, best practices |
-| Create implementation plan | Plan | Single/Multiple | Explicitly spawn via Task tool for thorough planning analysis |
-| Implement code changes | engineer | Single/Parallel | Code work, file modifications |
+| Task Type | Agent(s) | Execution | Primary Tools | When to Use |
+|-----------|----------|-----------|---------------|------------|
+| Find files/code patterns | Explore | Single | Read, Grep, Glob | "Where is X defined?", "Show structure of Y" |
+| Understand git history | historian | Single | Bash (git), Read | "Why was this changed?", "How did this evolve?" |
+| External research | researcher | Parallel (3-5) | WebSearch, WebFetch | Web docs, API references, best practices |
+| Create implementation plan | Plan | Single/Multiple | Read, Grep, Glob | Explicitly spawn via Task tool for thorough planning analysis |
+| Implement code changes | engineer | Single/Parallel | Edit, Write, Read, Bash | Code work, file modifications |
+
+### Tool Access Patterns
+
+**Explore Agent** (Read-only specialist):
+- **Primary tools**: Read, Grep, Glob (always prefer these)
+- **Bash fallback**: Git commands, `ls`, pipelines when absolutely necessary
+- **Prohibited**: Any write operations, network calls, destructive commands
+
+**Plan Agent** (Strategy specialist):
+- **Primary tools**: Read, Grep, Glob for code analysis
+- **Bash fallback**: Git history, dependency trees, build tool queries
+- **Prohibited**: Implementation commands (that's engineer's job)
+
+**Engineer Agent** (Implementation specialist):
+- **All tools**: Read, Edit, Write, Grep, Glob, Bash (full access)
+- **Bash usage**: Build commands, tests, git operations, file modifications
+- **Best practice**: Still prefer Read/Grep/Glob for exploration phase
+
+### Tool Selection Decision Tree
+
+```
+Need to explore codebase?
+├─ Finding files by pattern? → Use Glob
+├─ Searching file contents? → Use Grep
+├─ Reading specific files? → Use Read
+└─ Git history/metadata? → Use Bash (git/ls)
+
+Need to implement changes?
+├─ Creating new file? → Use Write
+├─ Modifying existing? → Use Edit (after Read)
+└─ Running builds/tests? → Use Bash
+```
 
 ### Workflow Patterns
 
@@ -343,6 +440,10 @@ Example: "Implement authentication system"
     - Use Explore agents (1-3 in parallel) to understand existing files and codebase structure
     - Use historian to understand past decisions and designs from git history
     - Quality over quantity: Use minimum agents needed (usually just 1 Explore agent)
+    - **Tool Usage**: Explore agents should use Read/Grep/Glob for 95% of operations
+    - Only fall back to Bash for git history or when piping is unavoidable
+    - Example good pattern: `Glob(**/*.py)` → `Grep(pattern="class ", glob="**/*.py")` → `Read(file_path="src/main.py")`
+    - Example bad pattern: `Bash(find . -name "*.py" | xargs grep "class")`
 
 2. **Research Phase** (Wave 2 - if needed)
     - Use researcher agents (3-5 in parallel) for external web searches, API docs, best practices
