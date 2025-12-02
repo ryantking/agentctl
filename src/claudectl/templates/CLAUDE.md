@@ -426,18 +426,22 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
    git push -u origin <branch-name>
    ```
 5. Create PR using gh CLI:
+   - **IMPORTANT**: PR title MUST use conventional commit format: `<type>(scope): <description>`
+   - **IMPORTANT**: PR body MUST contain actual explanations, not placeholder text
+   - Analyze the actual changes and describe what was done and why
+   - Replace example sections with real content from the changes
    ```bash
    gh pr create --title "feat(scope): description" --body "$(cat <<'EOF'
    ## Summary
-   Brief explanation of the changes
+   Actual explanation of what this PR accomplishes
 
    ## Changes
-   - Change 1
-   - Change 2
+   - Actual change 1 with details
+   - Actual change 2 with details
 
    ## Test Plan
-   - [ ] Test scenario 1
-   - [ ] Test scenario 2
+   - [ ] Actual test scenario 1
+   - [ ] Actual test scenario 2
    EOF
    )"
    ```
