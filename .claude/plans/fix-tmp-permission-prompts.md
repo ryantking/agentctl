@@ -576,7 +576,17 @@ The primary issue is **command chaining breaking permission matching**, not just
 
 ## Appendix: Research References
 
-- `.claude/research/2025-12-01-claude-code-permissions.md` - Permission system analysis
-- `.claude/research/2025-12-01-temporary-directory-best-practices.md` - Industry patterns
-- `src/claudectl/templates/CLAUDE.md` - Current template state
-- `src/claudectl/templates/settings.json` - Current permission configuration
+### New Research (This Session)
+- `.claude/research/2025-12-01-claude-code-bash-chaining-permissions.md` - **PRIMARY FINDING**: Why chaining breaks permission matching
+- `.claude/research/2025-12-01-claude-code-parallel-tool-calls.md` - Parallel tool call patterns and guidance
+- `.claude/research/2025-12-01-claude-code-permissions.md` - Permission system overview
+- `.claude/research/2025-12-01-temporary-directory-best-practices.md` - Industry temp file patterns
+
+### Current State Analysis
+- `src/claudectl/templates/CLAUDE.md` - Template lacking chaining/temp guidance (lines 80-121, 467-481)
+- `src/claudectl/templates/settings.json` - Current permission configuration (line 115)
+
+### Key External Sources
+- [GitHub Issue #4956](https://github.com/anthropics/claude-code/issues/4956) - Shell operator bypass testing (97% success rate)
+- [Claude Code System Prompt](https://gist.github.com/wong2/e0f34aac66caf890a332f7b6f9e2ba8f) - Official guidance on chaining vs parallel calls
+- [Anthropic Tool Use Docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview) - Parallel tool execution patterns
