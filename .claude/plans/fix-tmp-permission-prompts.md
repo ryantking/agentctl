@@ -558,13 +558,21 @@ Total: 0 prompts (all pre-approved)
 
 ## Next Steps
 
-1. **Review this plan** with stakeholders
-2. **Make decision** on settings.json Option A vs B
-3. **Implement Phase 1** (CLAUDE.md updates)
-4. **Test in fix-tmp-madness workspace**
-5. **Iterate based on real-world usage**
-6. **Create PR** with changes
-7. **Document in release notes**
+1. **Review this updated plan** (now addresses BOTH chaining and /tmp)
+2. **Prioritize Phase 1** (bash chaining guidance - biggest impact)
+3. **Implement Phase 1** (CLAUDE.md bash sequencing section)
+4. **Test Phase 1** in fix-tmp-madness workspace
+5. **Implement Phase 2** (temp directory guidance)
+6. **Test Phase 2** with combined changes
+7. **Measure impact** (count prompts before/after)
+8. **Create PR** with all changes
+9. **Document in release notes** emphasizing the chaining fix
+
+## Key Insight from Research
+
+The primary issue is **command chaining breaking permission matching**, not just `/tmp` usage. The `.claude/scratch/` directory approach is still valuable for organization and follows best practices, but **the bash chaining guidance will have 3x the impact** on reducing permission prompts.
+
+**Recommendation:** Implement both phases, but Phase 1 should be the priority and can ship independently if needed.
 
 ## Appendix: Research References
 
