@@ -17,6 +17,7 @@ def copy_claude_context(workspace_path: Path, source_root: Path | None = None) -
     Files copied (if they exist in source but not in workspace):
     - .claude/settings.local.json
     - CLAUDE.md
+    - .mcp.json
 
     Args:
         workspace_path: Path to the workspace to copy files to
@@ -34,6 +35,7 @@ def copy_claude_context(workspace_path: Path, source_root: Path | None = None) -
     files_to_copy = [
         Path(".claude") / "settings.local.json",
         Path("CLAUDE.md"),
+        Path(".mcp.json"),
     ]
 
     for rel_path in files_to_copy:

@@ -50,7 +50,7 @@ def create(
     """Create a new workspace with git worktree.
 
     Creates a new workspace at ~/.claude/workspaces/<repo>/<branch>/
-    and copies necessary context files (CLAUDE.md, settings.local.json).
+    and copies necessary context files (CLAUDE.md, settings.local.json, .mcp.json).
 
     Examples:
         claudectl workspace create feat/add-auth
