@@ -447,19 +447,26 @@ Total: 0 prompts (all pre-approved)
 ## Rollout Strategy
 
 ### Immediate (This PR):
-1. Update `src/claudectl/templates/CLAUDE.md` with new guidance
-2. Update `src/claudectl/templates/settings.json` with pre-approved patterns
-3. Add `.claude/scratch/` to gitignore template
+1. **Phase 1**: Update `src/claudectl/templates/CLAUDE.md` with bash chaining guidance
+2. **Phase 2**: Add temp directory guidance to same template
+3. Update `src/claudectl/templates/settings.json` with pre-approved patterns
+4. Add `.claude/scratch/` to gitignore template
+
+### This Branch (fix-tmp-madness):
+1. Apply all changes to local CLAUDE.md for testing
+2. Test with real agent workflows
+3. Document findings in PR description
 
 ### Next Release:
-1. Announce in release notes: "Reduced permission prompts for testing workflows"
-2. Document `.claude/scratch/` pattern in README
-3. Consider adding migration guide for existing projects
+1. Announce in release notes: "Dramatically reduced permission prompts via bash chaining guidance"
+2. Highlight: "80-95% reduction in prompts for testing/exploration workflows"
+3. Document `.claude/scratch/` pattern in README
+4. Consider adding migration guide for existing projects
 
 ### Future Consideration:
 1. Add `claudectl doctor` command to check for common permission issues
-2. Add telemetry (if desired) to track prompt reduction
-3. Consider upstreaming patterns to Claude Code documentation
+2. Consider upstreaming bash chaining patterns to Claude Code documentation
+3. Write blog post: "How We Reduced Permission Prompts by 90%"
 
 ## Trade-offs and Considerations
 
