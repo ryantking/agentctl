@@ -69,7 +69,7 @@ func NotifyInputWithSender(message string, appName, sender string) error {
 		message = "Claude needs your input to continue"
 	}
 	return notify.Send(notify.Options{
-		Title:    fmt.Sprintf("🔔 %s", appName),
+		Title:    appName,
 		Subtitle: projectName,
 		Message:  message,
 		Sound:    "",
@@ -119,7 +119,7 @@ func NotifyErrorWithSender(message string, appName, sender string) error {
 		message = "An error occurred during task execution"
 	}
 	return notify.Send(notify.Options{
-		Title:    fmt.Sprintf("❌ %s", appName),
+		Title:    appName,
 		Subtitle: projectName,
 		Message:  message,
 		Sound:    "Basso",
