@@ -60,26 +60,26 @@ Workspaces allow multiple instances of Claude Code or other agents to run on the
 
 **IMPORTANT:** When working in a workspace, you will be in $HOME/.claude/workspaces/<repo>/<workspace>, make all changes there.
 
-When you are instructed to use a workspace use `agentctl` to manage it:
+When you are instructed to use a workspace use `claudectl` to manage it:
 
-**IMPORTANT:** `agentctl workspace` commands use the underlying git repo so they return and manage workspaces for the current Git repository.
+**IMPORTANT:** `claudectl workspace` commands use the underlying git repo so they return and manage workspaces for the current Git repository.
 
-- `agentctl workspace create <branch-name>`: Create a new worktree for the specific branch, creating the branch if it does not already exist.
-- `agentctl workspace show <branch-name>`: Show the absolute path to a workspace
-- `agentctl workspace list --json`: List all workspaces 
-- `agentctl workspace delete <branch-name>`: Delete a workspace by removing the worktree but not the branch.
-- `agentctl workspace delete --force <branch-name>`: Delete a workspace even if the worktree has uncommitted changes.
-- `agentctl workspace status <branch>`: Show detailed status information about a workspace.
+- `claudectl workspace create <branch-name>`: Create a new worktree for the specific branch, creating the branch if it does not already exist.
+- `claudectl workspace show <branch-name>`: Show the absolute path to a workspace
+- `claudectl workspace list --json`: List all workspaces 
+- `claudectl workspace delete <branch-name>`: Delete a workspace by removing the worktree but not the branch.
+- `claudectl workspace delete --force <branch-name>`: Delete a workspace even if the worktree has uncommitted changes.
+- `claudectl workspace status <branch>`: Show detailed status information about a workspace.
 
 ## Global Hooks
 
-In **ALL** sessions the following hooks provide important functionality to always be aware of. Hooks are provided by `agentctl hooks` commands.
+In **ALL** sessions the following hooks provide important functionality to always be aware of. Hooks are provided by `claudectl hooks` commands.
 
 ### Context Injection
 
 **WHEN:** User submits a prompt, agent starts
 
-**WHAT:** Injects information about the Git repository and `agentctl` workspace so agents knows important information WITHOUT having to look it up using commands.
+**WHAT:** Injects information about the Git repository and `claudectl` workspace so agents knows important information WITHOUT having to look it up using commands.
 
 **EXAMPLE CONTEXT**
 
@@ -193,7 +193,7 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 2. Ensure you're on the default branch main/master unless otherwise specified
 3. Delete workspace if it exists:
    ```bash
-   agentctl workspace delete <branch-name>
+   claudectl workspace delete <branch-name>
    ```
 4. Switch to main and update:
    ```bash
@@ -288,7 +288,7 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
    ```
 6. Delete workspace before merging (if applicable):
    ```bash
-   agentctl workspace delete <branch-name>
+   claudectl workspace delete <branch-name>
    ```
 7. Merge the pull request using gh CLI with squash merge:
    - **IMPORTANT**: GitHub is configured to use PR title + body as the commit message
@@ -420,7 +420,7 @@ Example: "Implement authentication system"
 <!-- REPOSITORY_INDEX_START -->
 ### Repository Overview
 
-**agentctl** is a CLI tool for managing Claude Code configurations, hooks, and isolated workspaces using git worktrees. Built with Python 3.13+ and designed primarily for macOS/Linux.
+**claudectl** is a CLI tool for managing Claude Code configurations, hooks, and isolated workspaces using git worktrees. Built with Python 3.13+ and designed primarily for macOS/Linux.
 
 ### Main Purpose
 
@@ -440,8 +440,8 @@ Provides workspace isolation, lifecycle hooks, and automation for Claude Code de
 ### Directory Structure
 
 ```
-agentctl/
-├── src/agentctl/
+claudectl/
+├── src/claudectl/
 │   ├── cli/           # CLI entry point and commands
 │   │   ├── main.py    # Primary CLI app (hook, init, workspace subcommands)
 │   │   └── commands/  # hook.py, init.py, workspace.py
@@ -458,7 +458,7 @@ agentctl/
 
 ### Entry Points
 
-- **CLI Entry**: `agentctl.cli.main:main` (src/agentctl/cli/main.py:30)
+- **CLI Entry**: `claudectl.cli.main:main` (src/claudectl/cli/main.py:30)
 - **Subcommands**: `hook`, `init`, `workspace` registered at main.py:45-47
 
 ### Build/Run Commands (Justfile)
@@ -477,13 +477,13 @@ just release patch # Bump version, commit, tag (then push manually)
 ### Available Scripts
 
 **Workspace Management:**
-- `agentctl workspace create/list/show/status/delete/clean`
+- `claudectl workspace create/list/show/status/delete/clean`
 
 **Hook Integration:**
-- `agentctl hook post-edit/post-write/context-info/notify-*` (called by Claude Code lifecycle)
+- `claudectl hook post-edit/post-write/context-info/notify-*` (called by Claude Code lifecycle)
 
 **Initialization:**
-- `agentctl init` (setup repository with templates)
+- `claudectl init` (setup repository with templates)
 <!-- REPOSITORY_INDEX_END -->
 
 ## Tool Selection Guidelines
@@ -603,7 +603,7 @@ Use these alternatives instead:
    - Version controlled
    - Persistent across sessions
 
-3. **For Build/Runtime Caches** → Use `.cache/agentctl/` (gitignored)
+3. **For Build/Runtime Caches** → Use `.cache/claudectl/` (gitignored)
    - Follows npm/webpack convention
    - Persists across sessions
    - Excluded from git

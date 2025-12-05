@@ -1,4 +1,4 @@
-"""claudectl - CLI for managing Claude Code configurations."""
+"""agentctl - CLI for managing Claude Code configurations."""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from typing import Annotated
 
 import typer
 
-from claudectl.cli.commands.hook import app as hook_app
-from claudectl.cli.commands.init import app as init_app
-from claudectl.cli.commands.workspace import app as workspace_app
-from claudectl.cli.output import CLIError, handle_exception, is_json_output, set_json_output
+from agentctl.cli.commands.hook import app as hook_app
+from agentctl.cli.commands.init import app as init_app
+from agentctl.cli.commands.workspace import app as workspace_app
+from agentctl.cli.output import CLIError, handle_exception, is_json_output, set_json_output
 
 
 @dataclass
@@ -36,7 +36,7 @@ class StatusInfo:
 
 
 app = typer.Typer(
-    name="claudectl",
+    name="agentctl",
     help="CLI for managing Claude Code configurations and workflows.",
     no_args_is_help=True,
 )
@@ -84,12 +84,12 @@ def get_claude_info() -> tuple[bool, str | None, str | None]:
 @app.command()
 def version() -> None:
     """Show the current version."""
-    from claudectl import __version__
+    from agentctl import __version__
 
     if is_json_output():
         typer.echo(json.dumps({"version": __version__}))
     else:
-        typer.echo(f"claudectl {__version__}")
+        typer.echo(f"agentctl {__version__}")
 
 
 @app.command()

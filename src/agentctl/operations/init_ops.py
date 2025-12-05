@@ -1,4 +1,4 @@
-"""Core initialization operations for claudectl init command."""
+"""Core initialization operations for agentctl init command."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from claudectl.operations.settings_merge import merge_settings_smart
+from agentctl.operations.settings_merge import merge_settings_smart
 
 
 class ImportDirNotFoundError(Exception):

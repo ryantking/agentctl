@@ -984,7 +984,7 @@ Generate branch names from Linear issue data:
 - Check issue exists and is not archived
 
 **Cannot spawn parallel agents**:
-- Check multiplexing: `claudectl session check`
+- Check multiplexing: `agentctl session check`
 - Verify WezTerm or tmux is running
 - Check Redis is running (for file locking)
 
@@ -1011,12 +1011,12 @@ Generate branch names from Linear issue data:
 2. skill: "research" (automatic)
 3. Create feature issue with template
 4. Decompose into sub-tasks
-5. Start parallel work: claudectl session create for each
+5. Start parallel work: agentctl session create for each
 ```
 
 **Check progress**:
 ```
-claudectl session list
+agentctl session list
 ```
 
 **Complete and merge**:

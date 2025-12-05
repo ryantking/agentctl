@@ -7,7 +7,7 @@ deps:
     brew bundle --no-upgrade --file=hack/Brewfile
     gh extension install dlvhdr/gh-dash
 
-# Install claudectl globally in editable mode
+# Install agentctl globally in editable mode
 install:
     uv tool install --force --editable .
 

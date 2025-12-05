@@ -1,4 +1,4 @@
-"""Process spawning utilities for claudectl."""
+"""Process spawning utilities for agentctl."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from claudectl.operations.mcp_config import generate_mcp_config
+from agentctl.operations.mcp_config import generate_mcp_config
 
 # Type alias for process result (Python 3.12+ style)
 type SpawnedProcess = subprocess.Popen[bytes]

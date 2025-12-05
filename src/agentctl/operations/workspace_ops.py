@@ -5,8 +5,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from claudectl.core.git import NotInGitRepoError, branch_exists, get_current_branch, get_repo_root
-from claudectl.core.workspaces import (
+from agentctl.core.git import NotInGitRepoError, branch_exists, get_current_branch, get_repo_root
+from agentctl.core.workspaces import (
     Workspace,
     discover_workspaces,
     find_workspace_by_branch,

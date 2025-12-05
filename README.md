@@ -1,4 +1,4 @@
-# claudectl
+# agentctl
 
 A CLI tool for managing Claude Code configurations, hooks, and isolated workspaces using git worktrees.
 
@@ -16,27 +16,27 @@ A CLI tool for managing Claude Code configurations, hooks, and isolated workspac
 
 ```bash
 # Latest release
-pip install https://github.com/carelesslisper/claudectl/releases/latest/download/claudectl.tar.gz
+pip install https://github.com/ryantking/agentctl/releases/latest/download/agentctl.tar.gz
 
 # Specific version
-pip install https://github.com/carelesslisper/claudectl/releases/download/v0.1.0/claudectl-0.1.0.tar.gz
+pip install https://github.com/ryantking/agentctl/releases/download/v0.1.0/agentctl-0.1.0.tar.gz
 ```
 
 ### Via uv from GitHub Release
 
 ```bash
 # Latest release
-uv tool install https://github.com/carelesslisper/claudectl/releases/latest/download/claudectl.tar.gz
+uv tool install https://github.com/ryantking/agentctl/releases/latest/download/agentctl.tar.gz
 
 # Specific version
-uv tool install https://github.com/carelesslisper/claudectl/releases/download/v0.1.0/claudectl-0.1.0.tar.gz
+uv tool install https://github.com/ryantking/agentctl/releases/download/v0.1.0/agentctl-0.1.0.tar.gz
 ```
 
 ### From source
 
 ```bash
-git clone https://github.com/carelesslisper/claudectl.git
-cd claudectl
+git clone https://github.com/ryantking/agentctl.git
+cd agentctl
 just install
 ```
 
@@ -44,43 +44,43 @@ just install
 
 ```bash
 # Check installation
-claudectl status
+agentctl status
 
 # Show version
-claudectl version
+agentctl version
 
 # Create a new workspace
-claudectl workspace create my-feature-branch
+agentctl workspace create my-feature-branch
 
 # List all workspaces
-claudectl workspace list
+agentctl workspace list
 
 # Show workspace details
-claudectl workspace status my-feature-branch
+agentctl workspace status my-feature-branch
 
 # Delete a workspace
-claudectl workspace delete my-feature-branch
+agentctl workspace delete my-feature-branch
 ```
 
 ## Commands
 
 ### Workspace Commands
 
-- `claudectl workspace create <branch>` - Create new workspace with git worktree
-- `claudectl workspace list [--json]` - List all managed workspaces
-- `claudectl workspace show <branch>` - Print workspace path
-- `claudectl workspace status <branch>` - Show detailed workspace status
-- `claudectl workspace delete <branch>` - Delete a workspace
-- `claudectl workspace clean` - Remove all clean workspaces
+- `agentctl workspace create <branch>` - Create new workspace with git worktree
+- `agentctl workspace list [--json]` - List all managed workspaces
+- `agentctl workspace show <branch>` - Print workspace path
+- `agentctl workspace status <branch>` - Show detailed workspace status
+- `agentctl workspace delete <branch>` - Delete a workspace
+- `agentctl workspace clean` - Remove all clean workspaces
 
 ### Hook Commands
 
 Hook commands are designed to be called from Claude Code hooks:
 
-- `claudectl hook post-edit` - Auto-commit Edit tool changes
-- `claudectl hook post-write` - Auto-commit Write tool changes (new files)
-- `claudectl hook context-info` - Inject git/workspace context into prompts
-- `claudectl hook notify-*` - Notification commands
+- `agentctl hook post-edit` - Auto-commit Edit tool changes
+- `agentctl hook post-write` - Auto-commit Write tool changes (new files)
+- `agentctl hook context-info` - Inject git/workspace context into prompts
+- `agentctl hook notify-*` - Notification commands
 
 ## Development
 

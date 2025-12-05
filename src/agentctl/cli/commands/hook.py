@@ -1,4 +1,4 @@
-"""Hook commands for claudectl.
+"""Hook commands for agentctl.
 
 These commands are designed to be called directly from Claude Code hooks.
 They handle stdin parsing, error handling, and exit codes appropriately
@@ -20,7 +20,7 @@ import typer
 from git import InvalidGitRepositoryError, Repo
 from git.exc import GitCommandError
 
-from claudectl.cli.output import CLIError
+from agentctl.cli.output import CLIError
 
 app = typer.Typer(
     name="hook",
@@ -651,10 +651,10 @@ def _get_all_git_branches() -> dict | None:
 
 
 def _get_workspace_sessions() -> list[dict] | None:
-    """Get workspace list using claudectl workspace list --json."""
+    """Get workspace list using agentctl workspace list --json."""
     try:
         result = subprocess.run(
-            ["claudectl", "workspace", "list", "--json"],
+            ["agentctl", "workspace", "list", "--json"],
             capture_output=True,
             text=True,
             timeout=5,
@@ -674,7 +674,7 @@ def _get_workspace_sessions() -> list[dict] | None:
 
 
 def _get_current_workspace(cwd: Path) -> dict | None:
-    """Get the current workspace if cwd is inside a claudectl workspace."""
+    """Get the current workspace if cwd is inside an agentctl workspace."""
     workspaces = _get_workspace_sessions()
     if not workspaces:
         return None

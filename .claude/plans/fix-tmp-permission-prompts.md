@@ -86,7 +86,7 @@ The solution must address BOTH chaining (primary) and /tmp usage (secondary):
 
 **Priority:** HIGHEST - This is the root cause of most permission prompts
 
-**Location:** `src/claudectl/templates/CLAUDE.md`
+**Location:** `src/agentctl/templates/CLAUDE.md`
 
 **Add New Section After Line 88**: "Bash Command Sequencing"
 
@@ -166,7 +166,7 @@ Grep(pattern="pattern", glob="**/*.py", output_mode="content")
 
 #### 2. Update CLAUDE.md Template with Temp Directory Guidance
 
-**Location**: `src/claudectl/templates/CLAUDE.md`
+**Location**: `src/agentctl/templates/CLAUDE.md`
 
 **Changes Needed**:
 
@@ -189,7 +189,7 @@ Use these alternatives instead:
    - Version controlled
    - Persistent across sessions
 
-3. **For Build/Runtime Caches** → Use `.cache/claudectl/` (gitignored)
+3. **For Build/Runtime Caches** → Use `.cache/agentctl/` (gitignored)
    - Follows npm/webpack convention
    - Persists across sessions
    - Excluded from git
@@ -241,7 +241,7 @@ To:
 
 #### 2. Update settings.json Template
 
-**Location**: `src/claudectl/templates/settings.json`
+**Location**: `src/agentctl/templates/settings.json`
 
 **Current State** (Line 115):
 ```json
@@ -298,22 +298,22 @@ This pre-approves common safe operations in `.claude/` directories.
    ```markdown
    #### Directory Structure
    ```
-   claudectl/
+   agentctl/
    ├── .claude/
    │   ├── research/           # Persistent research findings
    │   ├── plans/              # Implementation plans
    │   └── scratch/            # Temporary test/build artifacts (gitignored)
    ```
 
-3. **Add to claudectl init command** (optional enhancement):
-   - Auto-create `.claude/scratch/` directory during `claudectl init`
+3. **Add to agentctl init command** (optional enhancement):
+   - Auto-create `.claude/scratch/` directory during `agentctl init`
    - Add to `.gitignore` automatically
 
 ## Implementation Plan
 
 ### Phase 1: Add Bash Chaining Guidance (HIGHEST PRIORITY)
 
-**File**: `src/claudectl/templates/CLAUDE.md`
+**File**: `src/agentctl/templates/CLAUDE.md`
 
 **Tasks**:
 1. **Add "Bash Command Sequencing" section after line 88** (detailed above)
@@ -329,11 +329,11 @@ This pre-approves common safe operations in `.claude/` directories.
 **Impact**:
 - Addresses 70% of permission prompts (primary root cause)
 - Makes agents aware they should split independent commands
-- Immediately improves UX for new `claudectl init` projects
+- Immediately improves UX for new `agentctl init` projects
 
 ### Phase 2: Add Temp Directory Guidance (High Priority)
 
-**File**: `src/claudectl/templates/CLAUDE.md`
+**File**: `src/agentctl/templates/CLAUDE.md`
 
 **Tasks**:
 1. Add "Temporary Files and Directories" section after "Bash Command Sequencing"
@@ -348,7 +348,7 @@ This pre-approves common safe operations in `.claude/` directories.
 
 ### Phase 2: Update settings.json Template (Medium Priority)
 
-**File**: `src/claudectl/templates/settings.json`
+**File**: `src/agentctl/templates/settings.json`
 
 **Decision Point**: Choose between:
 - **Option A**: Remove `/tmp` from `additionalDirectories` (forces alternative usage)
@@ -376,9 +376,9 @@ This pre-approves common safe operations in `.claude/` directories.
 ### Phase 5: Optional Enhancements
 
 **Potential Future Work**:
-1. Add `claudectl init --cleanup-scratch` flag to auto-clean old scratch files
+1. Add `agentctl init --cleanup-scratch` flag to auto-clean old scratch files
 2. Add warning in hooks if agents use `/tmp`
-3. Add `claudectl workspace clean` command to clear scratch directories
+3. Add `agentctl workspace clean` command to clear scratch directories
 4. Pre-create `.claude/scratch/` during workspace creation
 
 ## Expected Outcomes
@@ -447,9 +447,9 @@ Total: 0 prompts (all pre-approved)
 ## Rollout Strategy
 
 ### Immediate (This PR):
-1. **Phase 1**: Update `src/claudectl/templates/CLAUDE.md` with bash chaining guidance
+1. **Phase 1**: Update `src/agentctl/templates/CLAUDE.md` with bash chaining guidance
 2. **Phase 2**: Add temp directory guidance to same template
-3. Update `src/claudectl/templates/settings.json` with pre-approved patterns
+3. Update `src/agentctl/templates/settings.json` with pre-approved patterns
 4. Add `.claude/scratch/` to gitignore template
 
 ### This Branch (fix-tmp-madness):
@@ -464,7 +464,7 @@ Total: 0 prompts (all pre-approved)
 4. Consider adding migration guide for existing projects
 
 ### Future Consideration:
-1. Add `claudectl doctor` command to check for common permission issues
+1. Add `agentctl doctor` command to check for common permission issues
 2. Consider upstreaming bash chaining patterns to Claude Code documentation
 3. Write blog post: "How We Reduced Permission Prompts by 90%"
 
@@ -499,14 +499,14 @@ Total: 0 prompts (all pre-approved)
 
 ## Alternative Approaches Considered
 
-### Alternative 1: Use Python tempfile in claudectl
-**Idea**: Provide a `claudectl temp` command that creates/manages temp directories
+### Alternative 1: Use Python tempfile in agentctl
+**Idea**: Provide a `agentctl temp` command that creates/manages temp directories
 
 **Pros**: Centralized, respects TMPDIR, automatic cleanup
 
 **Cons**:
 - Doesn't solve the guidance problem (agents still need to know to use it)
-- Adds complexity to claudectl
+- Adds complexity to agentctl
 - Still requires bash commands (still prompts)
 
 **Decision**: Rejected - doesn't address root cause
@@ -583,8 +583,8 @@ The primary issue is **command chaining breaking permission matching**, not just
 - `.claude/research/2025-12-01-temporary-directory-best-practices.md` - Industry temp file patterns
 
 ### Current State Analysis
-- `src/claudectl/templates/CLAUDE.md` - Template lacking chaining/temp guidance (lines 80-121, 467-481)
-- `src/claudectl/templates/settings.json` - Current permission configuration (line 115)
+- `src/agentctl/templates/CLAUDE.md` - Template lacking chaining/temp guidance (lines 80-121, 467-481)
+- `src/agentctl/templates/settings.json` - Current permission configuration (line 115)
 
 ### Key External Sources
 - [GitHub Issue #4956](https://github.com/anthropics/claude-code/issues/4956) - Shell operator bypass testing (97% success rate)

@@ -40,18 +40,18 @@ jobs:
 
             ### Via pip from GitHub Release
             ```bash
-            pip install https://github.com/ryantking/claudectl/releases/download/${{ github.ref_name }}/claudectl-${{ github.ref_name }}.tar.gz
+            pip install https://github.com/ryantking/agentctl/releases/download/${{ github.ref_name }}/agentctl-${{ github.ref_name }}.tar.gz
             ```
 
             ### Via uv from GitHub Release
             ```bash
-            uv tool install https://github.com/ryantking/claudectl/releases/download/${{ github.ref_name }}/claudectl-${{ github.ref_name }}.tar.gz
+            uv tool install https://github.com/ryantking/agentctl/releases/download/${{ github.ref_name }}/agentctl-${{ github.ref_name }}.tar.gz
             ```
 
             ### From source
             ```bash
-            git clone https://github.com/ryantking/claudectl.git
-            cd claudectl
+            git clone https://github.com/ryantking/agentctl.git
+            cd agentctl
             git checkout ${{ github.ref_name }}
             just install
             ```

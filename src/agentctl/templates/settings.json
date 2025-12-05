@@ -51,7 +51,7 @@
       "Bash(gh browse:*)",
       "Bash(gh search:*)",
       "Bash(search:*)",
-      "Bash(claudectl:*)",
+      "Bash(agentctl:*)",
       "Bash(grep:*)",
       "Bash(rg:*)",
       "Bash(head:*)",
@@ -131,7 +131,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "claudectl hook context-info"
+            "command": "agentctl hook context-info"
           }
         ]
       }
@@ -141,7 +141,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "claudectl hook notify-input"
+            "command": "agentctl hook notify-input"
           }
         ]
       }
@@ -151,7 +151,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "claudectl hook notify-stop"
+            "command": "agentctl hook notify-stop"
           }
         ]
       }
@@ -162,7 +162,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "claudectl hook post-edit"
+            "command": "agentctl hook post-edit"
           }
         ]
       },
@@ -171,7 +171,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "claudectl hook post-write"
+            "command": "agentctl hook post-write"
           }
         ]
       }
@@ -181,7 +181,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "claudectl hook context-info"
+            "command": "agentctl hook context-info"
           }
         ]
       }

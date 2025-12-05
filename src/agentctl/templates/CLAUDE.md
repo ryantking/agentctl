@@ -60,26 +60,26 @@ Workspaces allow multiple instances of Claude Code or other agents to run on the
 
 **IMPORTANT:** When working in a workspace, you will be in $HOME/.claude/workspaces/<repo>/<workspace>, make all changes there.
 
-When you are instructed to use a workspace use `claudectl` to manage it:
+When you are instructed to use a workspace use `agentctl` to manage it:
 
-**IMPORTANT:** `claudectl workspace` commands use the underlying git repo so they return and manage workspaces for the current Git repository.
+**IMPORTANT:** `agentctl workspace` commands use the underlying git repo so they return and manage workspaces for the current Git repository.
 
-- `claudectl workspace create <branch-name>`: Create a new worktree for the specific branch, creating the branch if it does not already exist.
-- `claudectl workspace show <branch-name>`: Show the absolute path to a workspace
-- `claudectl workspace list --json`: List all workspaces 
-- `claudectl workspace delete <branch-name>`: Delete a workspace by removing the worktree but not the branch.
-- `claudectl workspace delete --force <branch-name>`: Delete a workspace even if the worktree has uncommitted changes.
-- `claudectl workspace status <branch>`: Show detailed status information about a workspace.
+- `agentctl workspace create <branch-name>`: Create a new worktree for the specific branch, creating the branch if it does not already exist.
+- `agentctl workspace show <branch-name>`: Show the absolute path to a workspace
+- `agentctl workspace list --json`: List all workspaces 
+- `agentctl workspace delete <branch-name>`: Delete a workspace by removing the worktree but not the branch.
+- `agentctl workspace delete --force <branch-name>`: Delete a workspace even if the worktree has uncommitted changes.
+- `agentctl workspace status <branch>`: Show detailed status information about a workspace.
 
 ## Global Hooks
 
-In **ALL** sessions the following hooks provide important functionality to always be aware of. Hooks are provided by `claudectl hooks` commands.
+In **ALL** sessions the following hooks provide important functionality to always be aware of. Hooks are provided by `agentctl hooks` commands.
 
 ### Context Injection
 
 **WHEN:** User submits a prompt, agent starts
 
-**WHAT:** Injects information about the Git repository and `claudectl` workspace so agents knows important information WITHOUT having to look it up using commands.
+**WHAT:** Injects information about the Git repository and `agentctl` workspace so agents knows important information WITHOUT having to look it up using commands.
 
 **EXAMPLE CONTEXT**
 
@@ -193,7 +193,7 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 2. Ensure you're on the default branch main/master unless otherwise specified
 3. Delete workspace if it exists:
    ```bash
-   claudectl workspace delete <branch-name>
+   agentctl workspace delete <branch-name>
    ```
 4. Switch to main and update:
    ```bash
@@ -288,7 +288,7 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
    ```
 6. Delete workspace before merging (if applicable):
    ```bash
-   claudectl workspace delete <branch-name>
+   agentctl workspace delete <branch-name>
    ```
 7. Merge the pull request using gh CLI with squash merge:
    - **IMPORTANT**: GitHub is configured to use PR title + body as the commit message
@@ -538,7 +538,7 @@ Use these alternatives instead:
    - Version controlled
    - Persistent across sessions
 
-3. **For Build/Runtime Caches** → Use `.cache/claudectl/` (gitignored)
+3. **For Build/Runtime Caches** → Use `.cache/agentctl/` (gitignored)
    - Follows npm/webpack convention
    - Persists across sessions
    - Excluded from git

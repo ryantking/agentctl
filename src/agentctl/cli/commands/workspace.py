@@ -1,4 +1,4 @@
-"""Workspace management commands for claudectl.
+"""Workspace management commands for agentctl.
 
 Commands for managing Claude workspaces (git worktrees) with proper
 separation from terminal multiplexing.
@@ -11,11 +11,11 @@ from typing import Annotated
 
 import typer
 
-from claudectl.cli.output import Result, is_json_output, output, print_table
-from claudectl.core.git import NotInGitRepoError
-from claudectl.operations.context import copy_claude_context
-from claudectl.operations.spawn import spawn_claude_in_shell
-from claudectl.operations.workspace_ops import (
+from agentctl.cli.output import Result, is_json_output, output, print_table
+from agentctl.core.git import NotInGitRepoError
+from agentctl.operations.context import copy_claude_context
+from agentctl.operations.spawn import spawn_claude_in_shell
+from agentctl.operations.workspace_ops import (
     BranchInUseError,
     WorkspaceError,
     WorkspaceExistsError,
@@ -53,8 +53,8 @@ def create(
     and copies necessary context files (CLAUDE.md, settings.local.json, .mcp.json).
 
     Examples:
-        claudectl workspace create feat/add-auth
-        claudectl workspace create fix/bug-123 --base main
+        agentctl workspace create feat/add-auth
+        agentctl workspace create fix/bug-123 --base main
     """
     try:
         manager = WorkspaceManager()
@@ -102,7 +102,7 @@ def open_workspace(
     MCPs and PATH are available. Uses the same terminal window.
 
     Example:
-        claudectl workspace open feat/add-auth
+        agentctl workspace open feat/add-auth
     """
     try:
         manager = WorkspaceManager()
@@ -143,7 +143,7 @@ def show(
     Claude in a new terminal window.
 
     Example:
-        cd $(claudectl workspace show feat/add-auth)
+        cd $(agentctl workspace show feat/add-auth)
     """
     try:
         manager = WorkspaceManager()
@@ -207,7 +207,7 @@ def list_workspaces(
 
         if not workspaces:
             typer.echo("\n  No managed workspaces found.\n")
-            typer.echo("  Create one with: claudectl workspace create <branch>\n")
+            typer.echo("  Create one with: agentctl workspace create <branch>\n")
             return
 
         rows = []
@@ -255,8 +255,8 @@ def delete(
     Use --force to delete even with changes (WARNING: data loss).
 
     Examples:
-        claudectl workspace delete feat/add-auth
-        claudectl workspace delete feat/add-auth --force
+        agentctl workspace delete feat/add-auth
+        agentctl workspace delete feat/add-auth --force
     """
     try:
         manager = WorkspaceManager()
@@ -287,7 +287,7 @@ def clean() -> None:
     Useful for cleanup after completing work.
 
     Example:
-        claudectl workspace clean
+        agentctl workspace clean
     """
     try:
         manager = WorkspaceManager()
@@ -325,7 +325,7 @@ def status(
     ahead/behind status relative to remote, and other details.
 
     Example:
-        claudectl workspace status feat/add-auth
+        agentctl workspace status feat/add-auth
     """
     try:
         manager = WorkspaceManager()
@@ -380,8 +380,8 @@ def diff(
     (defaults to main). Useful for reviewing changes before merging.
 
     Examples:
-        claudectl workspace diff feat/add-auth
-        claudectl workspace diff feat/add-auth --target develop
+        agentctl workspace diff feat/add-auth
+        agentctl workspace diff feat/add-auth --target develop
     """
     try:
         manager = WorkspaceManager()

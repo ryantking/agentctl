@@ -1,4 +1,4 @@
-"""Init command for claudectl - initialize Claude Code configuration."""
+"""Init command for agentctl - initialize Claude Code configuration."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from claudectl.cli.output import Result, output
-from claudectl.core.git import NotInGitRepoError
-from claudectl.operations.init_ops import ImportDirNotFoundError, InitManager
+from agentctl.cli.output import Result, output
+from agentctl.core.git import NotInGitRepoError
+from agentctl.operations.init_ops import ImportDirNotFoundError, InitManager
 
 app = typer.Typer(
     name="init",
@@ -66,7 +66,7 @@ def init(
         if global_install:
             target = Path.home() / ".claude"
         else:
-            from claudectl.core.git import get_repo_root
+            from agentctl.core.git import get_repo_root
 
             target = get_repo_root()
 

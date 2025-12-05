@@ -1,5 +1,5 @@
 [project]
-name = "claudectl"
+name = "agentctl"
 version = "0.1.0"
 description = "CLI tool for managing Claude Code configurations and workspaces"
 readme = "README.md"
@@ -27,17 +27,17 @@ dependencies = [
 ]
 
 [project.scripts]
-claudectl = "claudectl.cli.main:main"
+agentctl = "agentctl.cli.main:main"
 
 [tool.uv]
 package = true
 
 [project.urls]
-Homepage = "https://github.com/ryantking/claudectl"
-Repository = "https://github.com/ryantking/claudectl"
-Download = "https://github.com/ryantking/claudectl/releases/latest"
-Issues = "https://github.com/ryantking/claudectl/issues"
-Changelog = "https://github.com/ryantking/claudectl/releases"
+Homepage = "https://github.com/ryantking/agentctl"
+Repository = "https://github.com/ryantking/agentctl"
+Download = "https://github.com/ryantking/agentctl/releases/latest"
+Issues = "https://github.com/ryantking/agentctl/issues"
+Changelog = "https://github.com/ryantking/agentctl/releases"
 
 [build-system]
 requires = ["uv_build>=0.9.11,<0.10.0"]
@@ -75,7 +75,7 @@ addopts         = [
     "-v",
     "--strict-markers",
     "--tb=short",
-    "--cov=claudectl",
+    "--cov=agentctl",
     "--cov-report=term-missing",
     "--cov-report=html",
 ]

@@ -7,15 +7,15 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from claudectl.core.git import get_repo_name, get_repo_root, is_worktree_clean
+from agentctl.core.git import get_repo_name, get_repo_root, is_worktree_clean
 
 
 @dataclass
 class Workspace:
-    """A git worktree managed by claudectl.
+    """A git worktree managed by agentctl.
 
     Represents a single workspace (git worktree) that can be managed
-    by claudectl. Workspaces are discovered from git's authoritative
+    by agentctl. Workspaces are discovered from git's authoritative
     worktree list.
     """
 
@@ -27,7 +27,7 @@ class Workspace:
 
     @property
     def is_managed(self) -> bool:
-        """Check if this workspace is managed by claudectl.
+        """Check if this workspace is managed by agentctl.
 
         Managed workspaces live under ~/.claude/workspaces/<repo>/
         """
