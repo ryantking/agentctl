@@ -15,7 +15,7 @@ func NewHookCmd() *cobra.Command {
 	cmd.AddCommand(
 		NewHookPostEditCmd(),
 		NewHookPostWriteCmd(),
-		NewHookContextInfoCmd(),
+		NewHookInjectContextCmd(),
 		NewHookNotifyInputCmd(),
 		NewHookNotifyStopCmd(),
 		NewHookNotifyErrorCmd(),

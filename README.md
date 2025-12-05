@@ -68,7 +68,7 @@ Hook commands are designed to be called from Claude Code hooks:
 
 - `agentctl hook post-edit` - Auto-commit Edit tool changes
 - `agentctl hook post-write` - Auto-commit Write tool changes (new files)
-- `agentctl hook context-info` - Inject git/workspace context into prompts
+- `agentctl hook inject-context` - Inject git/workspace context into prompts
 - `agentctl hook notify-input` - Send notification when Claude needs input
 - `agentctl hook notify-stop` - Send notification when Claude completes a task
 - `agentctl hook notify-error` - Send error notification
