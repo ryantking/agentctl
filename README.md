@@ -12,23 +12,17 @@ A CLI tool for managing Claude Code configurations, hooks, and isolated workspac
 
 ## Installation
 
-### Via Homebrew (macOS)
+### Via Go Install
 
 ```bash
-brew install ryantking/tap/agentctl
+go install github.com/ryantking/agentctl/cmd/agentctl@latest
 ```
 
 ### Download Binary
 
 Download the appropriate binary for your platform from the [latest release](https://github.com/ryantking/agentctl/releases/latest).
 
-### From source
-
-```bash
-git clone https://github.com/ryantking/agentctl.git
-cd agentctl
-just install
-```
+Extract and place the binary in your PATH (e.g., `/usr/local/bin` or `~/bin`).
 
 ## Quick Start
 
@@ -151,7 +145,6 @@ just clean
 3. GitHub Actions automatically:
    - Builds binaries for multiple platforms
    - Creates GitHub Release with assets
-   - Updates Homebrew formula
 
 ## License
 
