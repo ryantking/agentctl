@@ -16,7 +16,7 @@ func Success(data interface{}) Result {
 }
 
 // Error creates an error result.
-func Error(msg string) Result {
+func ErrorResult(msg string) Result {
 	return Result{
 		Success: false,
 		Message: msg,

@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 
 	"github.com/spf13/cobra"
@@ -25,13 +23,6 @@ func NewStatusCmd() *cobra.Command {
 		Short: "Show the status of Claude Code",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			info := getClaudeInfo()
-
-			if jsonOutput {
-				encoder := json.NewEncoder(os.Stdout)
-				encoder.SetIndent("", "  ")
-				return encoder.Encode(info)
-			}
-
 			printStatus(info)
 			return nil
 		},

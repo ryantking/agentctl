@@ -12,6 +12,9 @@ func NewWorkspaceCmd() *cobra.Command {
 		Long:  "Commands for managing Claude workspaces (git worktrees) with proper separation from terminal multiplexing.",
 	}
 
+	// Add --json flag to workspace command group (inherited by all subcommands)
+	cmd.PersistentFlags().BoolP("json", "j", false, "Output result as JSON")
+
 	cmd.AddCommand(
 		NewWorkspaceCreateCmd(),
 		NewWorkspaceListCmd(),

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/ryantking/agentctl/internal/git"
-	"github.com/ryantking/agentctl/internal/setup"
 	"github.com/ryantking/agentctl/internal/output"
+	"github.com/ryantking/agentctl/internal/setup"
 	"github.com/spf13/cobra"
 )
 
@@ -27,8 +27,7 @@ By default, skips existing files.`,
 			if globalInstall {
 				home, err := os.UserHomeDir()
 				if err != nil {
-					result := output.Error(fmt.Sprintf("failed to get home directory: %v", err))
-					output.Output(result)
+					output.Errorf("failed to get home directory: %v", err)
 					return err
 				}
 				target = filepath.Join(home, ".claude")
@@ -36,22 +35,19 @@ By default, skips existing files.`,
 				target, err = git.GetRepoRoot()
 				if err != nil {
 					msg := fmt.Sprintf("%v\n\nRun from inside a git repository or use --global", err)
-					result := output.Error(msg)
-					output.Output(result)
+					output.Error(fmt.Errorf(msg))
 					return err
 				}
 			}
 
 			manager, err := setup.NewManager(target)
 			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
+				output.Error(err)
 				return err
 			}
 
 			if err := manager.Install(force, noIndex || globalInstall); err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
+				output.Error(err)
 				return err
 			}
 

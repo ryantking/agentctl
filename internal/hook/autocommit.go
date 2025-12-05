@@ -2,10 +2,10 @@ package hook
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
+
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/ryantking/agentctl/internal/git"
 )
 
 // PostEdit auto-commits changes if on a feature branch.
@@ -15,16 +15,21 @@ func PostEdit(filePath string) error {
 		return nil
 	}
 
-	repo, err := getRepo(filePath)
+	repoRoot, err := git.GetRepoRoot()
 	if err != nil {
 		return nil // Not in a repo, skip
 	}
 
-	if isMainBranch(repo) {
+	branch, err := git.GetCurrentBranch(repoRoot)
+	if err != nil || branch == "" {
+		return nil
+	}
+
+	if isMainBranch(branch) {
 		return nil // Skip on main/master
 	}
 
-	return gitAddAndCommit(repo, filePath)
+	return gitAddAndCommit(repoRoot, filePath)
 }
 
 // PostWrite auto-commits new files if on a feature branch.
@@ -34,46 +39,38 @@ func PostWrite(filePath string) error {
 		return nil
 	}
 
-	repo, err := getRepo(filePath)
+	repoRoot, err := git.GetRepoRoot()
 	if err != nil {
 		return nil // Not in a repo, skip
 	}
 
-	if isMainBranch(repo) {
+	branch, err := git.GetCurrentBranch(repoRoot)
+	if err != nil || branch == "" {
+		return nil
+	}
+
+	if isMainBranch(branch) {
 		return nil // Skip on main/master
 	}
 
-	return gitAddAndCommitNewFile(repo, filePath)
+	return gitAddAndCommitNewFile(repoRoot, filePath)
 }
 
-func getRepo(filePath string) (string, error) {
-	// Find git repo root
-	dir := filepath.Dir(filePath)
-	for {
-		gitDir := filepath.Join(dir, ".git")
-		if info, err := os.Stat(gitDir); err == nil && info.IsDir() {
-			return dir, nil
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break // Reached root
-		}
-		dir = parent
-	}
-	return "", fmt.Errorf("not in a git repository")
-}
-
-func isMainBranch(repoRoot string) bool {
-	cmd := exec.Command("git", "-C", repoRoot, "rev-parse", "--abbrev-ref", "HEAD")
-	output, err := cmd.Output()
-	if err != nil {
-		return false
-	}
-	branch := strings.TrimSpace(string(output))
+func isMainBranch(branch string) bool {
 	return branch == "main" || branch == "master"
 }
 
 func gitAddAndCommit(repoRoot, filePath string) error {
+	repo, err := git.OpenRepo(repoRoot)
+	if err != nil {
+		return fmt.Errorf("failed to open repository: %w", err)
+	}
+
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
 	// Make path relative to repo root
 	absPath, err := filepath.Abs(filePath)
 	if err != nil {
@@ -85,28 +82,46 @@ func gitAddAndCommit(repoRoot, filePath string) error {
 	}
 
 	// Stage the file
-	cmd := exec.Command("git", "-C", repoRoot, "add", relPath)
-	if err := cmd.Run(); err != nil {
-		return err
+	if _, err := worktree.Add(relPath); err != nil {
+		return fmt.Errorf("failed to stage file: %w", err)
 	}
 
 	// Check if there are staged changes
-	cmd = exec.Command("git", "-C", repoRoot, "diff", "--cached", "--quiet", relPath)
-	if err := cmd.Run(); err == nil {
+	status, err := worktree.Status()
+	if err != nil {
+		return fmt.Errorf("failed to get status: %w", err)
+	}
+
+	fileStatus, ok := status[relPath]
+	if !ok || fileStatus.Staging == gogit.Unmodified {
 		// No changes to commit
 		return nil
 	}
 
-	// Calculate lines changed (simplified)
+	// Calculate commit message
 	filename := filepath.Base(filePath)
 	msg := fmt.Sprintf("Update %s: moderate changes", filename)
 
 	// Create commit
-	cmd = exec.Command("git", "-C", repoRoot, "commit", "-m", msg)
-	return cmd.Run()
+	_, err = worktree.Commit(msg, &gogit.CommitOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create commit: %w", err)
+	}
+
+	return nil
 }
 
 func gitAddAndCommitNewFile(repoRoot, filePath string) error {
+	repo, err := git.OpenRepo(repoRoot)
+	if err != nil {
+		return fmt.Errorf("failed to open repository: %w", err)
+	}
+
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
 	// Make path relative to repo root
 	absPath, err := filepath.Abs(filePath)
 	if err != nil {
@@ -118,14 +133,18 @@ func gitAddAndCommitNewFile(repoRoot, filePath string) error {
 	}
 
 	// Stage the file
-	cmd := exec.Command("git", "-C", repoRoot, "add", relPath)
-	if err := cmd.Run(); err != nil {
-		return err
+	if _, err := worktree.Add(relPath); err != nil {
+		return fmt.Errorf("failed to stage file: %w", err)
 	}
 
 	// Check if file is staged
-	cmd = exec.Command("git", "-C", repoRoot, "diff", "--cached", "--quiet", relPath)
-	if err := cmd.Run(); err == nil {
+	status, err := worktree.Status()
+	if err != nil {
+		return fmt.Errorf("failed to get status: %w", err)
+	}
+
+	fileStatus, ok := status[relPath]
+	if !ok || fileStatus.Staging == gogit.Unmodified {
 		// No changes to commit
 		return nil
 	}
@@ -134,6 +153,10 @@ func gitAddAndCommitNewFile(repoRoot, filePath string) error {
 	msg := fmt.Sprintf("Add new file: %s", filename)
 
 	// Create commit
-	cmd = exec.Command("git", "-C", repoRoot, "commit", "-m", msg)
-	return cmd.Run()
+	_, err = worktree.Commit(msg, &gogit.CommitOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create commit: %w", err)
+	}
+
+	return nil
 }

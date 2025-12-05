@@ -3,131 +3,13 @@ package ui
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/ryantking/agentctl/internal/workspace"
 )
 
-var (
-	titleStyle        = lipgloss.NewStyle().MarginLeft(2).Bold(true)
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
-	cleanItemStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	dirtyItemStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-)
-
-type workspaceItem struct {
-	workspace workspace.Workspace
-}
-
-func (i workspaceItem) FilterValue() string {
-	return i.workspace.Branch
-}
-
-func (i workspaceItem) Title() string {
-	branch := i.workspace.Branch
-	if branch == "" {
-		branch = "detached"
-	}
-	return branch
-}
-
-func (i workspaceItem) Description() string {
-	isClean, status := i.workspace.IsClean()
-	statusText := status
-	if isClean {
-		statusText = cleanItemStyle.Render("✓ " + status)
-	} else {
-		statusText = dirtyItemStyle.Render("● " + status)
-	}
-	return fmt.Sprintf("%s • %s", statusText, i.workspace.Path)
-}
-
-type workspacePickerModel struct {
-	list     list.Model
-	choice   string
-	quitting bool
-}
-
-func (m workspacePickerModel) Init() tea.Cmd {
-	return nil
-}
-
-func (m workspacePickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.list.SetWidth(msg.Width)
-		return m, nil
-
-	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case "ctrl+c", "q", "esc":
-			m.quitting = true
-			return m, tea.Quit
-
-		case "enter":
-			i, ok := m.list.SelectedItem().(workspaceItem)
-			if ok {
-				m.choice = i.workspace.Branch
-			}
-			return m, tea.Quit
-		}
-	}
-
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
-}
-
-func (m workspacePickerModel) View() string {
-	if m.quitting {
-		return ""
-	}
-	return "\n" + m.list.View()
-}
-
-func PickWorkspace(workspaces []workspace.Workspace) (string, error) {
-	if len(workspaces) == 0 {
-		return "", fmt.Errorf("no workspaces available")
-	}
-
-	items := make([]list.Item, len(workspaces))
-	for i, w := range workspaces {
-		items[i] = workspaceItem{workspace: w}
-	}
-
-	const defaultWidth = 80
-	const listHeight = 14
-
-	l := list.New(items, list.NewDefaultDelegate(), defaultWidth, listHeight)
-	l.Title = "Select Workspace"
-	l.Styles.Title = titleStyle
-	l.Styles.PaginationStyle = lipgloss.NewStyle()
-	l.Styles.HelpStyle = lipgloss.NewStyle()
-
-	m := workspacePickerModel{list: l}
-
-	p := tea.NewProgram(m, tea.WithOutput(os.Stderr))
-	finalModel, err := p.Run()
-	if err != nil {
-		return "", err
-	}
-
-	if finalModel.(workspacePickerModel).quitting {
-		return "", fmt.Errorf("selection cancelled")
-	}
-
-	choice := finalModel.(workspacePickerModel).choice
-	if choice == "" {
-		return "", fmt.Errorf("no workspace selected")
-	}
-
-	return choice, nil
-}
-
-// GetWorkspaceArg gets workspace name from args or prompts user to pick one
+// GetWorkspaceArg gets workspace name from args or prompts user to pick one using fzf.
 func GetWorkspaceArg(args []string, workspaces []workspace.Workspace) (string, error) {
 	if len(args) > 0 && args[0] != "" {
 		return args[0], nil
@@ -138,7 +20,87 @@ func GetWorkspaceArg(args []string, workspaces []workspace.Workspace) (string, e
 		return "", fmt.Errorf("workspace name required when not in interactive terminal")
 	}
 
-	return PickWorkspace(workspaces)
+	// Try to use fzf if available
+	if fzfAvailable() {
+		return pickWorkspaceWithFzf(workspaces)
+	}
+
+	// No fzf available, require branch name
+	return "", fmt.Errorf("workspace name required (install fzf for interactive selection)")
+}
+
+// fzfAvailable checks if fzf is available in PATH.
+func fzfAvailable() bool {
+	_, err := exec.LookPath("fzf")
+	return err == nil
+}
+
+// pickWorkspaceWithFzf uses fzf to let user select a workspace.
+func pickWorkspaceWithFzf(workspaces []workspace.Workspace) (string, error) {
+	if len(workspaces) == 0 {
+		return "", fmt.Errorf("no workspaces available")
+	}
+
+	// Build input for fzf: format as "branch | status | commit"
+	lines := make([]string, len(workspaces))
+	for i, w := range workspaces {
+		isClean, status := w.IsClean()
+		statusIcon := "✓"
+		if !isClean {
+			statusIcon = "●"
+		}
+		branch := w.Branch
+		if branch == "" {
+			branch = "detached"
+		}
+		// Format: "branch | icon status | commit"
+		lines[i] = fmt.Sprintf("%s | %s %s | %s", branch, statusIcon, status, w.Commit)
+	}
+
+	input := strings.Join(lines, "\n")
+
+	// Run fzf with custom preview
+	cmd := exec.Command("fzf",
+		"--height", "40%",
+		"--border",
+		"--header", "Select workspace (use arrow keys, type to filter)",
+		"--preview", "echo {}",
+		"--preview-window", "down:3",
+		"--delimiter", "|",
+		"--with-nth", "1", // Only show branch name in main list
+	)
+
+	cmd.Stdin = strings.NewReader(input)
+	cmd.Stderr = os.Stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == 130 {
+			// Exit code 130 means user cancelled (Ctrl+C)
+			return "", fmt.Errorf("selection cancelled")
+		}
+		return "", fmt.Errorf("fzf error: %w", err)
+	}
+
+	// Extract branch name from fzf output
+	selected := strings.TrimSpace(string(output))
+	if selected == "" {
+		return "", fmt.Errorf("no workspace selected")
+	}
+
+	// Parse the selected line to get branch name
+	parts := strings.Split(selected, "|")
+	if len(parts) > 0 {
+		branch := strings.TrimSpace(parts[0])
+		// Verify it's a valid branch
+		for _, w := range workspaces {
+			if w.Branch == branch || (branch == "detached" && w.Branch == "") {
+				return branch, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("invalid selection")
 }
 
 func isTerminal(f *os.File) bool {

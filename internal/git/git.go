@@ -2,29 +2,24 @@ package git
 
 import (
 	"fmt"
-	"os/exec"
+	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
-var (
-	ErrNotInGitRepo = fmt.Errorf("not in a git repository")
-)
 
 // GetRepoRoot returns the root directory of the current git repository.
 // Correctly handles worktrees by finding the actual repository root
 // instead of the worktree directory.
 func GetRepoRoot() (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
-	output, err := cmd.Output()
+	wd, err := filepath.Abs(".")
 	if err != nil {
-		return "", ErrNotInGitRepo
+		return "", err
 	}
-	root := strings.TrimSpace(string(output))
-	if root == "" {
-		return "", ErrNotInGitRepo
-	}
-	return root, nil
+	return discoverRepoRoot(wd)
 }
 
 // GetRepoName returns the name of the current git repository.
@@ -38,37 +33,104 @@ func GetRepoName() (string, error) {
 
 // GetCurrentBranch returns the name of the current branch.
 // Returns empty string if in detached HEAD state.
-func GetCurrentBranch(repoRoot string) (string, error) {
-	cmd := exec.Command("git", "-C", repoRoot, "rev-parse", "--abbrev-ref", "HEAD")
-	output, err := cmd.Output()
+// Correctly handles worktrees by detecting the branch from the current directory.
+func GetCurrentBranch(path string) (string, error) {
+	// Discover the actual repo root (handles worktrees)
+	repoRoot, err := discoverRepoRoot(path)
 	if err != nil {
 		return "", err
 	}
-	branch := strings.TrimSpace(string(output))
-	// Detached HEAD returns "HEAD"
-	if branch == "HEAD" {
-		return "", nil
+
+	// Check if we're in a worktree by looking for .git file
+	gitDir := filepath.Join(path, ".git")
+	if info, err := os.Stat(gitDir); err == nil && !info.IsDir() {
+		// We're in a worktree - read HEAD from the worktree's git directory
+		data, err := os.ReadFile(gitDir)
+		if err == nil && len(data) > 8 && string(data[:8]) == "gitdir: " {
+			worktreeGitDir := strings.TrimSpace(string(data[8:]))
+			if !filepath.IsAbs(worktreeGitDir) {
+				worktreeGitDir = filepath.Join(path, worktreeGitDir)
+			}
+			headFile := filepath.Join(worktreeGitDir, "HEAD")
+			if headData, err := os.ReadFile(headFile); err == nil {
+				headRef := strings.TrimSpace(string(headData))
+				// Format: ref: refs/heads/branch-name or just commit hash
+				if strings.HasPrefix(headRef, "ref: ") {
+					headRef = strings.TrimPrefix(headRef, "ref: ")
+					headRef = strings.TrimSpace(headRef)
+				}
+				if strings.HasPrefix(headRef, "refs/heads/") {
+					return strings.TrimPrefix(headRef, "refs/heads/"), nil
+				}
+				// Detached HEAD
+				return "", nil
+			}
+		}
 	}
-	return branch, nil
+
+	// Regular repo or fallback - use go-git
+	repo, err := OpenRepo(repoRoot)
+	if err != nil {
+		return "", err
+	}
+
+	head, err := repo.Head()
+	if err != nil {
+		return "", nil // Detached HEAD or no commits
+	}
+
+	if !head.Name().IsBranch() {
+		return "", nil // Not on a branch
+	}
+
+	return head.Name().Short(), nil
 }
 
 // BranchExists checks if a branch exists locally or remotely.
 func BranchExists(repoRoot, branchName string) (bool, error) {
-	// Check local branches
-	cmd := exec.Command("git", "-C", repoRoot, "branch", "--list", branchName)
-	output, err := cmd.Output()
+	repo, err := OpenRepo(repoRoot)
 	if err != nil {
 		return false, err
 	}
-	if strings.TrimSpace(string(output)) != "" {
+
+	// Check local branches
+	branches, err := repo.Branches()
+	if err != nil {
+		return false, err
+	}
+
+	found := false
+	err = branches.ForEach(func(ref *plumbing.Reference) error {
+		if ref.Name().Short() == branchName {
+			found = true
+			return fmt.Errorf("found") // Break iteration
+		}
+		return nil
+	})
+	if err != nil && err.Error() == "found" {
+		return true, nil
+	}
+	if found {
 		return true, nil
 	}
 
 	// Check remote branches
-	cmd = exec.Command("git", "-C", repoRoot, "branch", "-r", "--list", fmt.Sprintf("origin/%s", branchName))
-	output, err = cmd.Output()
+	remotes, err := repo.Remotes()
 	if err != nil {
 		return false, err
 	}
-	return strings.TrimSpace(string(output)) != "", nil
+
+	for _, remote := range remotes {
+		refs, err := remote.List(&git.ListOptions{})
+		if err != nil {
+			continue
+		}
+		for _, ref := range refs {
+			if ref.Name().Short() == fmt.Sprintf("%s/%s", remote.Config().Name, branchName) {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }

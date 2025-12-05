@@ -1,76 +1,123 @@
 package workspace
 
 import (
-	"encoding/json"
+	"fmt"
 	"os"
 
+	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
-	"github.com/ryantking/agentctl/internal/ui"
 	"github.com/ryantking/agentctl/internal/workspace"
 	"github.com/spf13/cobra"
 )
 
 // NewWorkspaceListCmd creates the workspace list command.
 func NewWorkspaceListCmd() *cobra.Command {
-	var jsonFlag bool
-
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all managed workspaces",
 		Long:  "Shows workspaces in ~/.claude/workspaces/ with their status.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			jsonMode, _ := cmd.Flags().GetBool("json")
+
 			manager, err := workspace.NewManager()
 			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
-				return err
-			}
-
-			workspaces, err := manager.ListWorkspaces(true)
-			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
-				return err
-			}
-
-			// Handle --json flag on list command
-			if jsonFlag {
-				data := make([]map[string]interface{}, len(workspaces))
-				for i, w := range workspaces {
-					data[i] = w.ToMap()
+				if jsonMode {
+					return output.ErrorJSON(err)
 				}
-				encoder := json.NewEncoder(os.Stdout)
-				encoder.SetIndent("", "  ")
-				return encoder.Encode(data)
+				output.Error(err)
+				return err
 			}
 
-			jsonOutput, _ := cmd.Root().PersistentFlags().GetBool("json")
-			if jsonOutput {
-				result := output.Success(map[string]interface{}{
-					"workspaces": workspacesToMaps(workspaces),
-				})
-				output.Output(result)
+			// Get all workspaces including main/master
+			workspaces, err := manager.ListWorkspaces(false)
+			if err != nil {
+				if jsonMode {
+					return output.ErrorJSON(err)
+				}
+				output.Error(err)
+				return err
+			}
+
+			// Filter to only managed workspaces for JSON (backward compatibility)
+			if jsonMode {
+				var managed []workspace.Workspace
+				for _, w := range workspaces {
+					if w.IsManaged() && !w.IsMain {
+						managed = append(managed, w)
+					}
+				}
+				data := make([]map[string]interface{}, len(managed))
+				for i, w := range managed {
+					data[i] = workspaceToMapWithoutPath(w)
+				}
+				return output.WriteJSON(data)
+			}
+
+			// Get current branch to mark it with asterisk
+			// Use current working directory to detect branch in worktrees
+			var currentBranch string
+			wd, err := os.Getwd()
+			if err == nil {
+				// Open repo from current directory to get correct branch in worktrees
+				currentBranch, _ = git.GetCurrentBranch(wd)
+			}
+
+			// Simple text output - print immediately and exit
+			if len(workspaces) == 0 {
+				fmt.Println("\n  No workspaces found.\n\n  Create one with: agentctl workspace create <branch>\n")
 				return nil
 			}
 
-			// Use bubbletea table for nice output
-			if err := ui.ShowWorkspaceTable(workspaces); err != nil {
-				return err
+			// Print workspaces with nice formatting
+			for _, w := range workspaces {
+				isClean, status := w.IsClean()
+				statusIcon := "✓"
+				if !isClean {
+					statusIcon = "●"
+				}
+
+				branch := w.Branch
+				if branch == "" {
+					branch = "detached"
+				}
+
+				// Mark current workspace with asterisk
+				marker := " "
+				if branch == currentBranch {
+					marker = "*"
+				}
+
+				// Format: * branch-name    ✓ clean    abc1234
+				fmt.Fprintf(os.Stdout, "%s %-30s %s %-20s %s\n",
+					marker,
+					branch,
+					statusIcon,
+					status,
+					w.Commit,
+				)
 			}
 
+			fmt.Println()
 			return nil
 		},
 	}
 
-	cmd.Flags().BoolVarP(&jsonFlag, "json", "j", false, "Output as JSON list of workspaces")
-
 	return cmd
 }
 
-func workspacesToMaps(workspaces []workspace.Workspace) []map[string]interface{} {
-	result := make([]map[string]interface{}, len(workspaces))
-	for i, w := range workspaces {
-		result[i] = w.ToMap()
+// workspaceToMapWithoutPath converts workspace to map without path field.
+func workspaceToMapWithoutPath(w workspace.Workspace) map[string]interface{} {
+	isClean, status := w.IsClean()
+	branch := w.Branch
+	if branch == "" {
+		branch = "detached"
 	}
-	return result
+	return map[string]interface{}{
+		"branch":     branch,
+		"commit":     w.Commit,
+		"is_main":    w.IsMain,
+		"is_managed": w.IsManaged(),
+		"is_clean":   isClean,
+		"status":     status,
+	}
 }

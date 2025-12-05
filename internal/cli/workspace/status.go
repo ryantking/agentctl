@@ -12,51 +12,61 @@ import (
 // NewWorkspaceStatusCmd creates the workspace status command.
 func NewWorkspaceStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "status [branch]",
-		Short: "Show detailed workspace status",
-		Long:  "Displays status information including uncommitted changes, ahead/behind status relative to remote, and other details. If no branch is provided, opens an interactive picker.",
-		Args:  cobra.MaximumNArgs(1),
+		Use:               "status [branch]",
+		Short:             "Show detailed workspace status",
+		Long:              "Displays status information including uncommitted changes, ahead/behind status relative to remote, and other details. If no branch is provided, opens an interactive picker.",
+		Args:              cobra.MaximumNArgs(1),
+		ValidArgsFunction: completeWorkspaceNames,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			jsonMode, _ := cmd.Flags().GetBool("json")
+
 			manager, err := workspace.NewManager()
 			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
+				if jsonMode {
+					return output.ErrorJSON(err)
+				}
+				output.Error(err)
 				return err
 			}
 
 			workspaces, err := manager.ListWorkspaces(true)
 			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
+				if jsonMode {
+					return output.ErrorJSON(err)
+				}
+				output.Error(err)
 				return err
 			}
 
 			branch, err := ui.GetWorkspaceArg(args, workspaces)
 			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
+				if jsonMode {
+					return output.ErrorJSON(err)
+				}
+				output.Error(err)
 				return err
 			}
 
 			ws, err := manager.GetWorkspace(branch)
 			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
+				if jsonMode {
+					return output.ErrorJSON(err)
+				}
+				output.Error(err)
 				return err
 			}
 
 			statusInfo, err := manager.GetWorkspaceStatus(ws)
 			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
+				if jsonMode {
+					return output.ErrorJSON(err)
+				}
+				output.Error(err)
 				return err
 			}
 
-			jsonOutput, _ := cmd.Root().PersistentFlags().GetBool("json")
-			if jsonOutput {
-				result := output.Success(statusInfo)
-				output.Output(result)
-				return nil
+			if jsonMode {
+				return output.SuccessJSON(statusInfo)
 			}
 
 			// Human-readable output

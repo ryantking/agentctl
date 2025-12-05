@@ -15,32 +15,47 @@ func NewWorkspaceCleanCmd() *cobra.Command {
 		Short: "Remove all clean workspaces",
 		Long:  "Removes all workspaces that have no uncommitted changes. Useful for cleanup after completing work.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			jsonMode, _ := cmd.Flags().GetBool("json")
+
 			manager, err := workspace.NewManager()
 			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
+				if jsonMode {
+					return output.ErrorJSON(err)
+				}
+				output.Error(err)
 				return err
 			}
 
 			removed, err := manager.CleanWorkspaces(true)
 			if err != nil {
-				result := output.Error(err.Error())
-				output.Output(result)
+				if jsonMode {
+					return output.ErrorJSON(err)
+				}
+				output.Error(err)
 				return err
 			}
 
 			if len(removed) == 0 {
-				result := output.Success(nil)
-				result.Message = "No clean workspaces to remove"
-				output.Output(result)
-			} else {
-				result := output.Success(map[string]interface{}{
-					"removed": removed,
-				})
-				result.Message = fmt.Sprintf("Removed %d workspace(s)", len(removed))
-				output.Output(result)
+				if !jsonMode {
+					fmt.Println("No clean workspaces to remove")
+				}
+				if jsonMode {
+					return output.SuccessJSON(map[string]interface{}{
+						"removed": []string{},
+					})
+				}
+				return nil
 			}
 
+			data := map[string]interface{}{
+				"removed": removed,
+			}
+
+			if jsonMode {
+				return output.SuccessJSON(data)
+			}
+
+			fmt.Printf("Removed %d workspace(s)\n", len(removed))
 			return nil
 		},
 	}

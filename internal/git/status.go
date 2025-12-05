@@ -2,40 +2,44 @@ package git
 
 import (
 	"fmt"
-	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/go-git/go-git/v5"
 )
 
 // IsWorktreeClean checks if a worktree has uncommitted changes.
 // Returns (isClean, statusMessage).
 func IsWorktreeClean(worktreePath string) (bool, string) {
-	// Check for staged and unstaged changes
-	cmd := exec.Command("git", "-C", worktreePath, "status", "--porcelain")
-	output, err := cmd.Output()
+	repo, err := OpenRepo(worktreePath)
+	if err != nil {
+		return false, fmt.Sprintf("failed to open repository: %v", err)
+	}
+
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return false, fmt.Sprintf("failed to get worktree: %v", err)
+	}
+
+	status, err := worktree.Status()
 	if err != nil {
 		return false, fmt.Sprintf("failed to check status: %v", err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	if len(lines) == 1 && lines[0] == "" {
+	if status.IsClean() {
 		return true, "clean"
 	}
 
 	// Count changes
 	var staged, modified, untracked int
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		status := line[:2]
-		if status[0] != ' ' && status[0] != '?' {
+	for _, fileStatus := range status {
+		if fileStatus.Staging != git.Unmodified {
 			staged++
 		}
-		if status[1] != ' ' && status[1] != '?' {
+		if fileStatus.Worktree != git.Unmodified {
 			modified++
 		}
-		if status == "??" {
+		if fileStatus.Staging == git.Untracked || fileStatus.Worktree == git.Untracked {
 			untracked++
 		}
 	}

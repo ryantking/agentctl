@@ -1,12 +1,16 @@
 package hook
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/ryantking/agentctl/internal/git"
+	"github.com/ryantking/agentctl/internal/github"
+	"github.com/ryantking/agentctl/internal/workspace"
 )
 
 // ContextInfo generates context information for injection into prompts.
@@ -101,102 +105,75 @@ func ContextInfo() (string, error) {
 }
 
 func getGitBranch(repoRoot string) string {
-	cmd := exec.Command("git", "-C", repoRoot, "rev-parse", "--abbrev-ref", "HEAD")
-	output, err := cmd.Output()
+	branch, err := git.GetCurrentBranch(repoRoot)
 	if err != nil {
-		return ""
-	}
-	branch := strings.TrimSpace(string(output))
-	if branch == "HEAD" {
 		return ""
 	}
 	return branch
 }
 
 func getGitStatusSummary(repoRoot string) string {
-	cmd := exec.Command("git", "-C", repoRoot, "status", "--porcelain")
-	output, err := cmd.Output()
+	status, err := git.GetStatusSummary(repoRoot)
 	if err != nil {
 		return ""
 	}
-
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	if len(lines) == 1 && lines[0] == "" {
-		return "clean"
-	}
-
-	var staged, modified, untracked int
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		if len(line) < 2 {
-			continue
-		}
-		if line[0] != ' ' && line[0] != '?' {
-			staged++
-		}
-		if line[1] != ' ' && line[1] != '?' {
-			modified++
-		}
-		if strings.HasPrefix(line, "??") {
-			untracked++
-		}
-	}
-
-	var parts []string
-	if staged > 0 {
-		parts = append(parts, fmt.Sprintf("%d staged", staged))
-	}
-	if modified > 0 {
-		parts = append(parts, fmt.Sprintf("%d modified", modified))
-	}
-	if untracked > 0 {
-		parts = append(parts, fmt.Sprintf("%d untracked", untracked))
-	}
-
-	if len(parts) == 0 {
-		return "clean"
-	}
-	return strings.Join(parts, ", ")
+	return status
 }
 
 func getAllGitBranches(repoRoot string) map[string]string {
 	branches := make(map[string]string)
-	cmd := exec.Command("git", "-C", repoRoot, "branch", "--list")
-	output, err := cmd.Output()
+	repo, err := git.OpenRepo(repoRoot)
 	if err != nil {
 		return branches
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, "*") {
-			line = strings.TrimPrefix(line, "*")
-		}
-		branch := strings.TrimSpace(line)
-		if branch == "" {
-			continue
-		}
-		// Simplified: mark as unknown (checking cleanliness is expensive)
-		branches[branch] = "unknown"
+	iter, err := repo.Branches()
+	if err != nil {
+		return branches
 	}
+
+	iter.ForEach(func(ref *plumbing.Reference) error {
+		branchName := ref.Name().Short()
+		// Simplified: mark as unknown (checking cleanliness is expensive)
+		branches[branchName] = "unknown"
+		return nil
+	})
+
 	return branches
 }
 
 func getWorkspaceSessions() []map[string]interface{} {
-	cmd := exec.Command("agentctl", "workspace", "list", "--json")
-	cmd.Env = os.Environ()
-	output, err := cmd.Output()
+	// Get repo root to initialize workspace manager
+	repoRoot, err := git.GetRepoRoot()
 	if err != nil {
 		return nil
 	}
 
-	var workspaces []map[string]interface{}
-	if err := json.Unmarshal(output, &workspaces); err != nil {
+	manager, err := workspace.NewManagerAt(repoRoot)
+	if err != nil {
 		return nil
 	}
-	return workspaces
+
+	// List all managed workspaces
+	workspaces, err := manager.ListWorkspaces(true)
+	if err != nil {
+		return nil
+	}
+
+	// Convert to map format for compatibility
+	var result []map[string]interface{}
+	for _, ws := range workspaces {
+		isClean, status := ws.IsClean()
+		result = append(result, map[string]interface{}{
+			"path":   ws.Path,
+			"branch": ws.Branch,
+			"commit": ws.Commit,
+			"status": status,
+			"clean":  isClean,
+		})
+	}
+
+	return result
 }
 
 func getCurrentWorkspace(cwd string) map[string]interface{} {
@@ -216,55 +193,43 @@ func getCurrentWorkspace(cwd string) map[string]interface{} {
 }
 
 func getPRStatus(repoRoot string) map[string]interface{} {
-	cmd := exec.Command("gh", "pr", "view", "--json", "number,title,state,url,reviewDecision,statusCheckRollup")
-	cmd.Dir = repoRoot
-	output, err := cmd.Output()
+	// Get current branch
+	branch, err := git.GetCurrentBranch(repoRoot)
+	if err != nil || branch == "" {
+		return nil
+	}
+
+	// Skip main/master branches
+	if branch == "main" || branch == "master" {
+		return nil
+	}
+
+	// Create GitHub client (uses gh CLI authentication)
+	ghClient, err := github.NewClient(repoRoot)
 	if err != nil {
 		return nil
 	}
 
-	var prData map[string]interface{}
-	if err := json.Unmarshal(output, &prData); err != nil {
-		return nil
-	}
+	ctx := context.Background()
 
-	if state, ok := prData["state"].(string); !ok || state != "OPEN" {
+	// Find PR for current branch
+	pr, err := ghClient.GetPRForBranch(ctx, branch)
+	if err != nil {
 		return nil
 	}
 
 	result := map[string]interface{}{
-		"number": prData["number"],
-		"title":  prData["title"],
-		"url":     prData["url"],
+		"number": pr.Number,
+		"title":  pr.Title,
+		"url":    pr.URL,
 	}
 
-	if review, ok := prData["reviewDecision"].(string); ok {
-		result["review"] = review
+	if pr.Review != "" {
+		result["review"] = pr.Review
 	}
 
-	// Summarize check status
-	if checks, ok := prData["statusCheckRollup"].([]interface{}); ok {
-		var passed, failed, pending int
-		for _, check := range checks {
-			if checkMap, ok := check.(map[string]interface{}); ok {
-				if conclusion, ok := checkMap["conclusion"].(string); ok {
-					if conclusion == "SUCCESS" {
-						passed++
-					} else if conclusion == "FAILURE" {
-						failed++
-					}
-				} else if status, ok := checkMap["status"].(string); ok && status == "IN_PROGRESS" {
-					pending++
-				}
-			}
-		}
-		if failed > 0 {
-			result["checks"] = fmt.Sprintf("%d failing", failed)
-		} else if pending > 0 {
-			result["checks"] = fmt.Sprintf("%d pending", pending)
-		} else if passed > 0 {
-			result["checks"] = fmt.Sprintf("%d passed", passed)
-		}
+	if pr.Checks != "" {
+		result["checks"] = pr.Checks
 	}
 
 	return result
