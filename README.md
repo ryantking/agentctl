@@ -8,7 +8,8 @@ A CLI tool for managing Claude Code configurations, hooks, and isolated workspac
 - **Hook Integration**: Seamless integration with Claude Code lifecycle hooks
 - **Auto-commit**: Automatic git commits on feature branches for Edit/Write operations
 - **Context Injection**: Live git/workspace status injected into every Claude prompt
-- **Notification System**: macOS notifications for Claude Code events
+- **Notification System**: macOS notifications with automatic agent detection (Claude Code, Cursor, Cursor Agent)
+- **Tab Completion**: Intelligent tab completion for workspace commands
 
 ## Installation
 
@@ -39,7 +40,7 @@ agentctl init
 # Create a new workspace
 agentctl workspace create my-feature-branch
 
-# List all workspaces
+# List all workspaces (with tab completion!)
 agentctl workspace list
 
 # Show workspace details
@@ -53,43 +54,67 @@ agentctl workspace delete my-feature-branch
 
 ### Workspace Commands
 
-- `agentctl workspace create <branch>` - Create new workspace with git worktree
-- `agentctl workspace list [--json]` - List all managed workspaces
-- `agentctl workspace show <branch>` - Print workspace path
-- `agentctl workspace status <branch>` - Show detailed workspace status
-- `agentctl workspace diff <branch> [--target <branch>]` - Show git diff from workspace to target branch
-- `agentctl workspace delete <branch> [--force]` - Delete a workspace
+Manage git worktree-based workspaces for parallel development sessions.
+
+- `agentctl workspace create <branch> [--base <branch>]` - Create new workspace with git worktree
+- `agentctl workspace list [--json]` - List all workspaces (includes main/master, shows current with `*`)
+- `agentctl workspace show [branch]` - Print workspace path (for shell integration)
+- `agentctl workspace status [branch]` - Show detailed workspace status
+- `agentctl workspace delete [branch] [--force]` - Delete a workspace
 - `agentctl workspace clean` - Remove all clean workspaces
-- `agentctl workspace open <branch>` - Open Claude in a workspace directory
+
+**Tab Completion**: Workspace commands (`show`, `status`, `delete`) support tab completion for branch names.
+
+**JSON Output**: Use `--json` flag on any workspace command for programmatic access:
+
+```bash
+agentctl workspace list --json
+agentctl workspace show refactor/golang --json
+```
 
 ### Hook Commands
 
-Hook commands are designed to be called from Claude Code hooks:
+Hook commands are designed to be called from Claude Code hooks. They handle stdin parsing, error handling, and exit codes appropriately.
 
+- `agentctl hook inject-context` - Inject git/workspace context into prompts
+- `agentctl hook notify-input [message]` - Send notification when input is needed
+- `agentctl hook notify-stop` - Send notification when a task completes
+- `agentctl hook notify-error [message]` - Send error notification
 - `agentctl hook post-edit` - Auto-commit Edit tool changes
 - `agentctl hook post-write` - Auto-commit Write tool changes (new files)
-- `agentctl hook inject-context` - Inject git/workspace context into prompts
-- `agentctl hook notify-input` - Send notification when Claude needs input
-- `agentctl hook notify-stop` - Send notification when Claude completes a task
-- `agentctl hook notify-error` - Send error notification
+
+**Notification Agent Detection**: Notifications automatically detect the agent environment and use the appropriate icon:
+- **Cursor Agent** (TUI): Detected via `CURSOR_AGENT=1` and `CURSOR_CLI_COMPAT=1`
+- **Cursor IDE**: Detected via `CURSOR_AGENT=1` (without `CURSOR_CLI_COMPAT`)
+- **Claude Code**: Detected via `CLAUDECODE=1`
+
+You can override the sender with `AGENTCTL_NOTIFICATION_SENDER` environment variable.
 
 ### Init Command
 
+Initialize Claude Code configuration in a repository or globally.
+
 - `agentctl init` - Initialize Claude Code configuration
-  - `--global` - Install to $HOME/.claude instead of current repository
+  - `--global` - Install to `$HOME/.claude` instead of current repository
   - `--force` - Overwrite existing files
   - `--no-index` - Skip Claude CLI repository indexing
+
+### Other Commands
+
+- `agentctl version` - Show the current version
+- `agentctl status` - Show the status of Claude Code installation
+- `agentctl completion [bash|zsh|fish|powershell]` - Generate shell completion scripts
 
 ## Development
 
 ### Prerequisites
 
 - Go 1.23+
-- just
-- golangci-lint
-- gofumpt
-- govulncheck
-- macOS (for full feature support)
+- `just` (command runner)
+- `golangci-lint` (for linting)
+- `gofumpt` (for formatting)
+- `govulncheck` (for vulnerability checking)
+- macOS (for full feature support, including notifications)
 
 ### Setup
 
@@ -111,12 +136,6 @@ just format
 
 # Run all CI checks
 just ci
-```
-
-### Running Tests
-
-```bash
-just test
 ```
 
 ### Building
