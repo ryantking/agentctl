@@ -29,7 +29,6 @@ jobs:
         with:
           version: v2.7.1
           skip-cache: true
-          skip-preview: true
           args: --help  # Prevent automatic run, we'll run it via just ci
 
       - name: Install gofumpt
