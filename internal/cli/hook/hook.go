@@ -19,7 +19,6 @@ func NewHookCmd() *cobra.Command {
 		NewHookNotifyInputCmd(),
 		NewHookNotifyStopCmd(),
 		NewHookNotifyErrorCmd(),
-		NewHookNotifyTestCmd(),
 	)
 
 	return cmd

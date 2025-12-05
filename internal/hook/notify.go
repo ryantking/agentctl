@@ -17,18 +17,23 @@ const (
 	appName = "Claude Code"
 )
 
-// detectSender detects the appropriate sender based on environment or defaults to Claude.
+// detectSender detects the appropriate sender based on environment.
+// Only sets sender if a known agent is detected, otherwise returns empty string.
 func detectSender() string {
-	// Check for Cursor environment variable or process name
+	// Check for Cursor environment variables
 	if os.Getenv("CURSOR_AGENT") == "true" || os.Getenv("CURSOR") != "" {
 		return notify.SenderCursor
+	}
+	// Check for Claude Code environment variables
+	if os.Getenv("CLAUDE_CODE") != "" || os.Getenv("ANTHROPIC_CLAUDE") != "" {
+		return notify.SenderClaudeCode
 	}
 	// Check for explicit sender override
 	if sender := os.Getenv("AGENTCTL_NOTIFICATION_SENDER"); sender != "" {
 		return sender
 	}
-	// Default to Claude Code
-	return notify.SenderClaudeCode
+	// No known agent detected - return empty string (no custom sender)
+	return ""
 }
 
 // NotifyInput sends notification when Claude needs input.
@@ -100,37 +105,6 @@ func NotifyErrorWithSender(message string, sender string) error {
 	})
 }
 
-// NotifyTest sends a test notification.
-func NotifyTest() error {
-	return NotifyTestWithSender(detectSender())
-}
-
-// NotifyTestWithSender sends a test notification with a custom sender.
-func NotifyTestWithSender(sender string) error {
-	projectName := getProjectName()
-	hasNotifier := notify.HasTerminalNotifier()
-
-	if err := notify.Send(notify.Options{
-		Title:    fmt.Sprintf("🧪 %s", appName),
-		Subtitle: projectName,
-		Message:  "Notifications are working!",
-		Sound:    "",
-		Group:    fmt.Sprintf("claude-code-%s", projectName),
-		Sender:   sender,
-	}); err != nil {
-		return err
-	}
-
-	if hasNotifier {
-		fmt.Println("✓ Test notification sent (using terminal-notifier)")
-	} else {
-		fmt.Println("✓ Test notification sent (using osascript fallback)")
-		fmt.Println("\n  Tip: Install terminal-notifier for more reliable notifications:")
-		fmt.Println("       brew install terminal-notifier")
-	}
-
-	return nil
-}
 
 func getProjectName() string {
 	cwd, err := os.Getwd()

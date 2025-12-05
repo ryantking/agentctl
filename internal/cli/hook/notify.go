@@ -67,17 +67,3 @@ func NewHookNotifyErrorCmd() *cobra.Command {
 	return cmd
 }
 
-// NewHookNotifyTestCmd creates the hook notify-test command.
-func NewHookNotifyTestCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "notify-test",
-		Short: "Send a test notification to verify the system is working",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			_ = hook.NotifyTest()
-			os.Exit(0)
-			return nil
-		},
-	}
-
-	return cmd
-}
