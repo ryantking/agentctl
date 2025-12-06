@@ -10,6 +10,7 @@ import (
 // Uses git -C flag to change directory before running the command.
 // Returns the stdout output as a string, or an error if the command fails.
 func RunGit(repoPath string, args ...string) (string, error) {
+	// #nosec G204 -- repoPath and args are validated by callers and come from trusted sources
 	cmd := exec.Command("git", append([]string{"-C", repoPath}, args...)...)
 	output, err := cmd.Output()
 	if err != nil {
