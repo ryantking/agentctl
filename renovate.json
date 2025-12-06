@@ -12,17 +12,13 @@
     {
       "matchManagers": ["gomod"],
       "separateMajorMinor": true,
-      "automerge": true,
-      "automergeType": "branch",
       "postUpdateOptions": ["gomodTidy"]
     },
     {
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "groupName": "GitHub Actions (non-major)",
-      "groupSlug": "gha-non-major",
-      "automerge": true,
-      "automergeType": "branch"
+      "groupSlug": "gha-non-major"
     },
     {
       "matchUpdateTypes": ["major"],
