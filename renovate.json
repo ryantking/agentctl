@@ -6,21 +6,28 @@
     "group:allNonMajor"
   ],
   "labels": ["dependencies"],
+  "automerge": true,
+  "automergeType": "branch",
   "packageRules": [
     {
       "matchManagers": ["gomod"],
       "separateMajorMinor": true,
+      "automerge": true,
+      "automergeType": "branch",
       "postUpdateOptions": ["gomodTidy"]
     },
     {
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "groupName": "GitHub Actions (non-major)",
-      "groupSlug": "gha-non-major"
+      "groupSlug": "gha-non-major",
+      "automerge": true,
+      "automergeType": "branch"
     },
     {
       "matchUpdateTypes": ["major"],
-      "labels": ["major-update", "needs-review"]
+      "labels": ["major-update", "needs-review"],
+      "automerge": false
     }
   ]
 }
