@@ -75,10 +75,14 @@ func parseWorktreeDir(worktreeDir, repoRoot string) (Worktree, error) {
 		return wt, err
 	}
 	gitdirPath := strings.TrimSpace(string(data))
-	
-	// The gitdir file contains the path to the worktree's .git directory
-	// The worktree path is the parent directory of that .git directory
-	wt.Path = filepath.Dir(gitdirPath)
+
+	// The gitdir file typically contains the path to the worktree directory.
+	// Some git versions may include a trailing .git, so handle both cases.
+	if strings.HasSuffix(gitdirPath, ".git") {
+		wt.Path = filepath.Dir(gitdirPath)
+	} else {
+		wt.Path = gitdirPath
+	}
 
 	// Read HEAD file to get commit/branch
 	headFile := filepath.Join(worktreeDir, "HEAD")
