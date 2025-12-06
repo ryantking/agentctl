@@ -41,26 +41,9 @@ func NewClient(repoRoot string) (*Client, error) {
 
 // getRepoInfo extracts owner and repo name from git remote.
 func getRepoInfo(repoRoot string) (string, string, error) {
-	gitRepo, err := git.OpenRepo(repoRoot)
+	originURL, err := git.RunGit(repoRoot, "remote", "get-url", "origin")
 	if err != nil {
-		return "", "", fmt.Errorf("failed to open repository: %w", err)
-	}
-
-	remotes, err := gitRepo.Remotes()
-	if err != nil {
-		return "", "", fmt.Errorf("failed to get remotes: %w", err)
-	}
-
-	// Look for origin remote
-	var originURL string
-	for _, remote := range remotes {
-		if remote.Config().Name == "origin" {
-			urls := remote.Config().URLs
-			if len(urls) > 0 {
-				originURL = urls[0]
-				break
-			}
-		}
+		return "", "", fmt.Errorf("failed to get origin remote URL: %w", err)
 	}
 
 	if originURL == "" {

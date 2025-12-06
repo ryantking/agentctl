@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
-	gogit "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/ryantking/agentctl/internal/git"
 )
 
@@ -198,21 +196,18 @@ func (m *WorkspaceManager) GetWorkspaceStatus(workspace *Workspace) (map[string]
 
 	// Get ahead/behind information
 	if workspace.Branch != "" {
-		repo, err := git.OpenRepo(workspace.Path)
+		// Get local branch commit
+		localCommit, err := git.RunGit(workspace.Path, "rev-parse", "HEAD")
 		if err == nil {
-			head, err := repo.Head()
+			// Get remote branch commit
+			remoteCommit, err := git.RunGit(workspace.Path, "rev-parse", fmt.Sprintf("origin/%s", workspace.Branch))
 			if err == nil {
-				// Get remote tracking branch
-				remoteRefName := plumbing.NewRemoteReferenceName("origin", workspace.Branch)
-				remoteRef, err := repo.Reference(remoteRefName, false)
+				// Calculate ahead/behind
+				ahead, behind, err := calculateAheadBehind(workspace.Path, localCommit, remoteCommit)
 				if err == nil {
-					// Calculate ahead/behind
-					ahead, behind, err := calculateAheadBehind(repo, head.Hash(), remoteRef.Hash())
-					if err == nil {
-						result["ahead_behind"] = map[string]int{
-							"ahead":  ahead,
-							"behind": behind,
-						}
+					result["ahead_behind"] = map[string]int{
+						"ahead":  ahead,
+						"behind": behind,
 					}
 				}
 			}
@@ -223,105 +218,37 @@ func (m *WorkspaceManager) GetWorkspaceStatus(workspace *Workspace) (map[string]
 }
 
 // calculateAheadBehind calculates how many commits ahead and behind local is compared to remote.
-func calculateAheadBehind(repo *git.Repo, localHash, remoteHash plumbing.Hash) (int, int, error) {
-	localCommits, err := getCommitList(repo, localHash, remoteHash)
+func calculateAheadBehind(repoPath, localCommit, remoteCommit string) (int, int, error) {
+	// Count commits in local but not in remote (ahead)
+	aheadStr, err := git.RunGit(repoPath, "rev-list", "--count", fmt.Sprintf("%s..%s", remoteCommit, localCommit))
+	if err != nil {
+		return 0, 0, err
+	}
+	ahead, err := strconv.Atoi(aheadStr)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	remoteCommits, err := getCommitList(repo, remoteHash, localHash)
+	// Count commits in remote but not in local (behind)
+	behindStr, err := git.RunGit(repoPath, "rev-list", "--count", fmt.Sprintf("%s..%s", localCommit, remoteCommit))
 	if err != nil {
 		return 0, 0, err
 	}
-
-	// Count unique commits
-	localSet := make(map[plumbing.Hash]bool)
-	for _, hash := range localCommits {
-		localSet[hash] = true
-	}
-
-	remoteSet := make(map[plumbing.Hash]bool)
-	for _, hash := range remoteCommits {
-		remoteSet[hash] = true
-	}
-
-	ahead := 0
-	for hash := range localSet {
-		if !remoteSet[hash] {
-			ahead++
-		}
-	}
-
-	behind := 0
-	for hash := range remoteSet {
-		if !localSet[hash] {
-			behind++
-		}
+	behind, err := strconv.Atoi(behindStr)
+	if err != nil {
+		return 0, 0, err
 	}
 
 	return ahead, behind, nil
 }
 
-// getCommitList gets all commits reachable from fromHash but not from toHash.
-func getCommitList(repo *git.Repo, fromHash, toHash plumbing.Hash) ([]plumbing.Hash, error) {
-	var commits []plumbing.Hash
-
-	// Use commit iterator
-	commitIter, err := repo.Log(&gogit.LogOptions{
-		From:  fromHash,
-		Order: gogit.LogOrderCommitterTime,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	err = commitIter.ForEach(func(c *object.Commit) error {
-		if c.Hash == toHash {
-			return fmt.Errorf("found") // Stop iteration
-		}
-		commits = append(commits, c.Hash)
-		return nil
-	})
-
-	if err != nil && err.Error() != "found" {
-		return nil, err
-	}
-
-	return commits, nil
-}
-
 // GetWorkspaceDiff gets git diff from workspace to target branch.
 func (m *WorkspaceManager) GetWorkspaceDiff(workspace *Workspace, targetBranch string) (string, error) {
-	repo, err := git.OpenRepo(workspace.Path)
+	// Get diff between target branch and HEAD
+	diff, err := git.RunGit(workspace.Path, "diff", fmt.Sprintf("%s..HEAD", targetBranch))
 	if err != nil {
-		return "", fmt.Errorf("failed to open repository: %w", err)
+		return "", fmt.Errorf("failed to get diff: %w", err)
 	}
 
-	head, err := repo.Head()
-	if err != nil {
-		return "", fmt.Errorf("failed to get HEAD: %w", err)
-	}
-
-	targetRef, err := repo.Reference(plumbing.NewBranchReferenceName(targetBranch), true)
-	if err != nil {
-		return "", fmt.Errorf("target branch %s not found: %w", targetBranch, err)
-	}
-
-	// Get diff between target and HEAD
-	headCommit, err := repo.CommitObject(head.Hash())
-	if err != nil {
-		return "", fmt.Errorf("failed to get HEAD commit: %w", err)
-	}
-
-	targetCommit, err := repo.CommitObject(targetRef.Hash())
-	if err != nil {
-		return "", fmt.Errorf("failed to get target commit: %w", err)
-	}
-
-	patch, err := headCommit.Patch(targetCommit)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate patch: %w", err)
-	}
-
-	return patch.String(), nil
+	return diff, nil
 }

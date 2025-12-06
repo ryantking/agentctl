@@ -4,42 +4,48 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/go-git/go-git/v5"
 )
 
 // IsWorktreeClean checks if a worktree has uncommitted changes.
 // Returns (isClean, statusMessage).
 func IsWorktreeClean(worktreePath string) (bool, string) {
-	repo, err := OpenRepo(worktreePath)
-	if err != nil {
-		return false, fmt.Sprintf("failed to open repository: %v", err)
-	}
-
-	worktree, err := repo.Worktree()
-	if err != nil {
-		return false, fmt.Sprintf("failed to get worktree: %v", err)
-	}
-
-	status, err := worktree.Status()
+	lines, err := RunGitLines(worktreePath, "status", "--porcelain")
 	if err != nil {
 		return false, fmt.Sprintf("failed to check status: %v", err)
 	}
 
-	if status.IsClean() {
+	if len(lines) == 0 {
 		return true, "clean"
 	}
 
-	// Count changes
+	// Parse porcelain output
+	// Format: XY filename
+	// X = status of index, Y = status of work tree
+	// Common values: M = modified, A = added, D = deleted, ? = untracked, space = unmodified
 	var staged, modified, untracked int
-	for _, fileStatus := range status {
-		if fileStatus.Staging != git.Unmodified {
+	for _, line := range lines {
+		if len(line) < 3 {
+			continue
+		}
+		x := line[0]
+		y := line[1]
+
+		// Count staged changes (X != space)
+		if x != ' ' && x != '?' {
 			staged++
 		}
-		if fileStatus.Worktree != git.Unmodified {
-			modified++
+
+		// Count modified/untracked in worktree (Y != space)
+		if y != ' ' {
+			if y == '?' {
+				untracked++
+			} else {
+				modified++
+			}
 		}
-		if fileStatus.Staging == git.Untracked || fileStatus.Worktree == git.Untracked {
+
+		// Also count untracked files (X == '?' or Y == '?')
+		if x == '?' {
 			untracked++
 		}
 	}

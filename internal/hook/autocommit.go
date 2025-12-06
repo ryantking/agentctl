@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	gogit "github.com/go-git/go-git/v5"
 	"github.com/ryantking/agentctl/internal/git"
 )
 
@@ -62,16 +61,6 @@ func isMainBranch(branch string) bool {
 }
 
 func gitAddAndCommit(repoRoot, filePath string) error {
-	repo, err := git.OpenRepo(repoRoot)
-	if err != nil {
-		return fmt.Errorf("failed to open repository: %w", err)
-	}
-
-	worktree, err := repo.Worktree()
-	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
-	}
-
 	// Make path relative to repo root
 	absPath, err := filepath.Abs(filePath)
 	if err != nil {
@@ -83,19 +72,14 @@ func gitAddAndCommit(repoRoot, filePath string) error {
 	}
 
 	// Stage the file
-	if _, err := worktree.Add(relPath); err != nil {
+	if _, err := git.RunGit(repoRoot, "add", relPath); err != nil {
 		return fmt.Errorf("failed to stage file: %w", err)
 	}
 
 	// Check if there are staged changes
-	status, err := worktree.Status()
-	if err != nil {
-		return fmt.Errorf("failed to get status: %w", err)
-	}
-
-	fileStatus, ok := status[relPath]
-	if !ok || fileStatus.Staging == gogit.Unmodified {
-		// No changes to commit
+	_, err = git.RunGit(repoRoot, "diff", "--cached", "--quiet", relPath)
+	if err == nil {
+		// No changes to commit (exit code 0 means no diff)
 		return nil
 	}
 
@@ -104,8 +88,7 @@ func gitAddAndCommit(repoRoot, filePath string) error {
 	msg := fmt.Sprintf("Update %s: moderate changes", filename)
 
 	// Create commit
-	_, err = worktree.Commit(msg, &gogit.CommitOptions{})
-	if err != nil {
+	if _, err := git.RunGit(repoRoot, "commit", "-m", msg); err != nil {
 		return fmt.Errorf("failed to create commit: %w", err)
 	}
 
@@ -113,16 +96,6 @@ func gitAddAndCommit(repoRoot, filePath string) error {
 }
 
 func gitAddAndCommitNewFile(repoRoot, filePath string) error {
-	repo, err := git.OpenRepo(repoRoot)
-	if err != nil {
-		return fmt.Errorf("failed to open repository: %w", err)
-	}
-
-	worktree, err := repo.Worktree()
-	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
-	}
-
 	// Make path relative to repo root
 	absPath, err := filepath.Abs(filePath)
 	if err != nil {
@@ -134,19 +107,14 @@ func gitAddAndCommitNewFile(repoRoot, filePath string) error {
 	}
 
 	// Stage the file
-	if _, err := worktree.Add(relPath); err != nil {
+	if _, err := git.RunGit(repoRoot, "add", relPath); err != nil {
 		return fmt.Errorf("failed to stage file: %w", err)
 	}
 
 	// Check if file is staged
-	status, err := worktree.Status()
-	if err != nil {
-		return fmt.Errorf("failed to get status: %w", err)
-	}
-
-	fileStatus, ok := status[relPath]
-	if !ok || fileStatus.Staging == gogit.Unmodified {
-		// No changes to commit
+	_, err = git.RunGit(repoRoot, "diff", "--cached", "--quiet", relPath)
+	if err == nil {
+		// No changes to commit (exit code 0 means no diff)
 		return nil
 	}
 
@@ -154,8 +122,7 @@ func gitAddAndCommitNewFile(repoRoot, filePath string) error {
 	msg := fmt.Sprintf("Add new file: %s", filename)
 
 	// Create commit
-	_, err = worktree.Commit(msg, &gogit.CommitOptions{})
-	if err != nil {
+	if _, err := git.RunGit(repoRoot, "commit", "-m", msg); err != nil {
 		return fmt.Errorf("failed to create commit: %w", err)
 	}
 

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/github"
 	"github.com/ryantking/agentctl/internal/workspace"
@@ -122,23 +121,14 @@ func getGitStatusSummary(repoRoot string) string {
 
 func getAllGitBranches(repoRoot string) map[string]string {
 	branches := make(map[string]string)
-	repo, err := git.OpenRepo(repoRoot)
+	lines, err := git.RunGitLines(repoRoot, "for-each-ref", "--format=%(refname:short)", "refs/heads/")
 	if err != nil {
 		return branches
 	}
 
-	iter, err := repo.Branches()
-	if err != nil {
-		return branches
-	}
-
-	if err := iter.ForEach(func(ref *plumbing.Reference) error {
-		branchName := ref.Name().Short()
+	for _, branchName := range lines {
 		// Simplified: mark as unknown (checking cleanliness is expensive)
 		branches[branchName] = "unknown"
-		return nil
-	}); err != nil {
-		return branches
 	}
 
 	return branches
