@@ -1,3 +1,4 @@
+// Package github provides GitHub API client functionality for PR status and checks.
 package github
 
 import (
@@ -184,13 +185,15 @@ func (c *Client) getPRDetails(_ int, headSHA string) (*prDetailResponse, error) 
 	if err == nil {
 		var passed, failed, pending int
 		for _, run := range checkRunsResponse.CheckRuns {
-			if run.Status == "completed" {
-				if run.Conclusion == "success" {
+			switch run.Status {
+			case "completed":
+				switch run.Conclusion {
+				case "success":
 					passed++
-				} else if run.Conclusion == "failure" || run.Conclusion == "cancelled" {
+				case "failure", "cancelled":
 					failed++
 				}
-			} else if run.Status == "in_progress" || run.Status == "queued" {
+			case "in_progress", "queued":
 				pending++
 			}
 		}

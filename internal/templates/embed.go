@@ -1,3 +1,4 @@
+// Package templates provides access to embedded template files.
 package templates
 
 import (
@@ -6,6 +7,7 @@ import (
 )
 
 //go:embed all:templates
+// FS is the embedded filesystem containing template files.
 var FS embed.FS
 
 // GetTemplate reads a template file from the embedded filesystem.

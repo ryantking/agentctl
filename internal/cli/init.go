@@ -19,7 +19,7 @@ func NewInitCmd() *cobra.Command {
 		Short: "Initialize Claude Code configuration",
 		Long: `Initialize Claude Code configuration. Installs CLAUDE.md, agents, skills, and settings from the bundled templates directory.
 By default, skips existing files.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			var target string
 			var err error
 

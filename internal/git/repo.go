@@ -52,7 +52,7 @@ func discoverRepoRoot(startPath string) (string, error) {
 			}
 			// Check if it's a worktree (file containing path to actual git dir)
 			if !info.IsDir() {
-				data, err := os.ReadFile(gitDir)
+				data, err := os.ReadFile(gitDir) //nolint:gosec // Reading .git file is safe, path is controlled
 				if err == nil {
 					// Format: gitdir: <path>
 					if len(data) > 8 && string(data[:8]) == "gitdir: " {

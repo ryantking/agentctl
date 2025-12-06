@@ -88,7 +88,7 @@ func NewWorkspaceListCmd() *cobra.Command { //nolint:gocyclo // Complex command 
 				}
 
 				// Format: * branch-name    ✓ clean    abc1234
-				fmt.Fprintf(os.Stdout, "%s %-30s %s %-20s %s\n",
+				_, _ = fmt.Fprintf(os.Stdout, "%s %-30s %s %-20s %s\n",
 					marker,
 					branch,
 					statusIcon,

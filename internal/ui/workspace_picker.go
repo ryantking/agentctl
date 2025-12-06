@@ -1,3 +1,4 @@
+// Package ui provides user interface utilities for workspace selection.
 package ui
 
 import (

@@ -1,3 +1,4 @@
+// Package cli provides CLI command definitions and orchestration.
 package cli
 
 import (

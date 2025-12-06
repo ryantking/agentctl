@@ -74,7 +74,7 @@ func parseWorktreeDir(worktreeDir, repoRoot string) (Worktree, error) {
 
 	// Read gitdir file to get the worktree .git path
 	gitdirFile := filepath.Join(worktreeDir, "gitdir")
-	data, err := os.ReadFile(gitdirFile)
+	data, err := os.ReadFile(gitdirFile) //nolint:gosec // Reading gitdir file is safe, path is controlled
 	if err != nil {
 		return wt, err
 	}
@@ -86,7 +86,7 @@ func parseWorktreeDir(worktreeDir, repoRoot string) (Worktree, error) {
 
 	// Read HEAD file to get commit/branch
 	headFile := filepath.Join(worktreeDir, "HEAD")
-	data, err = os.ReadFile(headFile)
+	data, err = os.ReadFile(headFile) //nolint:gosec // Reading HEAD file is safe, path is controlled
 	if err != nil {
 		return wt, err
 	}
@@ -96,7 +96,7 @@ func parseWorktreeDir(worktreeDir, repoRoot string) (Worktree, error) {
 		wt.Branch = strings.TrimPrefix(headRef, "ref: refs/heads/")
 		// Get commit from branch ref in main repo
 		refPath := filepath.Join(repoRoot, ".git", headRef[5:]) // Skip "ref: "
-		if data, err := os.ReadFile(refPath); err == nil {
+		if data, err := os.ReadFile(refPath); err == nil { //nolint:gosec // Reading ref file is safe, path is controlled
 			commit := strings.TrimSpace(string(data))
 			if len(commit) > 8 {
 				wt.Commit = commit[:8]
@@ -132,7 +132,7 @@ func AddWorktree(repoRoot, path, branch string, createBranch bool, baseBranch st
 	}
 
 	// Create the directory
-	if err := os.MkdirAll(absPath, 0755); err != nil {
+	if err := os.MkdirAll(absPath, 0755); err != nil { //nolint:gosec // Worktree directories need to be readable
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -171,7 +171,7 @@ func AddWorktree(repoRoot, path, branch string, createBranch bool, baseBranch st
 	// Create worktree directory structure
 	worktreeID := generateWorktreeID()
 	worktreeDir := filepath.Join(repoRoot, ".git", "worktrees", worktreeID)
-	if err := os.MkdirAll(worktreeDir, 0755); err != nil {
+	if err := os.MkdirAll(worktreeDir, 0755); err != nil { //nolint:gosec // Worktree directories need to be readable
 		return fmt.Errorf("failed to create worktree directory: %w", err)
 	}
 
@@ -251,7 +251,7 @@ func RemoveWorktree(repoRoot, path string, force bool) error {
 		}
 		wtDir := filepath.Join(worktreesDir, entry.Name())
 		gitdirFile := filepath.Join(wtDir, "gitdir")
-		data, err := os.ReadFile(gitdirFile)
+		data, err := os.ReadFile(gitdirFile) //nolint:gosec // Reading gitdir file is safe, path is controlled
 		if err != nil {
 			continue
 		}

@@ -1,3 +1,4 @@
+// Package hook provides hook command implementations.
 package hook
 
 import (

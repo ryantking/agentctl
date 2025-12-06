@@ -1,4 +1,5 @@
-package context
+// Package context provides utilities for managing context files.
+package context //nolint:revive // Package name matches purpose, conflict with stdlib is acceptable
 
 import (
 	"io"
@@ -34,7 +35,7 @@ func CopyClaudeContext(workspacePath, sourceRoot string) ([]string, error) {
 		}
 
 		// Create parent directory if needed
-		if err := os.MkdirAll(filepath.Dir(destFile), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(destFile), 0755); err != nil { //nolint:gosec // Context directories need to be readable
 			return nil, err
 		}
 
@@ -50,17 +51,17 @@ func CopyClaudeContext(workspacePath, sourceRoot string) ([]string, error) {
 }
 
 func copyFile(src, dst string) error {
-	source, err := os.Open(src)
+	source, err := os.Open(src) //nolint:gosec // Path is controlled, opening context files
 	if err != nil {
 		return err
 	}
-	defer source.Close()
+	defer func() { _ = source.Close() }()
 
-	dest, err := os.Create(dst)
+	dest, err := os.Create(dst) //nolint:gosec // Path is controlled, creating context files
 	if err != nil {
 		return err
 	}
-	defer dest.Close()
+	defer func() { _ = dest.Close() }()
 
 	_, err = io.Copy(dest, source)
 	if err != nil {

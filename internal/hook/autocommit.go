@@ -1,3 +1,4 @@
+// Package hook provides hook command implementations for auto-commit and other lifecycle events.
 package hook
 
 import (

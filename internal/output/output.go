@@ -1,3 +1,4 @@
+// Package output provides utilities for formatting and displaying command output.
 package output
 
 import (

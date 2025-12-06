@@ -13,7 +13,7 @@ func NewHookNotifyInputCmd() *cobra.Command {
 		Use:   "notify-input [message]",
 		Short: "Notification hook - sends notification when input is needed",
 		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			input, _ := hook.GetStdinData()
 			message := ""
 			
@@ -39,7 +39,7 @@ func NewHookNotifyStopCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "notify-stop",
 		Short: "Stop hook - sends notification when a task completes",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			input, _ := hook.GetStdinData()
 			transcriptPath := ""
 			if input != nil {
@@ -60,7 +60,7 @@ func NewHookNotifyErrorCmd() *cobra.Command {
 		Use:   "notify-error [message]",
 		Short: "Send error notification",
 		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			input, _ := hook.GetStdinData()
 			message := ""
 			

@@ -1,3 +1,4 @@
+// Package git provides Git repository utilities and worktree management.
 package git
 
 import (
@@ -45,14 +46,14 @@ func GetCurrentBranch(path string) (string, error) {
 	gitDir := filepath.Join(path, ".git")
 	if info, err := os.Stat(gitDir); err == nil && !info.IsDir() {
 		// We're in a worktree - read HEAD from the worktree's git directory
-		data, err := os.ReadFile(gitDir)
+		data, err := os.ReadFile(gitDir) //nolint:gosec // Reading .git file is safe, path is controlled
 		if err == nil && len(data) > 8 && string(data[:8]) == "gitdir: " {
 			worktreeGitDir := strings.TrimSpace(string(data[8:]))
 			if !filepath.IsAbs(worktreeGitDir) {
 				worktreeGitDir = filepath.Join(path, worktreeGitDir)
 			}
 			headFile := filepath.Join(worktreeGitDir, "HEAD")
-			if headData, err := os.ReadFile(headFile); err == nil {
+			if headData, err := os.ReadFile(headFile); err == nil { //nolint:gosec // Reading HEAD file is safe, path is controlled
 				headRef := strings.TrimSpace(string(headData))
 				// Format: ref: refs/heads/branch-name or just commit hash
 				if strings.HasPrefix(headRef, "ref: ") {

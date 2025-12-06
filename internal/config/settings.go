@@ -1,3 +1,4 @@
+// Package config provides configuration file management and merging utilities.
 package config
 
 import (

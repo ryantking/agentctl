@@ -148,7 +148,7 @@ func extractFinalResponse(transcriptPath string, maxLength int) string { //nolin
 	if err != nil {
 		return ""
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var lastResponse string
 	scanner := bufio.NewScanner(file)

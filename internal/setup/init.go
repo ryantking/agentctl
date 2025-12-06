@@ -1,3 +1,4 @@
+// Package setup provides initialization and template installation functionality.
 package setup
 
 import (
@@ -87,7 +88,7 @@ func (m *Manager) installFile(templatePath, destPath string, force bool) error {
 		return fmt.Errorf("failed to read template %s: %w", templatePath, err)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil { //nolint:gosec // Template directories need to be readable
 		return err
 	}
 
@@ -176,7 +177,7 @@ func (m *Manager) installDirectory(templateDir, destDir string, force, recursive
 }
 
 func (m *Manager) copyTree(srcPath, destPath string) error {
-	if err := os.MkdirAll(destPath, 0755); err != nil {
+	if err := os.MkdirAll(destPath, 0755); err != nil { //nolint:gosec // Template directories need to be readable
 		return err
 	}
 
@@ -222,7 +223,7 @@ func (m *Manager) mergeSettings(force bool) error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil { //nolint:gosec // Template directories need to be readable
 		return err
 	}
 
@@ -241,7 +242,7 @@ func (m *Manager) mergeSettings(force bool) error {
 	}
 
 	// Existing settings - merge
-	existingData, err := os.ReadFile(destPath)
+	existingData, err := os.ReadFile(destPath) //nolint:gosec // Path is controlled, reading template files
 	if err != nil {
 		return err
 	}
@@ -294,7 +295,7 @@ func (m *Manager) configureMCP(force bool) error {
 		},
 	}
 
-	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil { //nolint:gosec // Template directories need to be readable
 		return err
 	}
 
@@ -303,7 +304,7 @@ func (m *Manager) configureMCP(force bool) error {
 
 	if _, err := os.Stat(destPath); err == nil && !force {
 		// Load existing config
-		data, err := os.ReadFile(destPath)
+		data, err := os.ReadFile(destPath) //nolint:gosec // Path is controlled, reading template files
 		if err != nil {
 			return err
 		}
@@ -410,7 +411,7 @@ func (m *Manager) insertRepositoryIndex(indexContent string) error {
 		return fmt.Errorf("CLAUDE.md not found")
 	}
 
-	data, err := os.ReadFile(claudeMDPath)
+	data, err := os.ReadFile(claudeMDPath) //nolint:gosec // Path is controlled, reading template files
 	if err != nil {
 		return err
 	}

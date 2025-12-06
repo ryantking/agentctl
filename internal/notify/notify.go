@@ -1,3 +1,4 @@
+// Package notify provides macOS notification functionality with graceful fallback.
 package notify
 
 import (
@@ -59,7 +60,7 @@ func sendWithTerminalNotifier(opts Options) error {
 		args = append(args, "-group", opts.Group)
 	}
 
-	cmd := exec.Command("terminal-notifier", args...)
+	cmd := exec.Command("terminal-notifier", args...) //nolint:gosec // terminal-notifier is a trusted local binary
 	return cmd.Run()
 }
 
@@ -71,7 +72,7 @@ func sendWithOSAScript(opts Options) error {
 	}
 	script := fmt.Sprintf(`display notification "%s" with title "%s" subtitle "%s"%s`,
 		opts.Message, opts.Title, opts.Subtitle, soundClause)
-	cmd := exec.Command("osascript", "-e", script)
+	cmd := exec.Command("osascript", "-e", script) //nolint:gosec // osascript is a trusted system binary
 	return cmd.Run()
 }
 

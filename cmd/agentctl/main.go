@@ -1,3 +1,4 @@
+// Package main is the entry point for the agentctl CLI application.
 package main
 
 import (

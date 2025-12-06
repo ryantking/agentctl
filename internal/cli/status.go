@@ -21,7 +21,7 @@ func NewStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
 		Short: "Show the status of Claude Code",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			info := getClaudeInfo()
 			printStatus(info)
 			return nil

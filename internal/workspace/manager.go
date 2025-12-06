@@ -79,7 +79,7 @@ func (m *WorkspaceManager) CreateWorkspace(branch string, baseBranch string) (*W
 	}
 
 	// Create parent directory
-	if err := os.MkdirAll(filepath.Dir(workspacePath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(workspacePath), 0755); err != nil { //nolint:gosec // Workspace directories need to be readable
 		return nil, fmt.Errorf("failed to create workspace directory: %w", err)
 	}
 
@@ -139,10 +139,7 @@ func (m *WorkspaceManager) DeleteWorkspace(branch string, force bool) error {
 
 	// Clean up empty parent directories
 	parent := filepath.Dir(workspace.Path)
-	for {
-		if parent == filepath.Dir(parent) {
-			break // Reached root
-		}
+	for parent != filepath.Dir(parent) {
 		dir, err := os.ReadDir(parent)
 		if err != nil {
 			break

@@ -1,3 +1,4 @@
+// Package workspace provides workspace management CLI commands.
 package workspace
 
 import (

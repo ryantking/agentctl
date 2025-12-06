@@ -13,7 +13,7 @@ func NewHookPostEditCmd() *cobra.Command {
 		Use:   "post-edit",
 		Short: "PostToolUse hook for Edit tool",
 		Long:  "Auto-commits changes if on a feature branch. Reads file path and session ID from stdin JSON.",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			input, _ := hook.GetStdinData()
 			filePath := hook.GetFilePath(input)
 			_ = hook.PostEdit(filePath)
