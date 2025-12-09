@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/cli/go-gh/v2 v2.13.0
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.10.2
 )
 
 require (
@@ -19,7 +19,7 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/thlib/go-timezone-local v0.0.0-20210907160436-ef149e42d28e // indirect
 	golang.org/x/sys v0.38.0 // indirect
