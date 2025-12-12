@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/ryantking/agentctl/internal/cli/memory"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,7 @@ func NewRootCmd() *cobra.Command {
 		NewWorkspaceCmd(),
 		NewHookCmd(),
 		NewInitCmd(),
+		memory.NewMemoryCmd(),
 	)
 
 	return cmd
