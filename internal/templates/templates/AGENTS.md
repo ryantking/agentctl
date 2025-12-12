@@ -276,13 +276,15 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
    ```bash
    git push -u origin <branch-name>
    ```
-5. Create the PR using gh CLI following conventional commit format:
-   - **IMPORTANT**: PR title MUST use conventional commit headline format: `<type>(scope): <description>`
-   - **IMPORTANT**: PR body MUST follow conventional commit body format (NOT the headline)
-   - **IMPORTANT**: Body MUST contain actual explanations, not placeholder text
-   - Analyze the actual changes and describe what was done and why
-   - Include body paragraphs, lists of changes, and footers as needed per conventional commits
-   - GitHub will use PR title + body as the squash merge commit message
+5. Create the PR using gh CLI with conventional commit format:
+   - **PR title**: Use conventional commit headline format: `<type>(scope): <description>`
+     - Example: `feat(memory): implement memory command tree`
+   - **PR body**: Use conventional commit body format (detailed explanation, NOT the headline)
+     - Start with detailed explanation of what changed and why
+     - Include bullet points for key changes
+     - Add footers like `Co-Authored-By:` as needed
+     - Body MUST contain actual explanations, not placeholder text
+   - **Why**: GitHub squash merge uses PR title + body as the commit message, so format it as a complete conventional commit
    ```bash
    gh pr create --title "feat(scope): description" --body "$(cat <<'EOF'
    Detailed explanation of what changed and why this change matters.
