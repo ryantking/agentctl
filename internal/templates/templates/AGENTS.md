@@ -301,39 +301,31 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 
 #### When I tell you to merge a pull request
 
-**IMPORTANT:** Use `gh pr merge` for pull requests, NOT `git merge`. This workflow is for when I say "merge PR #123" or "merge pull request".
-
-1. Ensure you're on the default branch main/master unless I specify otherwise
-2. Analyze the PR to understand the context:
-   ```bash
-   gh pr view <number>
-   gh pr view <number> --json reviews
-   ```
-3. Check PR checks status:
+1. Verify PR checks pass:
    ```bash
    gh pr checks <number>
    ```
-4. If checks failed, view logs and fix issues:
+2. If checks failed, view logs and fix issues:
    ```bash
    gh pr checks <number> --web
    ```
-5. If there are review comments, address them and push updates:
+3. If there are review comments, address them and push updates:
    ```bash
    git add <files>
    git commit -m "Address review comments"
    git push
    ```
-6. Delete the workspace before merging (if applicable):
+4. Delete the workspace before merging (if applicable):
    ```bash
    agentctl workspace delete <branch-name>
    ```
-7. Merge the pull request using gh CLI with squash merge:
-   - **IMPORTANT**: GitHub is configured to use PR title + body as the commit message
-   - **IMPORTANT**: Do NOT use `--body` parameter - let GitHub use the PR description
-   - The PR already has the conventional commit format from when it was created
+5. Merge the pull request:
+   - **GitHub is configured** to use PR title + body as the squash merge commit message
+   - Since the PR was created with conventional commit format (title = headline, body = commit body), you can merge via GitHub UI or use:
    ```bash
    gh pr merge <number> --squash --delete-branch
    ```
+   - No manual commit message crafting needed - GitHub uses the PR title + body automatically
 
 ## Repository Context
 
