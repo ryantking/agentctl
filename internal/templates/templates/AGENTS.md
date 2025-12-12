@@ -113,15 +113,13 @@ This shows detailed status information about the workspace.
 
 ## Global Hooks
 
-In **ALL** sessions the following hooks provide important functionality to always be aware of. Hooks are provided by `agentctl hooks` commands.
+In **ALL** sessions the following hooks provide important functionality. Hooks are provided by `agentctl hooks` commands.
 
 ### Context Injection
 
-**WHEN:** User submits a prompt, agent starts
+**When a session starts**, context information is automatically injected about the Git repository and `agentctl` workspace so you know important information WITHOUT having to look it up using commands.
 
-**WHAT:** Injects information about the Git repository and `agentctl` workspace so agents knows important information WITHOUT having to look it up using commands.
-
-**EXAMPLE CONTEXT**
+**Example context:**
 
 ```
 <context-refresh>
@@ -138,22 +136,18 @@ Directory: feat-better-claude-memory/
 </context-refresh>
 ```
 
-**RULES**
-
-- ALWAYS use the information available in the context refresh block
-- ONLY use the LATEST context refresh block
-- NEVER acknowledge the context refresh block unless explicitly asked
+**Rules:**
+- Always use the information available in the context refresh block
+- Only use the LATEST context refresh block
+- Never acknowledge the context refresh block unless explicitly asked
 
 ### Auto-commit
 
-**WHEN:** An agent creates or modifies a file 
+**When you create or modify a file**, it is automatically staged and committed if you're not on the default branch (main or master).
 
-**WHAT:** Automatically stages the changed file and creates a commit if not on the default branch (main or master)
-
-**RULES**
-
-- EXPECT files to be staged/committed when working on feature branches
-- When there are non-auto committed files analyze them to determine if the changes should be committed
+**Rules:**
+- Expect files to be staged/committed when working on feature branches
+- When there are non-auto committed files, analyze them to determine if the changes should be committed
 
 ## Git
 
@@ -473,44 +467,38 @@ Use these alternatives instead:
 - Never commit `.claude/scratch/` to git
 - Document any persistent artifacts in `.claude/research/`
 
-### Anti-Patterns (Will Trigger Permission Prompts)
+### Anti-patterns that trigger permission prompts
 
-❌ **DON'T**: Chain independent commands
+**Don't chain independent commands:**
 ```
 Bash(pytest tests/ && npm run lint && docker ps)
 ```
-✅ **DO**: Make parallel tool calls
+**Do make parallel tool calls:**
 ```
 Tool Call 1: Bash(pytest tests/)
 Tool Call 2: Bash(npm run lint)
 Tool Call 3: Bash(docker ps)
 ```
 
-❌ **DON'T**: Use /tmp with bash commands
+**Don't use /tmp with bash commands:**
 ```
 Bash(mkdir /tmp/test-run && python test.py > /tmp/test-run/output.txt)
 ```
-✅ **DO**: Use project-local scratch directory
+**Do use project-local scratch directory:**
 ```
 Bash(mkdir .claude/scratch/test-run && python test.py > .claude/scratch/test-run/output.txt)
 ```
 
-❌ **DON'T**: `find . -name "*.py" | xargs grep "pattern"`
-✅ **DO**: `Grep(pattern="pattern", glob="**/*.py")`
+**Don't use bash for file operations when tools exist:**
+- ❌ `find . -name "*.py" | xargs grep "pattern"` → ✅ `Grep(pattern="pattern", glob="**/*.py")`
+- ❌ `cat src/main.py | grep "import"` → ✅ `Grep(pattern="import", path="src/main.py")`
+- ❌ `find . -name "*.js" -type f` → ✅ `Glob(pattern="**/*.js")`
+- ❌ `head -50 README.md` → ✅ `Read(file_path="README.md", limit=50)`
 
-❌ **DON'T**: `cat src/main.py | grep "import"`
-✅ **DO**: `Grep(pattern="import", path="src/main.py")`
+### Why tool selection matters
 
-❌ **DON'T**: `find . -name "*.js" -type f`
-✅ **DO**: `Glob(pattern="**/*.js")`
-
-❌ **DON'T**: `head -50 README.md`
-✅ **DO**: `Read(file_path="README.md", limit=50)`
-
-### Why This Matters
-
-- Specialized tools are **pre-approved** in settings.json → no permission prompts
-- Bash commands use **prefix matching only** → hard to pre-approve complex patterns
+- Specialized tools are pre-approved in settings.json, so they don't trigger permission prompts
+- Bash commands use prefix matching only, making it hard to pre-approve complex patterns
 - Complex one-liners (`find | xargs | grep | sort`) are impossible to pre-approve
 - Each unique Bash variant requires a new permission prompt
 
