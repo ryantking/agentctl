@@ -42,20 +42,20 @@ By default, skips existing files unless --force is specified.`,
 			fmt.Println("Installing memory files...")
 
 			// Install AGENTS.md
-			if err := installTemplate("AGENTS.md", target, force); err != nil {
+			if err := InstallTemplate("AGENTS.md", target, force); err != nil {
 				output.Error(err)
 				return err
 			}
 
 			// Install CLAUDE.md
-			if err := installTemplate("CLAUDE.md", target, force); err != nil {
+			if err := InstallTemplate("CLAUDE.md", target, force); err != nil {
 				output.Error(err)
 				return err
 			}
 
 			// Optionally run indexing (unless --no-index or --global)
 			if !noIndex && !globalInstall {
-				if err := indexRepository(target); err != nil {
+				if err := IndexRepository(target); err != nil {
 					// Non-fatal: warn but continue
 					fmt.Printf("  → Repository indexing skipped: %v\n", err)
 				}
@@ -73,8 +73,9 @@ By default, skips existing files unless --force is specified.`,
 	return cmd
 }
 
-// installTemplate installs a template file to the target directory.
-func installTemplate(templateName, targetDir string, force bool) error {
+// InstallTemplate installs a template file to the target directory.
+// This function is exported so it can be called from other packages.
+func InstallTemplate(templateName, targetDir string, force bool) error {
 	destPath := filepath.Join(targetDir, templateName)
 
 	// Check if file exists and skip if not forcing
@@ -117,8 +118,9 @@ func installTemplate(templateName, targetDir string, force bool) error {
 	return nil
 }
 
-// indexRepository generates repository overview and injects into AGENTS.md.
-func indexRepository(targetDir string) error {
+// IndexRepository generates repository overview and injects into AGENTS.md.
+// This function is exported so it can be called from other packages.
+func IndexRepository(targetDir string) error {
 	// This will be implemented in a later task (Task 7vp.7)
 	// For now, just return nil to indicate it's not implemented yet
 	return nil
