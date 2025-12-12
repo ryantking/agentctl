@@ -37,6 +37,15 @@ agentctl version
 # Initialize Claude Code configuration
 agentctl init
 
+# Initialize or update memory files
+agentctl memory init
+
+# Validate memory files
+agentctl memory validate
+
+# Show memory file contents
+agentctl memory show AGENTS.md
+
 # Create a new workspace
 agentctl workspace create my-feature-branch
 
@@ -98,6 +107,31 @@ Initialize Claude Code configuration in a repository or globally.
   - `--global` - Install to `$HOME/.claude` instead of current repository
   - `--force` - Overwrite existing files
   - `--no-index` - Skip Claude CLI repository indexing
+
+Installs agents, skills, settings, MCP config, and memory files (AGENTS.md and CLAUDE.md).
+
+### Memory Commands
+
+Manage agent memory files (AGENTS.md and CLAUDE.md) following cross-platform standards.
+
+- `agentctl memory init` - Initialize memory files from templates
+  - `--global` - Install to `$HOME/.claude` instead of current repository
+  - `--force` - Overwrite existing files
+  - `--no-index` - Skip repository indexing step
+
+- `agentctl memory show [file]` - Display memory file contents
+  - `--resolve` - Expand @imports inline
+  - `--json` - Output as JSON with metadata
+
+- `agentctl memory validate` - Validate memory files for common issues
+  - Checks line counts, imports, circular imports, required sections, and conflicts
+
+- `agentctl memory index` - Generate repository overview and inject into AGENTS.md
+  - `--timeout <seconds>` - Override default 90-second timeout
+
+**Memory File Structure:**
+- **AGENTS.md**: Universal agent instructions (cross-platform standard)
+- **CLAUDE.md**: Claude Code-specific orchestration patterns (imports @AGENTS.md)
 
 ### Other Commands
 
