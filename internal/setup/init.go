@@ -30,13 +30,7 @@ func NewManager(target string) (*Manager, error) {
 
 // Install executes full initialization.
 func (m *Manager) Install(force, skipIndex bool) error {
-	// 1. Install CLAUDE.md
-	fmt.Println("Installing CLAUDE.md...")
-	if err := m.installFile("CLAUDE.md", filepath.Join(m.target, "CLAUDE.md"), force); err != nil {
-		return err
-	}
-
-	// 2. Install agents
+	// 1. Install agents
 	fmt.Println("Installing agents...")
 	count, err := m.installDirectory("agents", filepath.Join(m.target, ".claude", "agents"), force, false, "*.md")
 	if err != nil {
@@ -44,7 +38,7 @@ func (m *Manager) Install(force, skipIndex bool) error {
 	}
 	fmt.Printf("  → Installed %d agent(s)\n", count)
 
-	// 3. Install skills
+	// 2. Install skills
 	fmt.Println("Installing skills...")
 	count, err = m.installDirectory("skills", filepath.Join(m.target, ".claude", "skills"), force, true, "")
 	if err != nil {
@@ -52,24 +46,16 @@ func (m *Manager) Install(force, skipIndex bool) error {
 	}
 	fmt.Printf("  → Installed %d skill(s)\n", count)
 
-	// 4. Merge settings
+	// 3. Merge settings
 	fmt.Println("Merging settings.json...")
 	if err := m.mergeSettings(force); err != nil {
 		return err
 	}
 
-	// 5. Configure MCP servers
+	// 4. Configure MCP servers
 	fmt.Println("Configuring MCP servers...")
 	if err := m.configureMCP(force); err != nil {
 		return err
-	}
-
-	// 6. Index repository with claude CLI
-	if !skipIndex {
-		if err := m.indexRepository(); err != nil {
-			// Non-fatal error
-			fmt.Printf("  → Repository indexing skipped: %v\n", err)
-		}
 	}
 
 	fmt.Println("\n✓ Initialization complete")

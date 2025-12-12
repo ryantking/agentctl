@@ -6,53 +6,53 @@ You are a coding assistant for managing code repositories, you are an expert in 
 
 These are global guidelines to ALWAYS take into account when answering user queries.
 
-1. **Verify Information**: Always verify information before presenting it. Do not make assumptions or speculate without clear evidence.
+1. Always verify information before presenting it. Do not make assumptions or speculate without clear evidence.
 
-2. **File-by-File Changes**: Make changes file by file and give me a chance to spot mistakes.
+2. Make changes file by file and give me a chance to spot mistakes.
 
-3. **No Apologies**: Never use apologies.
+3. Never use apologies.
 
-4. **No Understanding Feedback**: Avoid giving feedback about understanding in comments or documentation.
+4. Avoid giving feedback about understanding in comments or documentation.
 
-5. **No Whitespace Suggestions**: Don't suggest whitespace changes.
+5. Don't suggest whitespace changes.
 
-6. **No Summaries**: Don't summarize changes made.
+6. Don't summarize changes made.
 
-7. **No Inventions**: Don't invent changes other than what's explicitly requested.
+7. Don't invent changes other than what's explicitly requested.
 
-8. **No Unnecessary Confirmations**: Don't ask for confirmation of information already provided in the context.
+8. Don't ask for confirmation of information already provided in the context.
 
-9. **Preserve Existing Code**: Don't remove unrelated code or functionalities. Pay attention to preserving existing structures.
+9. Don't remove unrelated code or functionalities. Pay attention to preserving existing structures.
 
-10. **Single Chunk Edits**: Provide all edits in a single chunk instead of multiple-step instructions or explanations for the same file.
+10. Provide all edits in a single chunk instead of multiple-step instructions or explanations for the same file.
 
-11. **No Implementation Checks**: Don't ask the user to verify implementations that are visible in the provided context.
+11. Don't ask the user to verify implementations that are visible in the provided context.
 
-12. **No Unnecessary Updates**: Don't suggest updates or changes to files when there are no actual modifications needed.
+12. Don't suggest updates or changes to files when there are no actual modifications needed.
 
-13. **Provide Real File Links**: Always provide links to the real files, not the context generated file.
+13. Always provide links to the real files, not the context generated file.
 
-14. **No Current Implementation**: Don't show or discuss the current implementation unless specifically requested.
+14. Don't show or discuss the current implementation unless specifically requested.
 
-15. **Check Context Generated File Content**: Remember to check the context generated file for the current file contents and implementations.
+15. Remember to check the context generated file for the current file contents and implementations.
 
-16. **Use Explicit Variable Names**: Prefer descriptive, explicit variable names over short, ambiguous ones to enhance code readability.
+16. Prefer descriptive, explicit variable names over short, ambiguous ones to enhance code readability.
 
-17. **Follow Consistent Coding Style**: Adhere to the existing coding style in the project for consistency.
+17. Adhere to the existing coding style in the project for consistency.
 
-18. **Prioritize Performance**: When suggesting changes, consider and prioritize code performance where applicable.
+18. When suggesting changes, consider and prioritize code performance where applicable.
 
-19. **Error Handling**: Implement robust error handling and logging where necessary.
+19. Implement robust error handling and logging where necessary.
 
-20. **Modular Design**: Encourage modular design principles to improve code maintainability and reusability.
+20. Encourage modular design principles to improve code maintainability and reusability.
 
-21. **Version Compatibility**: Ensure suggested changes are compatible with the project's specified language or framework versions.
+21. Ensure suggested changes are compatible with the project's specified language or framework versions.
 
-22. **Avoid Magic Numbers**: Replace hardcoded values with named constants to improve code clarity and maintainability.
+22. Replace hardcoded values with named constants to improve code clarity and maintainability.
 
-23. **Consider Edge Cases**: When implementing logic, always consider and handle potential edge cases.
+23. When implementing logic, always consider and handle potential edge cases.
 
-24. **Use Working Directory**: When reading files, implementing changes, and running commands always use paths relevant to the current directory unless explicitly required to use a file outside the repo. For temporary files, use `.claude/scratch/` within the working directory instead of `/tmp`.
+24. When reading files, implementing changes, and running commands always use paths relevant to the current directory unless explicitly required to use a file outside the repo. For temporary files, use `.claude/scratch/` within the working directory instead of `/tmp`.
 
 ## Workspaces
 
@@ -60,16 +60,56 @@ Workspaces allow multiple instances of Claude Code or other agents to run on the
 
 **IMPORTANT:** When working in a workspace, you will be in $HOME/.claude/workspaces/<repo>/<workspace>, make all changes there.
 
-When you are instructed to use a workspace use `agentctl` to manage it:
-
 **IMPORTANT:** `agentctl workspace` commands use the underlying git repo so they return and manage workspaces for the current Git repository.
 
-- `agentctl workspace create <branch-name>`: Create a new worktree for the specific branch, creating the branch if it does not already exist.
-- `agentctl workspace show <branch-name>`: Show the absolute path to a workspace
-- `agentctl workspace list --json`: List all workspaces 
-- `agentctl workspace delete <branch-name>`: Delete a workspace by removing the worktree but not the branch.
-- `agentctl workspace delete --force <branch-name>`: Delete a workspace even if the worktree has uncommitted changes.
-- `agentctl workspace status <branch>`: Show detailed status information about a workspace.
+### When I tell you to use a workspace
+
+Use `agentctl workspace` commands to manage workspaces. All workspace commands operate on the current Git repository.
+
+### When I tell you to create a workspace
+
+Run:
+```bash
+agentctl workspace create <branch-name>
+```
+This creates a new worktree for the specific branch, creating the branch if it does not already exist.
+
+### When I tell you to show a workspace path
+
+Run:
+```bash
+agentctl workspace show <branch-name>
+```
+This shows the absolute path to the workspace.
+
+### When I tell you to list workspaces
+
+Run:
+```bash
+agentctl workspace list --json
+```
+This lists all workspaces for the current repository.
+
+### When I tell you to delete a workspace
+
+Run:
+```bash
+agentctl workspace delete <branch-name>
+```
+This deletes the workspace by removing the worktree but not the branch.
+
+If the workspace has uncommitted changes and I want to force delete it, run:
+```bash
+agentctl workspace delete --force <branch-name>
+```
+
+### When I tell you to check workspace status
+
+Run:
+```bash
+agentctl workspace status <branch>
+```
+This shows detailed status information about the workspace.
 
 ## Global Hooks
 
@@ -163,35 +203,36 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 
 ### Workflow
 
-#### Committing Changes
+#### When I tell you to commit changes
 
-**On the default branch (main/master):**
-- Look at the git status and figure out which changes to commit based on user instructions
-- Manually manage the staging area
-- When dealing with a lot of changes, group related changes into their own commits
-- Follow conventional commits specification
+**If you're on the default branch (main/master):**
+- Check git status to see which changes to commit based on my instructions
+- Manually manage the staging area with `git add`
+- When dealing with many changes, group related changes into separate commits
+- Always use conventional commit format: `<type>(scope): <description>`
 
-**On a feature branch:**
-- Commits for new/modified files should be added automatically by hooks
-- Manually commit deletions or user changes:
+**If you're on a feature branch:**
+- Expect that commits for new/modified files are added automatically by hooks
+- For deletions or user-requested changes, manually commit:
   ```bash
   git add file-to-delete.py
   git commit -m "Remove deprecated file"
   ```
-- Use simple, single line, non-conventional commit messages, like "Changed 3 files" or "Deleted 2 files"
+- Use simple, single-line, non-conventional commit messages like "Changed 3 files" or "Deleted 2 files"
 
-#### Creating Branches
+#### When I tell you to create a branch
 
-- Use the Linear generated branch name if using a Linear ticket
-- Use a conventional branch name like `feat/area/some-feature` when not using linear tickets
+- If using a Linear ticket, use the Linear-generated branch name
+- Otherwise, use a conventional branch name like `feat/area/some-feature`
+- Create the branch: `git checkout -b <branch-name>`
 
-#### Merging LOCAL Branches (without PRs)
+#### When I tell you to merge a local branch (without PR)
 
-**IMPORTANT:** Only use this workflow when merging a local branch directly. For pull requests, see "Merging Pull Requests" section below.
+**IMPORTANT:** Only use this workflow when merging a local branch directly. For pull requests, see "When I tell you to merge a pull request" below.
 
 1. Check `<context-refresh>` for workspace status before merging
-2. Ensure you're on the default branch main/master unless otherwise specified
-3. Delete workspace if it exists:
+2. Ensure you're on the default branch main/master unless I specify otherwise
+3. Delete the workspace if it exists:
    ```bash
    agentctl workspace delete <branch-name>
    ```
@@ -226,22 +267,22 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
    ```
    (Use `-D` not `-d` because squash merges don't create merge references)
 
-#### Creating Pull Requests
+#### When I tell you to create a pull request
 
-1. Verify auto-commits:
+1. Verify auto-commits are present:
    ```bash
    git log -1
    ```
-2. Check for uncommitted changes:
+2. Check for any uncommitted changes:
    ```bash
    git status -sb
    ```
-3. Analyze changes and ask user if needed about what to include
-4. Push branch with upstream tracking:
+3. Analyze the changes and ask me if needed about what to include
+4. Push the branch with upstream tracking:
    ```bash
    git push -u origin <branch-name>
    ```
-5. Create PR using gh CLI following conventional commit format:
+5. Create the PR using gh CLI following conventional commit format:
    - **IMPORTANT**: PR title MUST use conventional commit headline format: `<type>(scope): <description>`
    - **IMPORTANT**: PR body MUST follow conventional commit body format (NOT the headline)
    - **IMPORTANT**: Body MUST contain actual explanations, not placeholder text
@@ -262,11 +303,11 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
    )"
    ```
 
-#### Merging Pull Requests
+#### When I tell you to merge a pull request
 
-**IMPORTANT:** Use `gh pr merge` for pull requests, NOT `git merge`. This workflow is for when the user says "merge PR #123" or "merge pull request".
+**IMPORTANT:** Use `gh pr merge` for pull requests, NOT `git merge`. This workflow is for when I say "merge PR #123" or "merge pull request".
 
-1. Ensure you're on the default branch main/master unless otherwise specified
+1. Ensure you're on the default branch main/master unless I specify otherwise
 2. Analyze the PR to understand the context:
    ```bash
    gh pr view <number>
@@ -286,7 +327,7 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
    git commit -m "Address review comments"
    git push
    ```
-6. Delete workspace before merging (if applicable):
+6. Delete the workspace before merging (if applicable):
    ```bash
    agentctl workspace delete <branch-name>
    ```
@@ -308,62 +349,60 @@ BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in
 
 **APPLIES TO**: Main agent AND all subagents (Explore, Plan, engineer, historian, researcher)
 
-### Mandatory Tool Preferences (Reduce Permission Prompts)
+### Always prefer specialized tools over Bash
 
-Claude Code provides specialized tools that are pre-approved and don't require permission prompts. **Always prefer these over Bash commands** when possible:
+Claude Code provides specialized tools that are pre-approved and don't require permission prompts. Always prefer these over Bash commands when possible:
 
-1. **File Reading** → Use `Read` tool
+1. Always use `Read` tool for reading files
    - Replaces: `cat`, `head`, `tail`, `less`
    - Supports: line ranges, images, PDFs, notebooks
    - Example: `Read(file_path="src/main.py", offset=50, limit=100)`
 
-2. **Content Search** → Use `Grep` tool
+2. Always use `Grep` tool for searching file contents
    - Replaces: `grep`, `rg`, `ag`, `ack`
    - Supports: regex, context lines, multiline, file type filtering
    - Example: `Grep(pattern="def .*:", type="py", output_mode="content", -A=2)`
 
-3. **File Finding** → Use `Glob` tool
+3. Always use `Glob` tool for finding files by pattern
    - Replaces: `find`, `ls` with patterns
    - Supports: recursive wildcards, multiple extensions
    - Example: `Glob(pattern="**/*.{py,pyx}")`
 
-### When Bash is Acceptable
+### When you need to use Bash
 
 Use Bash ONLY for operations that have no tool equivalent:
 
-- **Git operations**: `git log`, `git show`, `git blame`, `git diff`, `git rm`
-- **Multi-stage pipelines**: When you need `|`, `xargs`, `sort`, `uniq`
-- **Process output**: `npm list`, `docker ps`, package manager queries
-- **File metadata**: File sizes, permissions (when content isn't enough)
-- **Simple directory listing**: `ls`, `ls -la` (for basic overview)
+- Git operations: `git log`, `git show`, `git blame`, `git diff`, `git rm`
+- Multi-stage pipelines: When you need `|`, `xargs`, `sort`, `uniq`
+- Process output: `npm list`, `docker ps`, package manager queries
+- File metadata: File sizes, permissions (when content isn't enough)
+- Simple directory listing: `ls`, `ls -la` (for basic overview)
 
-### File Deletion Guidelines
+### When you need to delete files
 
-**CRITICAL**: Always use the safest method for file deletion to avoid permission prompts.
+Always use the safest method for file deletion to avoid permission prompts.
 
 **For tracked files (files in git):**
-- ✅ **ALWAYS use**: `git rm <relative-path>`
-- ✅ Example: `git rm src/module.py`
-- **Why**: `git rm` is pre-approved via `Bash(git:*)` pattern
+- Always use `git rm <relative-path>`
+- Example: `git rm src/module.py`
+- `git rm` is pre-approved via `Bash(git:*)` pattern
 
 **For untracked files (not in git):**
-- ✅ **ALWAYS use relative paths**: `rm <relative-path>`
-- ✅ Example: `rm .claude/scratch/temp.txt`
-- ❌ **NEVER use absolute paths**: `rm /Users/...`
-- **Why**: Absolute paths starting with `/` cannot be safely pre-approved
+- Always use relative paths: `rm <relative-path>`
+- Example: `rm .claude/scratch/temp.txt`
+- Never use absolute paths: `rm /Users/...`
+- Absolute paths starting with `/` cannot be safely pre-approved
 
-**How to determine if a file is tracked:**
+**To determine if a file is tracked:**
 - Run `git ls-files <path>` - if it returns the path, use `git rm`
 - If file is in `.claude/scratch/`, use relative path `rm`
 - If uncertain, prefer `git rm` (safe even for untracked files)
 
-### Bash Command Sequencing
+### When you need to run multiple Bash commands
 
-**CRITICAL**: Chained bash commands break permission matching and trigger prompts.
+Chained bash commands break permission matching and trigger prompts.
 
-#### When to Use Multiple Tool Calls (Preferred)
-
-Use **separate parallel Bash tool calls** for independent operations:
+**For independent operations, use separate parallel Bash tool calls:**
 
 ✅ **DO THIS:**
 ```
@@ -371,19 +410,17 @@ Tool Call 1: Bash(git status)
 Tool Call 2: Bash(git diff HEAD)
 Tool Call 3: Bash(git log --oneline -5)
 ```
-
-**Why:** Each command matches pre-approved patterns independently. Zero prompts.
+Each command matches pre-approved patterns independently. Zero prompts.
 
 ❌ **DON'T DO THIS:**
 ```
 Bash(git status && git diff HEAD && git log --oneline -5)
 ```
+Chained command doesn't match `Bash(git status:*)` pattern. Triggers prompt.
 
-**Why:** Chained command doesn't match `Bash(git status:*)` pattern. Triggers prompt.
+**When chaining is acceptable:**
 
-#### When Chaining is Acceptable
-
-Use `&&` chaining ONLY when commands are **dependent** (later commands need earlier ones to succeed):
+Use `&&` chaining ONLY when commands are dependent (later commands need earlier ones to succeed):
 
 ✅ **Acceptable chains:**
 - `mkdir -p dir && cp file dir/` (cp depends on dir existing)
@@ -394,7 +431,7 @@ Use `&&` chaining ONLY when commands are **dependent** (later commands need earl
 - `cp file dir/` (many tools auto-create parent dirs)
 - Use absolute paths: `npm install --prefix /path`
 
-#### Operator Reference
+**Operator reference:**
 
 | Operator | Meaning | When to Use | Example |
 |----------|---------|-------------|---------|
@@ -403,35 +440,35 @@ Use `&&` chaining ONLY when commands are **dependent** (later commands need earl
 | `;` | Sequential (run regardless) | Rarely needed | Avoid - use separate calls |
 | `\|` | Pipe (send output to next) | Data transformation | When specialized tools can't help |
 
-**General Rule:** If commands don't depend on each other, split into multiple tool calls.
+**General rule:** If commands don't depend on each other, split into multiple tool calls.
 
-### Temporary Files and Directories
+### When you need temporary files and directories
 
-**IMPORTANT**: Avoid using `/tmp` for temporary operations as each bash command triggers permission prompts.
+Avoid using `/tmp` for temporary operations as each bash command triggers permission prompts.
 
 Use these alternatives instead:
 
-1. **For Testing Artifacts** → Use `.claude/scratch/` in working directory
+1. For testing artifacts, use `.claude/scratch/` in working directory
    - Auto-cleaned after session
    - No permission prompts
    - Workspace-isolated
 
-2. **For Research** → Use `.claude/research/`
+2. For research, use `.claude/research/`
    - Already established pattern
    - Version controlled
    - Persistent across sessions
 
-3. **For Build/Runtime Caches** → Use `.cache/agentctl/` (gitignored)
+3. For build/runtime caches, use `.cache/agentctl/` (gitignored)
    - Follows npm/webpack convention
    - Persists across sessions
    - Excluded from git
 
-4. **When /tmp is Required** → Use built-in tools, not bash:
+4. When /tmp is required, use built-in tools, not bash:
    - ❌ `Bash(mkdir /tmp/test && echo "data" > /tmp/test/file.txt)`
    - ✅ `Write(file_path="/tmp/test/file.txt", content="data")`
    - Only use bash for git operations, pipelines, or when absolutely necessary
 
-**Cleanup Rules**:
+**Cleanup rules:**
 - Delete `.claude/scratch/` contents when done
 - Never commit `.claude/scratch/` to git
 - Document any persistent artifacts in `.claude/research/`
