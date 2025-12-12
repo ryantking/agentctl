@@ -1,9 +1,13 @@
 package memory
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
@@ -121,7 +125,73 @@ func InstallTemplate(templateName, targetDir string, force bool) error {
 // IndexRepository generates repository overview and injects into AGENTS.md.
 // This function is exported so it can be called from other packages.
 func IndexRepository(targetDir string) error {
-	// This will be implemented in a later task (Task 7vp.7)
-	// For now, just return nil to indicate it's not implemented yet
+	return indexRepository(targetDir)
+}
+
+func indexRepository(targetDir string) error {
+	if _, err := exec.LookPath("claude"); err != nil {
+		return fmt.Errorf("claude CLI not found")
+	}
+
+	prompt := `Analyze this repository and provide a concise overview:
+- Main purpose and key technologies
+- Directory structure (2-3 levels max)
+- Entry points and main files
+- Build/run commands (check for package.json scripts, Makefile targets, Justfile recipes, etc.)
+- Available scripts and automation tools
+
+Format as clean markdown starting at heading level 3 (###), keep it brief (under 500 words).`
+
+	fmt.Print("  → Indexing repository with Claude CLI...")
+
+	cmdCtx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(cmdCtx, "claude", "--print", "--output-format", "text", prompt)
+	cmd.Dir = targetDir
+	cmd.Env = os.Environ()
+
+	output, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+
+	indexContent := strings.TrimSpace(string(output))
+	if indexContent == "" {
+		return fmt.Errorf("empty output from Claude CLI")
+	}
+
+	if err := insertRepositoryIndex(targetDir, indexContent); err != nil {
+		return err
+	}
+
+	fmt.Println(" done")
 	return nil
+}
+
+func insertRepositoryIndex(targetDir, indexContent string) error {
+	agentsMDPath := filepath.Join(targetDir, "AGENTS.md")
+	if _, err := os.Stat(agentsMDPath); os.IsNotExist(err) {
+		return fmt.Errorf("AGENTS.md not found")
+	}
+
+	data, err := os.ReadFile(agentsMDPath) //nolint:gosec // Path is controlled, reading template files
+	if err != nil {
+		return err
+	}
+
+	content := string(data)
+	startMarker := "<!-- REPOSITORY_INDEX_START -->"
+	endMarker := "<!-- REPOSITORY_INDEX_END -->"
+
+	startIdx := strings.Index(content, startMarker)
+	endIdx := strings.Index(content, endMarker)
+
+	if startIdx == -1 || endIdx == -1 {
+		return fmt.Errorf("repository index markers not found in AGENTS.md")
+	}
+
+	updatedContent := content[:startIdx+len(startMarker)] + "\n" + indexContent + "\n" + content[endIdx:]
+
+	return os.WriteFile(agentsMDPath, []byte(updatedContent), 0644) //nolint:gosec // Template files need to be readable
 }
