@@ -31,7 +31,7 @@ Tools here
 <!-- REPOSITORY_INDEX_START -->
 <!-- REPOSITORY_INDEX_END -->`
 				agentsPath := filepath.Join(tmpDir, "AGENTS.md")
-				if err := os.WriteFile(agentsPath, []byte(agentsContent), 0644); err != nil {
+				if err := os.WriteFile(agentsPath, []byte(agentsContent), 0600); err != nil {
 					return err
 				}
 
@@ -41,7 +41,7 @@ Tools here
 ## Agent Orchestration
 Content`
 				claudePath := filepath.Join(tmpDir, "CLAUDE.md")
-				return os.WriteFile(claudePath, []byte(claudeContent), 0644)
+				return os.WriteFile(claudePath, []byte(claudeContent), 0600)
 			},
 			wantError:   false,
 			wantWarnings: false,
@@ -50,7 +50,7 @@ Content`
 			name: "missing AGENTS.md",
 			setup: func() error {
 				claudePath := filepath.Join(tmpDir, "CLAUDE.md")
-				return os.WriteFile(claudePath, []byte("# Test"), 0644)
+				return os.WriteFile(claudePath, []byte("# Test"), 0600)
 			},
 			wantError: true,
 		},
@@ -58,7 +58,7 @@ Content`
 			name: "missing CLAUDE.md",
 			setup: func() error {
 				agentsPath := filepath.Join(tmpDir, "AGENTS.md")
-				return os.WriteFile(agentsPath, []byte("# Test"), 0644)
+				return os.WriteFile(agentsPath, []byte("# Test"), 0600)
 			},
 			wantError: true,
 		},
@@ -66,11 +66,11 @@ Content`
 			name: "missing import in CLAUDE.md",
 			setup: func() error {
 				agentsPath := filepath.Join(tmpDir, "AGENTS.md")
-				if err := os.WriteFile(agentsPath, []byte("# Test"), 0644); err != nil {
+				if err := os.WriteFile(agentsPath, []byte("# Test"), 0600); err != nil {
 					return err
 				}
 				claudePath := filepath.Join(tmpDir, "CLAUDE.md")
-				return os.WriteFile(claudePath, []byte("# Test\nNo import"), 0644)
+				return os.WriteFile(claudePath, []byte("# Test\nNo import"), 0600)
 			},
 			wantError: true,
 		},
@@ -78,11 +78,11 @@ Content`
 			name: "missing required section",
 			setup: func() error {
 				agentsPath := filepath.Join(tmpDir, "AGENTS.md")
-				if err := os.WriteFile(agentsPath, []byte("# Test\n## Rules\n"), 0644); err != nil {
+				if err := os.WriteFile(agentsPath, []byte("# Test\n## Rules\n"), 0600); err != nil {
 					return err
 				}
 				claudePath := filepath.Join(tmpDir, "CLAUDE.md")
-				return os.WriteFile(claudePath, []byte("# Test\n@AGENTS.md"), 0644)
+				return os.WriteFile(claudePath, []byte("# Test\n@AGENTS.md"), 0600)
 			},
 			wantError: true,
 		},
@@ -91,8 +91,8 @@ Content`
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Cleanup
-			os.Remove(filepath.Join(tmpDir, "AGENTS.md"))
-			os.Remove(filepath.Join(tmpDir, "CLAUDE.md"))
+			_ = os.Remove(filepath.Join(tmpDir, "AGENTS.md"))
+			_ = os.Remove(filepath.Join(tmpDir, "CLAUDE.md"))
 
 			if err := tt.setup(); err != nil {
 				t.Fatalf("Setup failed: %v", err)
@@ -115,13 +115,17 @@ func TestHasCircularImport(t *testing.T) {
 	file1Path := filepath.Join(tmpDir, "file1.md")
 	file1Content := `# File 1
 @file2.md`
-	os.WriteFile(file1Path, []byte(file1Content), 0644)
+	if err := os.WriteFile(file1Path, []byte(file1Content), 0600); err != nil {
+		t.Fatal(err)
+	}
 
 	// Create file2.md that imports file1.md (circular)
 	file2Path := filepath.Join(tmpDir, "file2.md")
 	file2Content := `# File 2
 @file1.md`
-	os.WriteFile(file2Path, []byte(file2Content), 0644)
+	if err := os.WriteFile(file2Path, []byte(file2Content), 0600); err != nil {
+		t.Fatal(err)
+	}
 
 	// Test circular import detection
 	if !hasCircularImport(file1Content, tmpDir, 0, 5) {
@@ -132,12 +136,16 @@ func TestHasCircularImport(t *testing.T) {
 	file4Path := filepath.Join(tmpDir, "file4.md")
 	file4Content := `# File 4
 No imports`
-	os.WriteFile(file4Path, []byte(file4Content), 0644)
+	if err := os.WriteFile(file4Path, []byte(file4Content), 0600); err != nil {
+		t.Fatal(err)
+	}
 
 	file3Path := filepath.Join(tmpDir, "file3.md")
 	file3Content := `# File 3
 @file4.md`
-	os.WriteFile(file3Path, []byte(file3Content), 0644)
+	if err := os.WriteFile(file3Path, []byte(file3Content), 0600); err != nil {
+		t.Fatal(err)
+	}
 
 	if hasCircularImport(file3Content, tmpDir, 0, 5) {
 		t.Error("Should not detect circular import for non-circular case")

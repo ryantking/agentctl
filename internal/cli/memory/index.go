@@ -1,3 +1,4 @@
+// Package memory provides commands for managing agent memory files (AGENTS.md and CLAUDE.md).
 package memory
 
 import (
@@ -30,7 +31,9 @@ between the REPOSITORY_INDEX_START and REPOSITORY_INDEX_END markers.`,
 				return err
 			}
 
-			output.SuccessJSON(map[string]string{"status": "indexed", "file": "AGENTS.md"})
+			if err := output.SuccessJSON(map[string]string{"status": "indexed", "file": "AGENTS.md"}); err != nil {
+				return err
+			}
 			return nil
 		},
 	}

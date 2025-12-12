@@ -2,13 +2,10 @@
 package setup
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/ryantking/agentctl/internal/config"
 	"github.com/ryantking/agentctl/internal/templates"
@@ -29,7 +26,7 @@ func NewManager(target string) (*Manager, error) {
 }
 
 // Install executes full initialization.
-func (m *Manager) Install(force, skipIndex bool) error {
+func (m *Manager) Install(force, _ bool) error {
 	// 1. Install agents
 	fmt.Println("Installing agents...")
 	count, err := m.installDirectory("agents", filepath.Join(m.target, ".claude", "agents"), force, false, "*.md")
@@ -348,74 +345,6 @@ func (m *Manager) configureMCP(force bool) error {
 	relPath, _ := filepath.Rel(m.target, destPath)
 	fmt.Printf("  • %s (%s)\n", relPath, status)
 	return nil
-}
-
-func (m *Manager) indexRepository() error {
-	if _, err := exec.LookPath("claude"); err != nil {
-		return fmt.Errorf("claude CLI not found")
-	}
-
-	prompt := `Analyze this repository and provide a concise overview:
-- Main purpose and key technologies
-- Directory structure (2-3 levels max)
-- Entry points and main files
-- Build/run commands (check for package.json scripts, Makefile targets, Justfile recipes, etc.)
-- Available scripts and automation tools
-
-Format as clean markdown starting at heading level 3 (###), keep it brief (under 500 words).`
-
-	fmt.Print("  → Indexing repository with Claude CLI...")
-
-	cmdCtx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(cmdCtx, "claude", "--print", "--output-format", "text", prompt)
-	cmd.Dir = m.target
-	cmd.Env = os.Environ()
-
-	output, err := cmd.Output()
-	if err != nil {
-		return err
-	}
-
-	indexContent := strings.TrimSpace(string(output))
-	if indexContent == "" {
-		return fmt.Errorf("empty output from Claude CLI")
-	}
-
-	if err := m.insertRepositoryIndex(indexContent); err != nil {
-		return err
-	}
-
-	fmt.Println(" done")
-	return nil
-}
-
-func (m *Manager) insertRepositoryIndex(indexContent string) error {
-	claudeMDPath := filepath.Join(m.target, "CLAUDE.md")
-	if _, err := os.Stat(claudeMDPath); os.IsNotExist(err) {
-		return fmt.Errorf("CLAUDE.md not found")
-	}
-
-	data, err := os.ReadFile(claudeMDPath) //nolint:gosec // Path is controlled, reading template files
-	if err != nil {
-		return err
-	}
-
-	content := string(data)
-	startMarker := "<!-- REPOSITORY_INDEX_START -->"
-	endMarker := "<!-- REPOSITORY_INDEX_END -->"
-
-	startIdx := strings.Index(content, startMarker)
-	endIdx := strings.Index(content, endMarker)
-
-	if startIdx == -1 || endIdx == -1 {
-		return fmt.Errorf("repository index markers not found")
-	}
-
-	updatedContent := content[:startIdx+len(startMarker)] + "\n" + indexContent + "\n" + content[endIdx:]
-
-	return os.WriteFile(claudeMDPath, []byte(updatedContent), 0644) //nolint:gosec // Template files need to be readable
 }
 
 func matchPattern(name, pattern string) bool {

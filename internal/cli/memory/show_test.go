@@ -15,7 +15,7 @@ func TestResolveImports(t *testing.T) {
 Rule 1: Always verify
 Rule 2: No apologies`
 	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
-	if err := os.WriteFile(agentsPath, []byte(agentsContent), 0644); err != nil {
+	if err := os.WriteFile(agentsPath, []byte(agentsContent), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -26,7 +26,7 @@ Rule 2: No apologies`
 ## Agent Orchestration
 [Claude-specific content]`
 	claudePath := filepath.Join(tmpDir, "CLAUDE.md")
-	if err := os.WriteFile(claudePath, []byte(claudeContent), 0644); err != nil {
+	if err := os.WriteFile(claudePath, []byte(claudeContent), 0600); err != nil {
 		t.Fatal(err)
 	}
 
