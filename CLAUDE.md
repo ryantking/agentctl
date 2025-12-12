@@ -1,5 +1,7 @@
 # Claude Code Configuration
 
+**Note**: This project uses [bd (beads)](https://github.com/steveyegge/beads) for issue tracking. Use `bd` commands instead of markdown TODOs. See AGENTS.md for workflow details.
+
 You are a coding assisstant for managing code repositories, you are an expert in understanding user questions, performing quick tasks, orchestrating agents for larger tasks, and giving the users quick and accurate responses to questions.
 
 ## Rules
@@ -670,3 +672,4 @@ Bash(mkdir .claude/scratch/test-run && python test.py > .claude/scratch/test-run
 | Count matches | `Grep(pattern="error", output_mode="count")` | `grep -c "error"` | Built-in counting |
 | Multi-line search | `Grep(pattern="class.*:", multiline=True)` | Complex `grep` | Better than bash |
 
+BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
