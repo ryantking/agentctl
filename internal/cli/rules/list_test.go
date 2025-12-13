@@ -11,7 +11,7 @@ func TestListRules(t *testing.T) {
 	rulesDir := filepath.Join(tmpDir, "rules")
 
 	// Create rules directory
-	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+	if err := os.MkdirAll(rulesDir, 0755); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create rules directory: %v", err)
 	}
 
@@ -67,7 +67,7 @@ func TestListRulesEmptyDirectory(t *testing.T) {
 	rulesDir := filepath.Join(tmpDir, "rules")
 
 	// Create empty rules directory
-	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+	if err := os.MkdirAll(rulesDir, 0750); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create rules directory: %v", err)
 	}
 

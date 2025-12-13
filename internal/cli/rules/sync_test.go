@@ -13,7 +13,7 @@ func TestSyncToCursor(t *testing.T) {
 	cursorRulesDir := filepath.Join(tmpDir, ".cursor", "rules")
 
 	// Create rules directory with a test rule
-	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+	if err := os.MkdirAll(rulesDir, 0755); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create rules directory: %v", err)
 	}
 
@@ -59,7 +59,7 @@ func TestSyncToClaudeSkills(t *testing.T) {
 	claudeSkillsDir := filepath.Join(tmpDir, ".claude", "skills")
 
 	// Create rules directory with a test rule
-	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+	if err := os.MkdirAll(rulesDir, 0755); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create rules directory: %v", err)
 	}
 
@@ -119,7 +119,7 @@ func TestSyncToAGENTSMD(t *testing.T) {
 	rulesDir := filepath.Join(agentDir, "rules")
 
 	// Create rules directory with a test rule
-	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+	if err := os.MkdirAll(rulesDir, 0755); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create rules directory: %v", err)
 	}
 
