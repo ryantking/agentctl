@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ryantking/agentctl/internal/cli/memory"
+	"github.com/ryantking/agentctl/internal/cli/rules"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/ryantking/agentctl/internal/setup"
@@ -19,7 +19,7 @@ func NewInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize Claude Code configuration",
-		Long: `Initialize Claude Code configuration. Installs agents, skills, settings, and memory files (AGENTS.md and CLAUDE.md) from the bundled templates directory.
+		Long: `Initialize Claude Code configuration. Installs agents, skills, settings, MCP config, and initializes .agent directory with default rules.
 By default, skips existing files.`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			var target string
@@ -51,21 +51,12 @@ By default, skips existing files.`,
 				return err
 			}
 
-			// Install memory files (AGENTS.md and CLAUDE.md)
-			if err := memory.InstallTemplate("AGENTS.md", target, force); err != nil {
-				output.Error(err)
-				return err
-			}
-			if err := memory.InstallTemplate("CLAUDE.md", target, force); err != nil {
-				output.Error(err)
-				return err
-			}
-
-			// Optionally run indexing (unless --no-index or --global)
-			if !noIndex && !globalInstall {
-				if err := memory.IndexRepository(target); err != nil {
+			// Initialize .agent directory with rules (unless --global)
+			if !globalInstall {
+				noProject := noIndex // Use --no-index flag to skip project.md generation
+				if err := rules.InitRules(target, force, noProject); err != nil {
 					// Non-fatal: warn but continue
-					fmt.Printf("  → Repository indexing skipped: %v\n", err)
+					fmt.Printf("  → Rules initialization skipped: %v\n", err)
 				}
 			}
 
