@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/ryantking/agentctl/internal/cli/memory"
+	"github.com/ryantking/agentctl/internal/cli/rules"
 	"github.com/spf13/cobra"
 )
 
@@ -25,6 +26,7 @@ func NewRootCmd() *cobra.Command {
 		NewHookCmd(),
 		NewInitCmd(),
 		memory.NewMemoryCmd(),
+		rules.NewRulesCmd(),
 	)
 
 	return cmd
