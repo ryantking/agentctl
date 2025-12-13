@@ -1,0 +1,206 @@
+package rules
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestSyncToCursor(t *testing.T) {
+	tmpDir := t.TempDir()
+	rulesDir := filepath.Join(tmpDir, ".agent", "rules")
+	cursorRulesDir := filepath.Join(tmpDir, ".cursor", "rules")
+
+	// Create rules directory with a test rule
+	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+		t.Fatalf("failed to create rules directory: %v", err)
+	}
+
+	testRule := `---
+name: "Test Rule"
+description: "A test rule"
+---
+
+## Content
+Test content.`
+
+	rulePath := filepath.Join(rulesDir, "test-rule.mdc")
+	if err := os.WriteFile(rulePath, []byte(testRule), 0600); err != nil {
+		t.Fatalf("failed to write test rule: %v", err)
+	}
+
+	// Test sync
+	err := syncToCursor(tmpDir, rulesDir)
+	if err != nil {
+		t.Fatalf("syncToCursor() error = %v", err)
+	}
+
+	// Verify file was copied
+	destPath := filepath.Join(cursorRulesDir, "test-rule.mdc")
+	if _, err := os.Stat(destPath); os.IsNotExist(err) {
+		t.Error("Rule file should be copied to .cursor/rules/")
+	}
+
+	// Verify content matches
+	destData, err := os.ReadFile(destPath) //nolint:gosec // Reading test file
+	if err != nil {
+		t.Fatalf("failed to read copied file: %v", err)
+	}
+
+	if string(destData) != testRule {
+		t.Error("Copied file content should match original")
+	}
+}
+
+func TestSyncToClaudeSkills(t *testing.T) {
+	tmpDir := t.TempDir()
+	rulesDir := filepath.Join(tmpDir, ".agent", "rules")
+	claudeSkillsDir := filepath.Join(tmpDir, ".claude", "skills")
+
+	// Create rules directory with a test rule
+	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+		t.Fatalf("failed to create rules directory: %v", err)
+	}
+
+	testRule := `---
+name: "Test Rule"
+description: "A test rule"
+when-to-use: "When testing"
+---
+
+## Content
+Test content.`
+
+	rulePath := filepath.Join(rulesDir, "test-rule.mdc")
+	if err := os.WriteFile(rulePath, []byte(testRule), 0600); err != nil {
+		t.Fatalf("failed to write test rule: %v", err)
+	}
+
+	// Test sync
+	err := syncToClaudeSkills(tmpDir, rulesDir)
+	if err != nil {
+		t.Fatalf("syncToClaudeSkills() error = %v", err)
+	}
+
+	// Verify skill directory was created
+	skillDir := filepath.Join(claudeSkillsDir, "test-rule")
+	if _, err := os.Stat(skillDir); os.IsNotExist(err) {
+		t.Error("Skill directory should be created")
+	}
+
+	// Verify SKILL.md exists
+	skillMDPath := filepath.Join(skillDir, "SKILL.md")
+	if _, err := os.Stat(skillMDPath); os.IsNotExist(err) {
+		t.Error("SKILL.md should be created")
+	}
+
+	// Verify content
+	skillData, err := os.ReadFile(skillMDPath) //nolint:gosec // Reading test file
+	if err != nil {
+		t.Fatalf("failed to read skill file: %v", err)
+	}
+
+	skillContent := string(skillData)
+	if !strings.Contains(skillContent, "name: Test Rule") {
+		t.Error("Skill file should contain rule name")
+	}
+	if !strings.Contains(skillContent, "description: A test rule") {
+		t.Error("Skill file should contain rule description")
+	}
+	if !strings.Contains(skillContent, "## Content") {
+		t.Error("Skill file should contain rule body content")
+	}
+}
+
+func TestSyncToAGENTSMD(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentDir := filepath.Join(tmpDir, ".agent")
+	rulesDir := filepath.Join(agentDir, "rules")
+
+	// Create rules directory with a test rule
+	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+		t.Fatalf("failed to create rules directory: %v", err)
+	}
+
+	testRule := `---
+name: "Test Rule"
+description: "A test rule"
+when-to-use: "When testing"
+---
+
+## Content
+Test content.`
+
+	rulePath := filepath.Join(rulesDir, "test-rule.mdc")
+	if err := os.WriteFile(rulePath, []byte(testRule), 0600); err != nil {
+		t.Fatalf("failed to write test rule: %v", err)
+	}
+
+	// Test sync
+	err := syncToAGENTSMD(tmpDir, agentDir, rulesDir)
+	if err != nil {
+		t.Fatalf("syncToAGENTSMD() error = %v", err)
+	}
+
+	// Verify AGENTS.md was created
+	agentsMDPath := filepath.Join(tmpDir, "AGENTS.md")
+	if _, err := os.Stat(agentsMDPath); os.IsNotExist(err) {
+		t.Error("AGENTS.md should be created")
+	}
+
+	// Verify content
+	agentsData, err := os.ReadFile(agentsMDPath) //nolint:gosec // Reading test file
+	if err != nil {
+		t.Fatalf("failed to read AGENTS.md: %v", err)
+	}
+
+	agentsContent := string(agentsData)
+	if !strings.Contains(agentsContent, "Test Rule") {
+		t.Error("AGENTS.md should contain rule name")
+	}
+	if !strings.Contains(agentsContent, "A test rule") {
+		t.Error("AGENTS.md should contain rule description")
+	}
+	if !strings.Contains(agentsContent, "When testing") {
+		t.Error("AGENTS.md should contain when-to-use")
+	}
+}
+
+func TestSanitizeSkillName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		want     string
+	}{
+		{
+			name:  "simple name",
+			input: "Git Workflow",
+			want:  "git-workflow",
+		},
+		{
+			name:  "with special chars",
+			input: "Tool Selection Guidelines!",
+			want:  "tool-selection-guidelines",
+		},
+		{
+			name:  "already lowercase",
+			input: "test-rule",
+			want:  "test-rule",
+		},
+		{
+			name:  "with numbers",
+			input: "Rule 123",
+			want:  "rule-123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sanitizeSkillName(tt.input)
+			if got != tt.want {
+				t.Errorf("sanitizeSkillName(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
