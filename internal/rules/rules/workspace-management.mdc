@@ -1,0 +1,66 @@
+---
+name: "Workspace Management"
+description: "Managing agentctl workspaces for parallel development"
+when-to-use: "When working with multiple branches or parallel Claude Code sessions"
+applies-to: ["claude"]
+priority: 1
+tags: ["workspace", "agentctl", "git-worktrees"]
+version: "1.0.0"
+---
+
+## Workspaces
+
+Workspaces allow multiple instances of Claude Code or other agents to run on the same repository at the same time. Workspaces are just a wrapper around git branches worktrees.
+
+**IMPORTANT:** When working in a workspace, you will be in $HOME/.claude/workspaces/<repo>/<workspace>, make all changes there.
+
+**IMPORTANT:** `agentctl workspace` commands use the underlying git repo so they return and manage workspaces for the current Git repository.
+
+### When I tell you to use a workspace
+
+Use `agentctl workspace` commands to manage workspaces. All workspace commands operate on the current Git repository.
+
+### When I tell you to create a workspace
+
+Run:
+```bash
+agentctl workspace create <branch-name>
+```
+This creates a new worktree for the specific branch, creating the branch if it does not already exist.
+
+### When I tell you to show a workspace path
+
+Run:
+```bash
+agentctl workspace show <branch-name>
+```
+This shows the absolute path to the workspace.
+
+### When I tell you to list workspaces
+
+Run:
+```bash
+agentctl workspace list --json
+```
+This lists all workspaces for the current repository.
+
+### When I tell you to delete a workspace
+
+Run:
+```bash
+agentctl workspace delete <branch-name>
+```
+This deletes the workspace by removing the worktree but not the branch.
+
+If the workspace has uncommitted changes and I want to force delete it, run:
+```bash
+agentctl workspace delete --force <branch-name>
+```
+
+### When I tell you to check workspace status
+
+Run:
+```bash
+agentctl workspace status <branch>
+```
+This shows detailed status information about the workspace.
