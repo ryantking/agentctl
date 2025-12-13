@@ -16,6 +16,7 @@ func NewRulesCmd() *cobra.Command {
 		NewRulesInitCmd(),
 		NewRulesListCmd(),
 		NewRulesShowCmd(),
+		NewRulesRemoveCmd(),
 	)
 
 	return cmd
