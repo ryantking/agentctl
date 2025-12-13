@@ -5,7 +5,7 @@ import (
 )
 
 // NewMemoryCmd creates the memory command group.
-// DEPRECATED: Use 'agentctl rules' commands instead. See docs/migration-memory-to-rules.md
+// Deprecated: Use 'agentctl rules' commands instead. See docs/migration-memory-to-rules.md
 func NewMemoryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "memory",
