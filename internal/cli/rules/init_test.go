@@ -11,7 +11,7 @@ func TestInitRules(t *testing.T) {
 
 	// Create a fake git repo
 	gitDir := filepath.Join(tmpDir, ".git")
-	if err := os.MkdirAll(gitDir, 0755); err != nil {
+	if err := os.MkdirAll(gitDir, 0750); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create .git directory: %v", err)
 	}
 
@@ -49,7 +49,7 @@ func TestInitRulesWithForce(t *testing.T) {
 
 	// Create a fake git repo
 	gitDir := filepath.Join(tmpDir, ".git")
-	if err := os.MkdirAll(gitDir, 0755); err != nil {
+	if err := os.MkdirAll(gitDir, 0750); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create .git directory: %v", err)
 	}
 
