@@ -1,3 +1,4 @@
+// Package rules provides commands for managing agent rules in the .agent directory.
 package rules
 
 import (
@@ -52,7 +53,11 @@ Example:
 				// Generate filename from prompt (first few words, sanitized)
 				words := strings.Fields(prompt)
 				if len(words) > 0 {
-					filename = sanitizeSkillName(strings.Join(words[:min(3, len(words))], "-"))
+					maxWords := 3
+					if len(words) < maxWords {
+						maxWords = len(words)
+					}
+					filename = sanitizeSkillName(strings.Join(words[:maxWords], "-"))
 				}
 				if filename == "" {
 					filename = "new-rule"
@@ -68,6 +73,7 @@ Example:
 			if _, err := os.Stat(rulePath); err == nil {
 				return fmt.Errorf("rule file already exists: %s\n\nUse a different --name or remove the existing file", filename)
 			}
+			// File doesn't exist, which is what we want - continue
 
 			// Generate rule content
 			ruleContent, err := generateRuleContent(prompt, name, description, whenToUse, appliesTo)
@@ -104,9 +110,19 @@ func generateRuleContent(prompt, name, description, whenToUse string, appliesTo 
 	if name == "" {
 		words := strings.Fields(prompt)
 		if len(words) > 0 {
-			name = strings.Title(strings.ToLower(words[0]))
+			// Capitalize first letter of first word
+			first := strings.ToLower(words[0])
+			if len(first) > 0 {
+				first = strings.ToUpper(first[:1]) + first[1:]
+			}
+			name = first
 			if len(words) > 1 {
-				name += " " + strings.Title(strings.ToLower(words[1]))
+				// Capitalize first letter of second word
+				second := strings.ToLower(words[1])
+				if len(second) > 0 {
+					second = strings.ToUpper(second[:1]) + second[1:]
+				}
+				name += " " + second
 			}
 		}
 		if name == "" {
@@ -146,17 +162,10 @@ func generateRuleContent(prompt, name, description, whenToUse string, appliesTo 
 	body.WriteString(fmt.Sprintf("## %s\n\n", name))
 	body.WriteString(fmt.Sprintf("%s\n\n", description))
 	body.WriteString("## Guidelines\n\n")
-	body.WriteString(fmt.Sprintf("When working with this rule:\n\n"))
+	body.WriteString("When working with this rule:\n\n")
 	body.WriteString(fmt.Sprintf("- %s\n", prompt))
 	body.WriteString("\n## Examples\n\n")
 	body.WriteString("(Add examples here)\n")
 
 	return frontmatter.String() + body.String(), nil
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
