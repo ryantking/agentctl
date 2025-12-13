@@ -15,6 +15,52 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// InitRules initializes the .agent directory with default rules.
+// This function is exported so it can be called from other packages.
+func InitRules(repoRoot string, force, noProject bool) error {
+	// Determine .agent directory location (AGENTDIR env var or default)
+	agentDir := os.Getenv("AGENTDIR")
+	if agentDir == "" {
+		agentDir = ".agent"
+	}
+	// If relative path, make it relative to repo root
+	if !filepath.IsAbs(agentDir) {
+		agentDir = filepath.Join(repoRoot, agentDir)
+	}
+
+	fmt.Println("Initializing .agent directory...")
+
+	// Create .agent/rules/ directory
+	rulesDir := filepath.Join(agentDir, "rules")
+	if err := os.MkdirAll(rulesDir, 0755); err != nil { //nolint:gosec // Rules directory needs to be readable
+		return fmt.Errorf("failed to create rules directory: %w", err)
+	}
+
+	// Copy default rules from embedded rules/ directory
+	if err := copyDefaultRules(rulesDir, force); err != nil {
+		return err
+	}
+
+	// Create .agent/research/ directory
+	researchDir := filepath.Join(agentDir, "research")
+	if err := os.MkdirAll(researchDir, 0755); err != nil { //nolint:gosec // Research directory needs to be readable
+		return fmt.Errorf("failed to create research directory: %w", err)
+	}
+	relResearchPath, _ := filepath.Rel(repoRoot, researchDir)
+	fmt.Printf("  • %s (created)\n", relResearchPath)
+
+	// Generate project.md unless noProject flag
+	if !noProject {
+		if err := generateProjectMD(agentDir, repoRoot, force); err != nil {
+			// Non-fatal: warn but continue
+			fmt.Printf("  → Project.md generation skipped: %v\n", err)
+		}
+	}
+
+	fmt.Println("\n✓ .agent directory initialized successfully")
+	return nil
+}
+
 // NewRulesInitCmd creates the rules init command.
 func NewRulesInitCmd() *cobra.Command {
 	var force, noProject bool
@@ -36,48 +82,7 @@ Respects AGENTDIR environment variable (defaults to .agent).`,
 				return err
 			}
 
-			// Determine .agent directory location (AGENTDIR env var or default)
-			agentDir := os.Getenv("AGENTDIR")
-			if agentDir == "" {
-				agentDir = ".agent"
-			}
-			// If relative path, make it relative to repo root
-			if !filepath.IsAbs(agentDir) {
-				agentDir = filepath.Join(repoRoot, agentDir)
-			}
-
-			fmt.Println("Initializing .agent directory...")
-
-			// Create .agent/rules/ directory
-			rulesDir := filepath.Join(agentDir, "rules")
-			if err := os.MkdirAll(rulesDir, 0755); err != nil { //nolint:gosec // Rules directory needs to be readable
-				return fmt.Errorf("failed to create rules directory: %w", err)
-			}
-
-			// Copy default rules from embedded rules/ directory
-			if err := copyDefaultRules(rulesDir, force); err != nil {
-				output.Error(err)
-				return err
-			}
-
-			// Create .agent/research/ directory
-			researchDir := filepath.Join(agentDir, "research")
-			if err := os.MkdirAll(researchDir, 0755); err != nil { //nolint:gosec // Research directory needs to be readable
-				return fmt.Errorf("failed to create research directory: %w", err)
-			}
-			relResearchPath, _ := filepath.Rel(repoRoot, researchDir)
-			fmt.Printf("  • %s (created)\n", relResearchPath)
-
-			// Generate project.md unless --no-project flag
-			if !noProject {
-				if err := generateProjectMD(agentDir, repoRoot, force); err != nil {
-					// Non-fatal: warn but continue
-					fmt.Printf("  → Project.md generation skipped: %v\n", err)
-				}
-			}
-
-			fmt.Println("\n✓ .agent directory initialized successfully")
-			return nil
+			return InitRules(repoRoot, force, noProject)
 		},
 	}
 
