@@ -55,7 +55,7 @@ Supports removing multiple rules at once. Prompts for confirmation unless --forc
 					relPath, _ := filepath.Rel(repoRoot, rulePath)
 					fmt.Printf("Remove rule: %s? [y/N]: ", relPath)
 					var response string
-					fmt.Scanln(&response)
+					_, _ = fmt.Scanln(&response) // Ignore error - user input
 					if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
 						fmt.Printf("  → Skipped %s\n", ruleName)
 						continue
