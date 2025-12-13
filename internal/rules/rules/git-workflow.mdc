@@ -1,0 +1,185 @@
+---
+name: "Git Workflow"
+description: "Conventional commits, branch management, and PR workflows"
+when-to-use: "When committing changes, creating branches, or managing pull requests"
+applies-to: ["claude", "cursor", "windsurf"]
+priority: 1
+tags: ["git", "workflow", "conventional-commits"]
+version: "1.0.0"
+---
+
+## Conventional Commits
+
+ALWAYS follow the Conventional Commit Messages specification to generate commit messages WHEN committing to the default branch or merging pull requests:
+
+The commit message should be structured as follows:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Commit Types
+
+- **fix**: a commit of the type fix patches a bug in your codebase (this correlates with PATCH in Semantic Versioning).
+- **feat**: a commit of the type feat introduces a new feature to your codebase (this correlates with MINOR in Semantic Versioning).
+- **BREAKING CHANGE**: a commit that has a footer BREAKING CHANGE:, or appends a ! after the type/scope, introduces a breaking API change (correlating with MAJOR in Semantic Versioning). A BREAKING CHANGE can be part of commits of any type.
+- types other than fix: and feat: are allowed, for example @commitlint/config-conventional (based on the Angular convention) recommends build:, chore:, ci:, docs:, style:, refactor:, perf:, test:, and others.
+- footers other than BREAKING CHANGE: <description> may be provided and follow a convention similar to git trailer format.
+- Additional types are not mandated by the Conventional Commits specification, and have no implicit effect in Semantic Versioning (unless they include a BREAKING CHANGE). A scope may be provided to a commit's type, to provide additional contextual information and is contained within parenthesis, e.g., feat(parser): add ability to parse arrays.
+
+### Conventional Commits Specification
+
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119.
+
+Commits MUST be prefixed with a type, which consists of a noun, feat, fix, etc., followed by the OPTIONAL scope, OPTIONAL !, and REQUIRED terminal colon and space.
+The type feat MUST be used when a commit adds a new feature to your application or library.
+The type fix MUST be used when a commit represents a bug fix for your application.
+A scope MAY be provided after a type. A scope MUST consist of a noun describing a section of the codebase surrounded by parenthesis, e.g., fix(parser):
+A description MUST immediately follow the colon and space after the type/scope prefix. The description is a short summary of the code changes, e.g., fix: array parsing issue when multiple spaces were contained in string.
+A longer commit body MAY be provided after the short description, providing additional contextual information about the code changes. The body MUST begin one blank line after the description.
+A commit body is free-form and MAY consist of any number of newline separated paragraphs.
+One or more footers MAY be provided one blank line after the body. Each footer MUST consist of a word token, followed by either a :<space> or <space># separator, followed by a string value (this is inspired by the git trailer convention).
+A footer's token MUST use - in place of whitespace characters, e.g., Acked-by (this helps differentiate the footer section from a multi-paragraph body). An exception is made for BREAKING CHANGE, which MAY also be used as a token.
+A footer's value MAY contain spaces and newlines, and parsing MUST terminate when the next valid footer token/separator pair is observed.
+Breaking changes MUST be indicated in the type/scope prefix of a commit, or as an entry in the footer.
+If included as a footer, a breaking change MUST consist of the uppercase text BREAKING CHANGE, followed by a colon, space, and description, e.g., BREAKING CHANGE: environment variables now take precedence over config files.
+If included in the type/scope prefix, breaking changes MUST be indicated by a ! immediately before the :. If ! is used, BREAKING CHANGE: MAY be omitted from the footer section, and the commit description SHALL be used to describe the breaking change.
+Types other than feat and fix MAY be used in your commit messages, e.g., docs: update ref docs.
+The units of information that make up Conventional Commits MUST NOT be treated as case sensitive by implementors, with the exception of BREAKING CHANGE which MUST be uppercase.
+BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in a footer.
+
+## Workflow
+
+### When I tell you to commit changes
+
+**If you're on the default branch (main/master):**
+- Check git status to see which changes to commit based on my instructions
+- Manually manage the staging area with `git add`
+- When dealing with many changes, group related changes into separate commits
+- Always use conventional commit format: `<type>(scope): <description>`
+
+**If you're on a feature branch:**
+- Expect that commits for new/modified files are added automatically by hooks
+- For deletions or user-requested changes, manually commit:
+  ```bash
+  git add file-to-delete.py
+  git commit -m "Remove deprecated file"
+  ```
+- Use simple, single-line, non-conventional commit messages like "Changed 3 files" or "Deleted 2 files"
+
+### When I tell you to create a branch
+
+- If using a Linear ticket, use the Linear-generated branch name
+- Otherwise, use a conventional branch name like `feat/area/some-feature`
+- Create the branch: `git checkout -b <branch-name>`
+
+### When I tell you to merge a local branch (without PR)
+
+**IMPORTANT:** Only use this workflow when merging a local branch directly. For pull requests, see "When I tell you to merge a pull request" below.
+
+1. Check `<context-refresh>` for workspace status before merging
+2. Ensure you're on the default branch main/master unless I specify otherwise
+3. Delete the workspace if it exists:
+   ```bash
+   agentctl workspace delete <branch-name>
+   ```
+4. Switch to main and update:
+   ```bash
+   git checkout main && git pull origin main
+   ```
+5. Review changes before merging:
+   ```bash
+   git log main..<branch-name> --oneline
+   git diff main...<branch-name> --stat
+   ```
+6. Squash merge and create conventional commit:
+   ```bash
+   git merge --squash <branch-name>
+   git commit -m "$(cat <<'EOF'
+   feat(scope): description of changes
+
+   Detailed explanation of what changed and why.
+
+   - Key change 1
+   - Key change 2
+
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   EOF
+   )"
+   ```
+7. Push and cleanup:
+   ```bash
+   git push origin main
+   git branch -D <branch-name>
+   ```
+   (Use `-D` not `-d` because squash merges don't create merge references)
+
+### When I tell you to create a pull request
+
+1. Verify auto-commits are present:
+   ```bash
+   git log -1
+   ```
+2. Check for any uncommitted changes:
+   ```bash
+   git status -sb
+   ```
+3. Analyze the changes and ask me if needed about what to include
+4. Push the branch with upstream tracking:
+   ```bash
+   git push -u origin <branch-name>
+   ```
+5. Create the PR using gh CLI with conventional commit format:
+   - **PR title**: Use conventional commit headline format: `<type>(scope): <description>`
+     - Example: `feat(memory): implement memory command tree`
+   - **PR body**: Use conventional commit body format (detailed explanation, NOT the headline)
+     - Start with detailed explanation of what changed and why
+     - Include bullet points for key changes
+     - Add footers like `Co-Authored-By:` as needed
+     - Body MUST contain actual explanations, not placeholder text
+   - **Why**: GitHub squash merge uses PR title + body as the commit message, so format it as a complete conventional commit
+   ```bash
+   gh pr create --title "feat(scope): description" --body "$(cat <<'EOF'
+   Detailed explanation of what changed and why this change matters.
+   Describe the reasoning behind the implementation choices.
+
+   - Actual key change 1 with context
+   - Actual key change 2 with context
+   - Actual key change 3 with context
+
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   EOF
+   )"
+   ```
+
+### When I tell you to merge a pull request
+
+1. Verify PR checks pass:
+   ```bash
+   gh pr checks <number>
+   ```
+2. If checks failed, view logs and fix issues:
+   ```bash
+   gh pr checks <number> --web
+   ```
+3. If there are review comments, address them and push updates:
+   ```bash
+   git add <files>
+   git commit -m "Address review comments"
+   git push
+   ```
+4. Delete the workspace before merging (if applicable):
+   ```bash
+   agentctl workspace delete <branch-name>
+   ```
+5. Merge the pull request:
+   - **GitHub is configured** to use PR title + body as the squash merge commit message
+   - Since the PR was created with conventional commit format (title = headline, body = commit body), you can merge via GitHub UI or use:
+   ```bash
+   gh pr merge <number> --squash --delete-branch
+   ```
+   - No manual commit message crafting needed - GitHub uses the PR title + body automatically

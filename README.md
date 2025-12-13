@@ -37,6 +37,21 @@ agentctl version
 # Initialize Claude Code configuration
 agentctl init
 
+# Initialize .agent directory with default rules
+agentctl rules init
+
+# List all rules
+agentctl rules list
+
+# Show a specific rule
+agentctl rules show git-workflow
+
+# Add a new rule
+agentctl rules add "Always validate input" --name input-validation
+
+# Sync rules to different formats
+agentctl rules sync
+
 # Create a new workspace
 agentctl workspace create my-feature-branch
 
@@ -98,6 +113,59 @@ Initialize Claude Code configuration in a repository or globally.
   - `--global` - Install to `$HOME/.claude` instead of current repository
   - `--force` - Overwrite existing files
   - `--no-index` - Skip Claude CLI repository indexing
+
+Installs agents, skills, settings, MCP config, and initializes `.agent/` directory with default rules.
+
+### Rules Commands
+
+Manage agent rules in the `.agent/` directory. Rules are modular `.mdc` files with YAML frontmatter that can be synced to different formats.
+
+- `agentctl rules init` - Initialize `.agent/` directory with default rules
+  - `--force` - Overwrite existing files
+  - `--no-project` - Skip project.md generation
+
+- `agentctl rules list` - List all rules with metadata
+  - `--json` - Output as JSON for programmatic access
+
+- `agentctl rules show [rule-name]` - Display rule content
+  - `--raw` - Output raw mdc file without pretty-printing
+
+- `agentctl rules add [prompt]` - Add a new rule from a description
+  - `--name <filename>` - Specify filename (without .mdc extension)
+  - `--description <text>` - Rule description (auto-generated if not provided)
+  - `--when-to-use <text>` - When to use this rule (auto-generated if not provided)
+  - `--applies-to <tools>` - Comma-separated list of tools (default: claude)
+
+- `agentctl rules remove [rule-name...]` - Remove rule files
+  - `--force` - Skip confirmation prompt
+  - Supports removing multiple rules at once
+
+- `agentctl rules sync` - Sync rules to different formats
+  - `--cursor` - Copy to `.cursor/rules/` (Cursor format)
+  - `--claude` - Convert to `.claude/skills/<name>/SKILL.md` (Claude skills)
+  - `--agents` - Generate `AGENTS.md` table of contents
+  - `--claude-md` - Generate `CLAUDE.md` overview
+  - If no flags specified, syncs to all formats
+
+**Directory Structure:**
+- `.agent/rules/` - Rule files (.mdc format with YAML frontmatter)
+- `.agent/research/` - Research artifacts (cached findings)
+- `.agent/project.md` - High-level repository description
+
+**Environment Variable:**
+- `AGENTDIR` - Override default `.agent` location (defaults to `.agent`)
+
+**Rule File Format (.mdc):**
+Rules use YAML frontmatter with required fields (`name`, `description`, `when-to-use`) and optional fields (`applies-to`, `priority`, `tags`, `version`). See [docs/rules.md](docs/rules.md) for full schema documentation.
+
+### Memory Commands (Deprecated)
+
+**Note:** The `agentctl memory` commands are deprecated in favor of the new `agentctl rules` system. See [Migration Guide](docs/migration-memory-to-rules.md) for details.
+
+- `agentctl memory init` - Initialize memory files from templates (deprecated)
+- `agentctl memory show [file]` - Display memory file contents (deprecated)
+- `agentctl memory validate` - Validate memory files (deprecated)
+- `agentctl memory index` - Generate repository overview (deprecated)
 
 ### Other Commands
 

@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/ryantking/agentctl/internal/cli/rules"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/ryantking/agentctl/internal/setup"
@@ -17,7 +19,7 @@ func NewInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize Claude Code configuration",
-		Long: `Initialize Claude Code configuration. Installs CLAUDE.md, agents, skills, and settings from the bundled templates directory.
+		Long: `Initialize Claude Code configuration. Installs agents, skills, settings, MCP config, and initializes .agent directory with default rules.
 By default, skips existing files.`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			var target string
@@ -44,9 +46,18 @@ By default, skips existing files.`,
 				return err
 			}
 
-			if err := manager.Install(force, noIndex || globalInstall); err != nil {
+			if err := manager.Install(force, true); err != nil {
 				output.Error(err)
 				return err
+			}
+
+			// Initialize .agent directory with rules (unless --global)
+			if !globalInstall {
+				noProject := noIndex // Use --no-index flag to skip project.md generation
+				if err := rules.InitRules(target, force, noProject); err != nil {
+					// Non-fatal: warn but continue
+					fmt.Printf("  → Rules initialization skipped: %v\n", err)
+				}
 			}
 
 			return nil
