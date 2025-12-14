@@ -150,7 +150,7 @@ func copyDefaultRules(targetDir string, force bool) error {
 }
 
 // generateProjectMD generates .agent/project.md using Anthropic SDK.
-func generateProjectMD(agentDir, repoRoot string, force bool) error {
+func generateProjectMD(agentDir, _ string, force bool) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
 
 	// Check if file exists and skip if not forcing
@@ -185,7 +185,7 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 
 	// Create message request
 	params := anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaude3_7SonnetLatest,
+		Model:     anthropic.ModelClaudeSonnet4_5,
 		MaxTokens: 2000,
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
