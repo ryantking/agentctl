@@ -295,17 +295,20 @@ func syncToAGENTSMD(repoRoot, agentDir, rulesDir string) error {
 				continue
 			}
 
-			priorityLabel := fmt.Sprintf("Priority %d", priority)
-			if priority == 0 {
+			var priorityLabel string
+			switch priority {
+			case 0:
 				priorityLabel = "Priority 0 (Critical)"
-			} else if priority == 1 {
+			case 1:
 				priorityLabel = "Priority 1 (High)"
-			} else if priority == 2 {
+			case 2:
 				priorityLabel = "Priority 2 (Medium)"
-			} else if priority == 3 {
+			case 3:
 				priorityLabel = "Priority 3 (Low)"
-			} else {
+			case 4:
 				priorityLabel = "Priority 4 (Backlog)"
+			default:
+				priorityLabel = fmt.Sprintf("Priority %d", priority)
 			}
 
 			content.WriteString(fmt.Sprintf("### %s\n\n", priorityLabel))
