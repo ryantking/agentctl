@@ -2,10 +2,13 @@
 package rules
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
@@ -103,9 +106,88 @@ Example:
 	return cmd
 }
 
-// generateRuleContent generates rule content from a prompt.
-// For now, this is a simple template-based approach. In the future, this could spawn an agent.
+// generateRuleContent generates rule content from a prompt using Claude CLI.
+// If Claude CLI is not available, falls back to simple template-based generation.
 func generateRuleContent(prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
+	// Try to use Claude CLI if available
+	if _, err := exec.LookPath("claude"); err == nil {
+		return generateRuleContentWithAgent(prompt, name, description, whenToUse, appliesTo)
+	}
+
+	// Fallback to template-based generation
+	return generateRuleContentTemplate(prompt, name, description, whenToUse, appliesTo)
+}
+
+// generateRuleContentWithAgent spawns Claude CLI to generate rule content.
+func generateRuleContentWithAgent(prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
+	systemPrompt := `You are creating a rule file (.mdc format) for an agent rules system. 
+
+The rule file format is:
+- YAML frontmatter with metadata
+- Markdown body with guidelines and examples
+
+Required frontmatter fields:
+- name: Human-readable rule name
+- description: One-line description
+- when-to-use: Context for when this rule applies
+- applies-to: List of tools (default: ["claude"])
+- priority: 0-4 (default: 2)
+- tags: Array of tags
+- version: Semantic version (default: "1.0.0")
+
+The body should include:
+- Clear guidelines on how to apply the rule
+- Examples when helpful
+- Best practices
+
+Generate a complete .mdc rule file based on the user's prompt.`
+
+	userPrompt := fmt.Sprintf(`Create a rule file for: %s`, prompt)
+	
+	// Add any provided metadata to the prompt
+	if name != "" {
+		userPrompt += fmt.Sprintf("\n\nRule name: %s", name)
+	}
+	if description != "" {
+		userPrompt += fmt.Sprintf("\n\nDescription: %s", description)
+	}
+	if whenToUse != "" {
+		userPrompt += fmt.Sprintf("\n\nWhen to use: %s", whenToUse)
+	}
+	if len(appliesTo) > 0 {
+		userPrompt += fmt.Sprintf("\n\nApplies to: %s", strings.Join(appliesTo, ", "))
+	}
+
+	fullPrompt := fmt.Sprintf("%s\n\n%s", systemPrompt, userPrompt)
+
+	fmt.Print("  → Generating rule content with Claude CLI...")
+
+	cmdCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(cmdCtx, "claude", "--print", "--output-format", "text", fullPrompt)
+	cmd.Env = os.Environ()
+
+	output, err := cmd.Output()
+	if err != nil {
+		// If Claude CLI fails, fall back to template
+		fmt.Println(" (failed, using template)")
+		return generateRuleContentTemplate(prompt, name, description, whenToUse, appliesTo)
+	}
+
+	ruleContent := strings.TrimSpace(string(output))
+	if ruleContent == "" {
+		// Empty output, fall back to template
+		fmt.Println(" (empty output, using template)")
+		return generateRuleContentTemplate(prompt, name, description, whenToUse, appliesTo)
+	}
+
+	fmt.Println(" (done)")
+	return ruleContent, nil
+}
+
+// generateRuleContentTemplate generates rule content using a simple template.
+func generateRuleContentTemplate(prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
 	// If name not provided, extract from prompt
 	if name == "" {
 		words := strings.Fields(prompt)
