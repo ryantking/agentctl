@@ -139,7 +139,78 @@ func parseRuleMetadata(rulePath string) (RuleMetadata, error) {
 		return RuleMetadata{}, fmt.Errorf("failed to parse frontmatter: %w", err)
 	}
 
+	// Validate metadata schema
+	if err := validateRuleMetadata(metadata, rulePath); err != nil {
+		return RuleMetadata{}, err
+	}
+
 	return metadata, nil
+}
+
+// validateRuleMetadata validates rule frontmatter schema.
+func validateRuleMetadata(metadata RuleMetadata, rulePath string) error {
+	var errors []string
+
+	// Required fields must be non-empty
+	if strings.TrimSpace(metadata.Name) == "" {
+		errors = append(errors, "required field 'name' is empty")
+	}
+	if strings.TrimSpace(metadata.Description) == "" {
+		errors = append(errors, "required field 'description' is empty")
+	}
+	if strings.TrimSpace(metadata.WhenToUse) == "" {
+		errors = append(errors, "required field 'when-to-use' is empty")
+	}
+
+	// Priority must be 0-4
+	if metadata.Priority < 0 || metadata.Priority > 4 {
+		errors = append(errors, fmt.Sprintf("priority must be 0-4, got %d", metadata.Priority))
+	}
+
+	// Version should follow semver (basic validation)
+	if metadata.Version != "" {
+		if !isValidSemver(metadata.Version) {
+			errors = append(errors, fmt.Sprintf("version should follow semver format (e.g., '1.0.0'), got '%s'", metadata.Version))
+		}
+	}
+
+	if len(errors) > 0 {
+		relPath := rulePath
+		if cwd, err := os.Getwd(); err == nil {
+			if rel, err := filepath.Rel(cwd, rulePath); err == nil {
+				relPath = rel
+			}
+		}
+		return fmt.Errorf("validation errors in %s:\n  - %s", relPath, strings.Join(errors, "\n  - "))
+	}
+
+	return nil
+}
+
+// isValidSemver performs basic semver validation (major.minor.patch).
+func isValidSemver(version string) bool {
+	// Remove 'v' prefix if present
+	version = strings.TrimPrefix(version, "v")
+	
+	parts := strings.Split(version, ".")
+	if len(parts) != 3 {
+		return false
+	}
+
+	// Check each part is numeric
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			return false
+		}
+		// Allow numeric with optional pre-release/build metadata
+		// Basic check: starts with digit
+		if len(part) == 0 || (part[0] < '0' || part[0] > '9') {
+			return false
+		}
+	}
+
+	return true
 }
 
 // extractFrontmatter extracts YAML frontmatter from markdown content.
