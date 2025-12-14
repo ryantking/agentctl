@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/constant"
 	anthclient "github.com/ryantking/agentctl/internal/anthropic"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
@@ -191,7 +190,6 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
 				OfText: &anthropic.TextBlockParam{
 					Text: prompt,
-					Type: constant.Text,
 				},
 			}),
 		},
