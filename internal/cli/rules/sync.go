@@ -262,31 +262,82 @@ func syncToAGENTSMD(repoRoot, agentDir, rulesDir string) error {
 	if projectContent != "" {
 		content.WriteString(projectContent)
 		content.WriteString("\n\n")
+		content.WriteString("---\n\n")
 	}
 
-	content.WriteString("## Available Rules\n\n")
-	content.WriteString("This repository uses a modular rules system. Rules are stored in `.agent/rules/` and can be synced to different formats.\n\n")
+	content.WriteString("## Rules System\n\n")
+	content.WriteString("This repository uses a modular rules system. Rules are stored in `.agent/rules/` as `.mdc` files (Markdown with frontmatter) and can be synced to different formats for different tools.\n\n")
+	content.WriteString("### Managing Rules\n\n")
+	content.WriteString("- **List rules**: `agentctl rules list`\n")
+	content.WriteString("- **View rule**: `agentctl rules show <name>`\n")
+	content.WriteString("- **Add rule**: `agentctl rules add \"<description>\"`\n")
+	content.WriteString("- **Sync rules**: `agentctl rules sync` (generates this file)\n\n")
 
 	if len(ruleInfos) == 0 {
-		content.WriteString("No rules found. Run `agentctl rules init` to initialize.\n")
+		content.WriteString("## Available Rules\n\n")
+		content.WriteString("No rules found. Run `agentctl rules init` to initialize with default rules.\n")
 	} else {
-		content.WriteString("| Rule | Description | When to Use |\n")
-		content.WriteString("|------|-------------|-------------|\n")
-		
+		// Group rules by priority
+		priorityGroups := make(map[int][]RuleInfo)
 		for _, rule := range ruleInfos {
-			name := rule.Metadata.Name
-			desc := rule.Metadata.Description
-			whenToUse := rule.Metadata.WhenToUse
-			
-			// Escape pipe characters in markdown table
-			name = strings.ReplaceAll(name, "|", "\\|")
-			desc = strings.ReplaceAll(desc, "|", "\\|")
-			whenToUse = strings.ReplaceAll(whenToUse, "|", "\\|")
-			
-			content.WriteString(fmt.Sprintf("| %s | %s | %s |\n", name, desc, whenToUse))
+			priority := rule.Metadata.Priority
+			priorityGroups[priority] = append(priorityGroups[priority], rule)
 		}
-		
-		content.WriteString("\nFor more details, see `.agent/rules/` directory.\n")
+
+		content.WriteString("## Available Rules\n\n")
+		content.WriteString("Rules are organized by priority (0 = highest, 4 = lowest).\n\n")
+
+		// Sort priorities and output groups
+		priorities := []int{0, 1, 2, 3, 4}
+		for _, priority := range priorities {
+			rules := priorityGroups[priority]
+			if len(rules) == 0 {
+				continue
+			}
+
+			priorityLabel := fmt.Sprintf("Priority %d", priority)
+			if priority == 0 {
+				priorityLabel = "Priority 0 (Critical)"
+			} else if priority == 1 {
+				priorityLabel = "Priority 1 (High)"
+			} else if priority == 2 {
+				priorityLabel = "Priority 2 (Medium)"
+			} else if priority == 3 {
+				priorityLabel = "Priority 3 (Low)"
+			} else {
+				priorityLabel = "Priority 4 (Backlog)"
+			}
+
+			content.WriteString(fmt.Sprintf("### %s\n\n", priorityLabel))
+			content.WriteString("| Rule | Description | When to Use | Tags |\n")
+			content.WriteString("|------|-------------|-------------|------|\n")
+
+			for _, rule := range rules {
+				name := rule.Metadata.Name
+				desc := rule.Metadata.Description
+				whenToUse := rule.Metadata.WhenToUse
+				tags := strings.Join(rule.Metadata.Tags, ", ")
+				if tags == "" {
+					tags = "-"
+				}
+
+				// Escape pipe characters in markdown table
+				name = strings.ReplaceAll(name, "|", "\\|")
+				desc = strings.ReplaceAll(desc, "|", "\\|")
+				whenToUse = strings.ReplaceAll(whenToUse, "|", "\\|")
+				tags = strings.ReplaceAll(tags, "|", "\\|")
+
+				content.WriteString(fmt.Sprintf("| %s | %s | %s | %s |\n", name, desc, whenToUse, tags))
+			}
+			content.WriteString("\n")
+		}
+
+		content.WriteString("### Viewing Rules\n\n")
+		content.WriteString("To view the full content of a rule:\n\n")
+		content.WriteString("```bash\n")
+		content.WriteString("agentctl rules show <rule-name>\n")
+		content.WriteString("```\n\n")
+		content.WriteString("For more details, see `.agent/rules/` directory.\n")
 	}
 
 	// Write AGENTS.md
@@ -325,21 +376,53 @@ func syncToCLAUDEMD(repoRoot, agentDir, rulesDir string) error {
 	if projectContent != "" {
 		content.WriteString(projectContent)
 		content.WriteString("\n\n")
+		content.WriteString("---\n\n")
 	}
 
-	content.WriteString("## Available Skills\n\n")
-	content.WriteString("Claude Code automatically loads skills from `.claude/skills/`. Run `agentctl rules sync --claude` to sync rules to skills.\n\n")
+	content.WriteString("## Skills\n\n")
+	content.WriteString("Claude Code automatically loads skills from `.claude/skills/`. Each skill provides specialized knowledge or workflows for this repository.\n\n")
+	content.WriteString("### Syncing Skills\n\n")
+	content.WriteString("To sync rules to Claude skills:\n\n")
+	content.WriteString("```bash\n")
+	content.WriteString("agentctl rules sync --claude\n")
+	content.WriteString("```\n\n")
+	content.WriteString("This converts `.agent/rules/*.mdc` files into `.claude/skills/<name>/SKILL.md` format.\n\n")
 
 	if len(ruleInfos) == 0 {
-		content.WriteString("No rules found. Run `agentctl rules init` to initialize.\n")
+		content.WriteString("### Available Skills\n\n")
+		content.WriteString("No skills found. Run `agentctl rules init` to initialize, then `agentctl rules sync --claude` to sync rules to skills.\n")
 	} else {
-		for _, rule := range ruleInfos {
-			content.WriteString(fmt.Sprintf("### %s\n\n", rule.Metadata.Name))
+		content.WriteString("### Available Skills\n\n")
+		content.WriteString("The following skills are available in this repository:\n\n")
+
+		for i, rule := range ruleInfos {
+			content.WriteString(fmt.Sprintf("#### %s\n\n", rule.Metadata.Name))
 			content.WriteString(fmt.Sprintf("%s\n\n", rule.Metadata.Description))
+			
 			if rule.Metadata.WhenToUse != "" {
 				content.WriteString(fmt.Sprintf("**When to use:** %s\n\n", rule.Metadata.WhenToUse))
 			}
+
+			if len(rule.Metadata.AppliesTo) > 0 {
+				content.WriteString(fmt.Sprintf("**Applies to:** %s\n\n", strings.Join(rule.Metadata.AppliesTo, ", ")))
+			}
+
+			if len(rule.Metadata.Tags) > 0 {
+				content.WriteString(fmt.Sprintf("**Tags:** %s\n\n", strings.Join(rule.Metadata.Tags, ", ")))
+			}
+
+			// Add separator between skills (except last one)
+			if i < len(ruleInfos)-1 {
+				content.WriteString("---\n\n")
+			}
 		}
+
+		content.WriteString("### Managing Skills\n\n")
+		content.WriteString("- **View skill**: `agentctl rules show <skill-name>`\n")
+		content.WriteString("- **List all skills**: `agentctl rules list`\n")
+		content.WriteString("- **Add new skill**: `agentctl rules add \"<description>\"`\n")
+		content.WriteString("- **Sync all skills**: `agentctl rules sync --claude`\n\n")
+		content.WriteString("Skills are automatically loaded by Claude Code when present in `.claude/skills/`.\n")
 	}
 
 	// Write CLAUDE.md
