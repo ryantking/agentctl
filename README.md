@@ -184,6 +184,16 @@ Rules use YAML frontmatter with required fields (`name`, `description`, `when-to
 - `govulncheck` (for vulnerability checking)
 - macOS (for full feature support, including notifications)
 
+### Optional: Anthropic API Key
+
+Some features (like agent-based rule generation) require an Anthropic API key:
+
+```bash
+export ANTHROPIC_API_KEY=your-api-key-here
+```
+
+If not configured, these features will gracefully fall back to template-based generation.
+
 ### Setup
 
 ```bash
