@@ -78,7 +78,7 @@ Test content.`
 	}
 
 	// Test sync
-	err := syncToClaudeSkills(tmpDir, rulesDir)
+	err := syncToClaudeSkills(tmpDir, rulesDir, false)
 	if err != nil {
 		t.Fatalf("syncToClaudeSkills() error = %v", err)
 	}
@@ -110,6 +110,84 @@ Test content.`
 	}
 	if !strings.Contains(skillContent, "## Content") {
 		t.Error("Skill file should contain rule body content")
+	}
+}
+
+func TestSyncToClaudeSkillsSkipsExisting(t *testing.T) {
+	tmpDir := t.TempDir()
+	rulesDir := filepath.Join(tmpDir, ".agent", "rules")
+	claudeSkillsDir := filepath.Join(tmpDir, ".claude", "skills")
+
+	// Create rules directory with a test rule
+	if err := os.MkdirAll(rulesDir, 0750); err != nil { //nolint:gosec // Test directory
+		t.Fatalf("failed to create rules directory: %v", err)
+	}
+
+	testRule := `---
+name: "Test Rule"
+description: "A test rule"
+---
+
+## Content
+Test content.`
+
+	rulePath := filepath.Join(rulesDir, "test-rule.mdc")
+	if err := os.WriteFile(rulePath, []byte(testRule), 0600); err != nil {
+		t.Fatalf("failed to write test rule: %v", err)
+	}
+
+	// Create existing skill with manual modifications
+	skillDir := filepath.Join(claudeSkillsDir, "test-rule")
+	if err := os.MkdirAll(skillDir, 0750); err != nil { //nolint:gosec // Test directory
+		t.Fatalf("failed to create skill directory: %v", err)
+	}
+
+	existingSkill := `---
+name: Manual Skill
+description: Manually created skill
+---
+
+## Manual Content
+This was manually created.`
+
+	skillMDPath := filepath.Join(skillDir, "SKILL.md")
+	if err := os.WriteFile(skillMDPath, []byte(existingSkill), 0600); err != nil {
+		t.Fatalf("failed to write existing skill: %v", err)
+	}
+
+	// Test sync without force (should skip)
+	err := syncToClaudeSkills(tmpDir, rulesDir, false)
+	if err != nil {
+		t.Fatalf("syncToClaudeSkills() error = %v", err)
+	}
+
+	// Verify existing skill was not overwritten
+	skillData, err := os.ReadFile(skillMDPath) //nolint:gosec // Reading test file
+	if err != nil {
+		t.Fatalf("failed to read skill file: %v", err)
+	}
+
+	if string(skillData) != existingSkill {
+		t.Error("Existing skill should not be overwritten without --force")
+	}
+
+	// Test sync with force (should overwrite)
+	err = syncToClaudeSkills(tmpDir, rulesDir, true)
+	if err != nil {
+		t.Fatalf("syncToClaudeSkills() with force error = %v", err)
+	}
+
+	// Verify skill was overwritten
+	skillData, err = os.ReadFile(skillMDPath) //nolint:gosec // Reading test file
+	if err != nil {
+		t.Fatalf("failed to read skill file: %v", err)
+	}
+
+	if strings.Contains(string(skillData), "Manual Skill") {
+		t.Error("Existing skill should be overwritten with --force")
+	}
+	if !strings.Contains(string(skillData), "Test Rule") {
+		t.Error("Skill should contain new rule content after force overwrite")
 	}
 }
 

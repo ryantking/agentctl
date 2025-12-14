@@ -13,7 +13,7 @@ import (
 
 // NewRulesSyncCmd creates the rules sync command.
 func NewRulesSyncCmd() *cobra.Command {
-	var cursor, claude, agents, claudeMD bool
+	var cursor, claude, agents, claudeMD, force bool
 
 	cmd := &cobra.Command{
 		Use:   "sync",
@@ -61,7 +61,7 @@ If no flags are specified, syncs to all formats.`,
 			}
 
 			if claude {
-				if err := syncToClaudeSkills(repoRoot, rulesDir); err != nil {
+				if err := syncToClaudeSkills(repoRoot, rulesDir, force); err != nil {
 					errors = append(errors, fmt.Sprintf("Claude skills sync: %v", err))
 				}
 			}
@@ -94,6 +94,7 @@ If no flags are specified, syncs to all formats.`,
 	cmd.Flags().BoolVar(&claude, "claude", false, "Sync to .claude/skills/")
 	cmd.Flags().BoolVar(&agents, "agents", false, "Generate AGENTS.md table of contents")
 	cmd.Flags().BoolVar(&claudeMD, "claude-md", false, "Generate CLAUDE.md")
+	cmd.Flags().BoolVar(&force, "force", false, "Overwrite existing Claude skills (skipped by default)")
 
 	return cmd
 }
@@ -145,7 +146,7 @@ func syncToCursor(repoRoot, rulesDir string) error {
 }
 
 // syncToClaudeSkills converts each .agent/rules/*.mdc to .claude/skills/<name>/SKILL.md.
-func syncToClaudeSkills(repoRoot, rulesDir string) error {
+func syncToClaudeSkills(repoRoot, rulesDir string, force bool) error {
 	claudeSkillsDir := filepath.Join(repoRoot, ".claude", "skills")
 	
 	fmt.Println("Syncing to Claude skills...")
@@ -200,12 +201,30 @@ description: %s
 %s`, metadata.Name, metadata.Description, body)
 
 		skillMDPath := filepath.Join(skillDir, "SKILL.md")
+		
+		// Check if skill already exists
+		if _, err := os.Stat(skillMDPath); err == nil {
+			// Skill exists
+			if !force {
+				relPath, _ := filepath.Rel(repoRoot, skillMDPath)
+				fmt.Printf("  ⚠ %s (skipped, already exists, use --force to overwrite)\n", relPath)
+				continue
+			}
+			// Force overwrite
+			relPath, _ := filepath.Rel(repoRoot, skillMDPath)
+			fmt.Printf("  • %s (overwritten)\n", relPath)
+		} else if os.IsNotExist(err) {
+			// Skill doesn't exist, create it
+			relPath, _ := filepath.Rel(repoRoot, skillMDPath)
+			fmt.Printf("  • %s (synced)\n", relPath)
+		} else {
+			// Other error checking file
+			return fmt.Errorf("failed to check skill file %s: %w", skillName, err)
+		}
+		
 		if err := os.WriteFile(skillMDPath, []byte(skillContent), 0644); err != nil { //nolint:gosec // Skill file needs to be readable
 			return fmt.Errorf("failed to write skill file %s: %w", skillName, err)
 		}
-
-		relPath, _ := filepath.Rel(repoRoot, skillMDPath)
-		fmt.Printf("  • %s (synced)\n", relPath)
 		converted++
 	}
 
