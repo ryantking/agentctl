@@ -165,7 +165,7 @@ Generate a complete .mdc rule file based on the user's prompt.`
 	cmdCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(cmdCtx, "claude", "--print", "--output-format", "text", fullPrompt)
+	cmd := exec.CommandContext(cmdCtx, "claude", "--print", "--output-format", "text", fullPrompt) //nolint:gosec // Claude CLI is user-controlled
 	cmd.Env = os.Environ()
 
 	output, err := cmd.Output()
