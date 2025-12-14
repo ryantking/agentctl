@@ -32,7 +32,11 @@ Supports removing multiple rules at once. Prompts for confirmation unless --forc
 			}
 
 			// Determine .agent directory location (AGENTDIR env var or default)
-			agentDir := getAgentDir(repoRoot)
+			agentDir, err := getAgentDir(repoRoot)
+			if err != nil {
+				output.Error(err)
+				return err
+			}
 			rulesDir := filepath.Join(agentDir, "rules")
 
 			// Check if rules directory exists

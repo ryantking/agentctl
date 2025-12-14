@@ -330,3 +330,118 @@ Content.`
 		t.Errorf("Expected 'valid.mdc', got '%s'", rules[0].Filename)
 	}
 }
+
+func TestValidateAgentDir(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	tests := []struct {
+		name      string
+		agentDir  string
+		wantError bool
+		errorMsg  string
+	}{
+		{
+			name:      "empty string",
+			agentDir:  "",
+			wantError: true,
+			errorMsg:  "cannot be empty",
+		},
+		{
+			name:      "valid relative path",
+			agentDir:  ".agent",
+			wantError: false,
+		},
+		{
+			name:      "valid custom name",
+			agentDir:  ".custom-agent",
+			wantError: false,
+		},
+		{
+			name:      "contains ..",
+			agentDir:  "../.agent",
+			wantError: true,
+			errorMsg:  "invalid character sequence",
+		},
+		{
+			name:      "contains ~",
+			agentDir:  "~/.agent",
+			wantError: true,
+			errorMsg:  "invalid character sequence",
+		},
+		{
+			name:      "valid absolute path",
+			agentDir:  tmpDir,
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateAgentDir(tt.agentDir)
+			if (err != nil) != tt.wantError {
+				t.Errorf("validateAgentDir(%q) error = %v, wantError %v", tt.agentDir, err, tt.wantError)
+				return
+			}
+			if tt.wantError && tt.errorMsg != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("validateAgentDir(%q) error = %v, want error containing %q", tt.agentDir, err, tt.errorMsg)
+				}
+			}
+		})
+	}
+}
+
+func TestGetAgentDir(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	tests := []struct {
+		name      string
+		envValue  string
+		repoRoot  string
+		wantError bool
+	}{
+		{
+			name:      "default .agent",
+			envValue:  "",
+			repoRoot:  tmpDir,
+			wantError: false,
+		},
+		{
+			name:      "custom relative path",
+			envValue:  ".custom",
+			repoRoot:  tmpDir,
+			wantError: false,
+		},
+		{
+			name:      "invalid path with ..",
+			envValue:  "../.agent",
+			repoRoot:  tmpDir,
+			wantError: true,
+		},
+		{
+			name:      "valid absolute path",
+			envValue:  tmpDir,
+			repoRoot:  "/some/repo",
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.envValue != "" {
+				t.Setenv("AGENTDIR", tt.envValue)
+			} else {
+				os.Unsetenv("AGENTDIR")
+			}
+
+			agentDir, err := getAgentDir(tt.repoRoot)
+			if (err != nil) != tt.wantError {
+				t.Errorf("getAgentDir() error = %v, wantError %v", err, tt.wantError)
+				return
+			}
+			if !tt.wantError && agentDir == "" {
+				t.Error("getAgentDir() should return non-empty path")
+			}
+		})
+	}
+}

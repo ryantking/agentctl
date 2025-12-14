@@ -19,13 +19,9 @@ import (
 // This function is exported so it can be called from other packages.
 func InitRules(repoRoot string, force, noProject bool) error {
 	// Determine .agent directory location (AGENTDIR env var or default)
-	agentDir := os.Getenv("AGENTDIR")
-	if agentDir == "" {
-		agentDir = ".agent"
-	}
-	// If relative path, make it relative to repo root
-	if !filepath.IsAbs(agentDir) {
-		agentDir = filepath.Join(repoRoot, agentDir)
+	agentDir, err := getAgentDir(repoRoot)
+	if err != nil {
+		return fmt.Errorf("invalid AGENTDIR: %w", err)
 	}
 
 	fmt.Println("Initializing .agent directory...")

@@ -50,7 +50,11 @@ from frontmatter. Use --json for structured output.`,
 			}
 
 			// Determine .agent directory location (AGENTDIR env var or default)
-			agentDir := getAgentDir(repoRoot)
+			agentDir, err := getAgentDir(repoRoot)
+			if err != nil {
+				output.Error(err)
+				return err
+			}
 			rulesDir := filepath.Join(agentDir, "rules")
 
 			rules, err := listRules(rulesDir)
@@ -73,16 +77,52 @@ from frontmatter. Use --json for structured output.`,
 }
 
 // getAgentDir returns the .agent directory path, respecting AGENTDIR env var.
-func getAgentDir(repoRoot string) string {
+func getAgentDir(repoRoot string) (string, error) {
 	agentDir := os.Getenv("AGENTDIR")
 	if agentDir == "" {
 		agentDir = ".agent"
+	} else {
+		// Validate AGENTDIR if set
+		if err := validateAgentDir(agentDir); err != nil {
+			return "", fmt.Errorf("invalid AGENTDIR environment variable: %w", err)
+		}
 	}
 	// If relative path, make it relative to repo root
 	if !filepath.IsAbs(agentDir) {
 		agentDir = filepath.Join(repoRoot, agentDir)
 	}
-	return agentDir
+	return agentDir, nil
+}
+
+// validateAgentDir validates the AGENTDIR environment variable value.
+func validateAgentDir(agentDir string) error {
+	if agentDir == "" {
+		return fmt.Errorf("AGENTDIR cannot be empty")
+	}
+
+	// Check for invalid characters (basic validation)
+	invalidChars := []string{"..", "~", "$", "`"}
+	for _, char := range invalidChars {
+		if strings.Contains(agentDir, char) {
+			return fmt.Errorf("AGENTDIR contains invalid character sequence: %s", char)
+		}
+	}
+
+	// Check for absolute paths that don't exist (warn but allow)
+	if filepath.IsAbs(agentDir) {
+		if _, err := os.Stat(agentDir); os.IsNotExist(err) {
+			// Allow non-existent absolute paths (will be created)
+			// But validate parent directory exists
+			parent := filepath.Dir(agentDir)
+			if parent != agentDir && parent != "/" {
+				if _, err := os.Stat(parent); os.IsNotExist(err) {
+					return fmt.Errorf("AGENTDIR parent directory does not exist: %s", parent)
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // listRules reads all .mdc files from the rules directory and extracts metadata.
