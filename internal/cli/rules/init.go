@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/shared/constant"
 	anthclient "github.com/ryantking/agentctl/internal/anthropic"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
@@ -184,12 +185,13 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 
 	// Create message request
 	params := anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaude3_5Sonnet20241022,
+		Model:     anthropic.ModelClaude3_5SonnetLatest,
 		MaxTokens: 2000,
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
 				OfText: &anthropic.TextBlockParam{
 					Text: prompt,
+					Type: constant.Text,
 				},
 			}),
 		},
