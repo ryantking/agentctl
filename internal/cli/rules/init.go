@@ -185,13 +185,13 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 
 	// Create message request
 	params := anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaude3_5SonnetLatest,
+		Model:     anthropic.ModelClaude3_7SonnetLatest,
 		MaxTokens: 2000,
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
 				OfText: &anthropic.TextBlockParam{
 					Text: prompt,
-					Type: constant.Text,
+					Type: constant.Text("text"),
 				},
 			}),
 		},
@@ -206,8 +206,8 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 	// Extract text content from response
 	var projectContent strings.Builder
 	for _, block := range msg.Content {
-		if textBlock := block.OfText; textBlock != nil {
-			projectContent.WriteString(textBlock.Text)
+		if block.Type == "text" {
+			projectContent.WriteString(block.Text)
 		}
 	}
 
