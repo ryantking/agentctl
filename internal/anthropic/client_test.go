@@ -3,8 +3,6 @@ package anthropic
 import (
 	"os"
 	"testing"
-
-	"github.com/anthropics/anthropic-sdk-go"
 )
 
 func TestIsConfigured(t *testing.T) {
