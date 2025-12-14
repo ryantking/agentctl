@@ -290,8 +290,8 @@ func syncToAGENTSMD(repoRoot, agentDir, rulesDir string) error {
 		// Sort priorities and output groups
 		priorities := []int{0, 1, 2, 3, 4}
 		for _, priority := range priorities {
-			rules := priorityGroups[priority]
-			if len(rules) == 0 {
+			rules, hasRules := priorityGroups[priority]
+			if !hasRules || len(rules) == 0 {
 				continue
 			}
 
