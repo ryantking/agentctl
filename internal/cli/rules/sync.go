@@ -221,8 +221,9 @@ func syncToAGENTSMD(repoRoot, agentDir, rulesDir string) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
 	var projectContent string
 	if data, err := os.ReadFile(projectMDPath); err == nil { //nolint:gosec // Reading project.md
-		projectContent = string(data)
+		projectContent = strings.TrimSpace(string(data))
 	}
+	// If project.md doesn't exist, projectContent remains empty and is skipped below
 
 	// List all rules
 	ruleInfos, err := listRules(rulesDir)
@@ -283,8 +284,9 @@ func syncToCLAUDEMD(repoRoot, agentDir, rulesDir string) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
 	var projectContent string
 	if data, err := os.ReadFile(projectMDPath); err == nil { //nolint:gosec // Reading project.md
-		projectContent = string(data)
+		projectContent = strings.TrimSpace(string(data))
 	}
+	// If project.md doesn't exist, projectContent remains empty and is skipped below
 
 	// List all rules
 	ruleInfos, err := listRules(rulesDir)

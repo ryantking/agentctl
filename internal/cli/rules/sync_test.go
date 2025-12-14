@@ -13,7 +13,7 @@ func TestSyncToCursor(t *testing.T) {
 	cursorRulesDir := filepath.Join(tmpDir, ".cursor", "rules")
 
 	// Create rules directory with a test rule
-	if err := os.MkdirAll(rulesDir, 0755); err != nil { //nolint:gosec // Test directory
+	if err := os.MkdirAll(rulesDir, 0750); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create rules directory: %v", err)
 	}
 
@@ -59,7 +59,7 @@ func TestSyncToClaudeSkills(t *testing.T) {
 	claudeSkillsDir := filepath.Join(tmpDir, ".claude", "skills")
 
 	// Create rules directory with a test rule
-	if err := os.MkdirAll(rulesDir, 0755); err != nil { //nolint:gosec // Test directory
+	if err := os.MkdirAll(rulesDir, 0750); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create rules directory: %v", err)
 	}
 
@@ -119,7 +119,7 @@ func TestSyncToAGENTSMD(t *testing.T) {
 	rulesDir := filepath.Join(agentDir, "rules")
 
 	// Create rules directory with a test rule
-	if err := os.MkdirAll(rulesDir, 0755); err != nil { //nolint:gosec // Test directory
+	if err := os.MkdirAll(rulesDir, 0750); err != nil { //nolint:gosec // Test directory
 		t.Fatalf("failed to create rules directory: %v", err)
 	}
 
@@ -164,6 +164,108 @@ Test content.`
 	}
 	if !strings.Contains(agentsContent, "When testing") {
 		t.Error("AGENTS.md should contain when-to-use")
+	}
+}
+
+func TestSyncToAGENTSMDWithoutProjectMD(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentDir := filepath.Join(tmpDir, ".agent")
+	rulesDir := filepath.Join(agentDir, "rules")
+
+	// Create rules directory with a test rule (but no project.md)
+	if err := os.MkdirAll(rulesDir, 0750); err != nil { //nolint:gosec // Test directory
+		t.Fatalf("failed to create rules directory: %v", err)
+	}
+
+	testRule := `---
+name: "Test Rule"
+description: "A test rule"
+---
+
+## Content
+Test content.`
+
+	rulePath := filepath.Join(rulesDir, "test-rule.mdc")
+	if err := os.WriteFile(rulePath, []byte(testRule), 0600); err != nil {
+		t.Fatalf("failed to write test rule: %v", err)
+	}
+
+	// Test sync without project.md
+	err := syncToAGENTSMD(tmpDir, agentDir, rulesDir)
+	if err != nil {
+		t.Fatalf("syncToAGENTSMD() error = %v", err)
+	}
+
+	// Verify AGENTS.md was created
+	agentsMDPath := filepath.Join(tmpDir, "AGENTS.md")
+	if _, err := os.Stat(agentsMDPath); os.IsNotExist(err) {
+		t.Error("AGENTS.md should be created even without project.md")
+	}
+
+	// Verify content doesn't have empty sections
+	agentsData, err := os.ReadFile(agentsMDPath) //nolint:gosec // Reading test file
+	if err != nil {
+		t.Fatalf("failed to read AGENTS.md: %v", err)
+	}
+
+	agentsContent := string(agentsData)
+	if !strings.Contains(agentsContent, "Test Rule") {
+		t.Error("AGENTS.md should contain rule name")
+	}
+	// Should not have empty project content sections
+	if strings.Contains(agentsContent, "\n\n\n") {
+		t.Error("AGENTS.md should not have empty sections")
+	}
+}
+
+func TestSyncToCLAUDEMDWithoutProjectMD(t *testing.T) {
+	tmpDir := t.TempDir()
+	agentDir := filepath.Join(tmpDir, ".agent")
+	rulesDir := filepath.Join(agentDir, "rules")
+
+	// Create rules directory with a test rule (but no project.md)
+	if err := os.MkdirAll(rulesDir, 0750); err != nil { //nolint:gosec // Test directory
+		t.Fatalf("failed to create rules directory: %v", err)
+	}
+
+	testRule := `---
+name: "Test Rule"
+description: "A test rule"
+---
+
+## Content
+Test content.`
+
+	rulePath := filepath.Join(rulesDir, "test-rule.mdc")
+	if err := os.WriteFile(rulePath, []byte(testRule), 0600); err != nil {
+		t.Fatalf("failed to write test rule: %v", err)
+	}
+
+	// Test sync without project.md
+	err := syncToCLAUDEMD(tmpDir, agentDir, rulesDir)
+	if err != nil {
+		t.Fatalf("syncToCLAUDEMD() error = %v", err)
+	}
+
+	// Verify CLAUDE.md was created
+	claudeMDPath := filepath.Join(tmpDir, "CLAUDE.md")
+	if _, err := os.Stat(claudeMDPath); os.IsNotExist(err) {
+		t.Error("CLAUDE.md should be created even without project.md")
+	}
+
+	// Verify content doesn't have empty sections
+	claudeData, err := os.ReadFile(claudeMDPath) //nolint:gosec // Reading test file
+	if err != nil {
+		t.Fatalf("failed to read CLAUDE.md: %v", err)
+	}
+
+	claudeContent := string(claudeData)
+	if !strings.Contains(claudeContent, "Test Rule") {
+		t.Error("CLAUDE.md should contain rule name")
+	}
+	// Should not have empty project content sections
+	if strings.Contains(claudeContent, "\n\n\n") {
+		t.Error("CLAUDE.md should not have empty sections")
 	}
 }
 
