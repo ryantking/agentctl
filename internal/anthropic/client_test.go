@@ -10,9 +10,9 @@ func TestIsConfigured(t *testing.T) {
 	originalKey := os.Getenv("ANTHROPIC_API_KEY")
 	defer func() {
 		if originalKey != "" {
-			os.Setenv("ANTHROPIC_API_KEY", originalKey)
+			_ = os.Setenv("ANTHROPIC_API_KEY", originalKey) //nolint:errcheck // Test cleanup
 		} else {
-			os.Unsetenv("ANTHROPIC_API_KEY")
+			_ = os.Unsetenv("ANTHROPIC_API_KEY") //nolint:errcheck // Test cleanup
 		}
 	}()
 
@@ -23,7 +23,7 @@ func TestIsConfigured(t *testing.T) {
 	}
 
 	// Test set
-	os.Setenv("ANTHROPIC_API_KEY", "test-key")
+	_ = os.Setenv("ANTHROPIC_API_KEY", "test-key") //nolint:errcheck // Test setup
 	if !IsConfigured() {
 		t.Error("IsConfigured() should return true when API key is set")
 	}
@@ -34,7 +34,7 @@ func TestNewClientOrNil(t *testing.T) {
 	originalKey := os.Getenv("ANTHROPIC_API_KEY")
 	defer func() {
 		if originalKey != "" {
-			os.Setenv("ANTHROPIC_API_KEY", originalKey)
+			_ = os.Setenv("ANTHROPIC_API_KEY", originalKey) //nolint:errcheck // Test cleanup
 		} else {
 			_ = os.Unsetenv("ANTHROPIC_API_KEY") //nolint:errcheck // Test cleanup
 		}
