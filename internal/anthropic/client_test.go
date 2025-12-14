@@ -3,6 +3,8 @@ package anthropic
 import (
 	"os"
 	"testing"
+
+	"github.com/anthropics/anthropic-sdk-go"
 )
 
 func TestIsConfigured(t *testing.T) {
@@ -36,7 +38,7 @@ func TestNewClientOrNil(t *testing.T) {
 		if originalKey != "" {
 			os.Setenv("ANTHROPIC_API_KEY", originalKey)
 		} else {
-			os.Unsetenv("ANTHROPIC_API_KEY")
+			_ = os.Unsetenv("ANTHROPIC_API_KEY") //nolint:errcheck // Test cleanup
 		}
 	}()
 
@@ -46,7 +48,9 @@ func TestNewClientOrNil(t *testing.T) {
 	if err != nil {
 		t.Errorf("NewClientOrNil() should not return error when API key not set, got %v", err)
 	}
-	if client != nil {
-		t.Error("NewClientOrNil() should return nil client when API key not set")
+	// Check if client is zero value (empty struct)
+	var zeroClient anthropic.Client
+	if client != zeroClient {
+		t.Error("NewClientOrNil() should return zero client when API key not set")
 	}
 }
