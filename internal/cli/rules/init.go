@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/constant"
+	anthclient "github.com/ryantking/agentctl/internal/anthropic"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/ryantking/agentctl/internal/rules"
@@ -65,7 +67,7 @@ func NewRulesInitCmd() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize .agent directory with default rules",
 		Long: `Initialize .agent directory structure. Copies default rules from agentctl's rules/ directory
-to .agent/rules/. Generates .agent/project.md using Claude CLI. Creates .agent/research/ directory.
+to .agent/rules/. Generates .agent/project.md using Anthropic SDK. Creates .agent/research/ directory.
 
 Respects AGENTDIR environment variable (defaults to .agent).`,
 		RunE: func(_ *cobra.Command, _ []string) error {
@@ -147,7 +149,7 @@ func copyDefaultRules(targetDir string, force bool) error {
 	return nil
 }
 
-// generateProjectMD generates .agent/project.md using Claude CLI.
+// generateProjectMD generates .agent/project.md using Anthropic SDK.
 func generateProjectMD(agentDir, repoRoot string, force bool) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
 
@@ -157,8 +159,14 @@ func generateProjectMD(agentDir, repoRoot string, force bool) error {
 		return nil
 	}
 
-	if _, err := exec.LookPath("claude"); err != nil {
-		return fmt.Errorf("claude CLI not found")
+	// Check if API key is configured
+	if !anthclient.IsConfigured() {
+		return fmt.Errorf("ANTHROPIC_API_KEY environment variable not set")
+	}
+
+	client, err := anthclient.NewClient()
+	if err != nil {
+		return fmt.Errorf("failed to create Anthropic client: %w", err)
 	}
 
 	prompt := `Analyze this repository and provide a concise overview:
@@ -170,27 +178,46 @@ func generateProjectMD(agentDir, repoRoot string, force bool) error {
 
 Format as clean markdown starting at heading level 2 (##), keep it brief (under 500 words).`
 
-	fmt.Print("  → Generating project.md with Claude CLI...")
+	fmt.Print("  → Generating project.md with Anthropic SDK...")
 
-	cmdCtx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(cmdCtx, "claude", "--print", "--output-format", "text", prompt)
-	cmd.Dir = repoRoot
-	cmd.Env = os.Environ()
-
-	output, err := cmd.Output()
-	if err != nil {
-		return err
+	// Create message request
+	params := anthropic.MessageNewParams{
+		Model:     anthropic.ModelClaude3_5Sonnet20241022,
+		MaxTokens: 2000,
+		Messages: []anthropic.MessageParam{
+			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
+				OfText: &anthropic.TextBlockParam{
+					Text: prompt,
+					Type: constant.Text,
+				},
+			}),
+		},
 	}
 
-	projectContent := strings.TrimSpace(string(output))
-	if projectContent == "" {
-		return fmt.Errorf("empty output from Claude CLI")
+	// Call Messages API
+	msg, err := client.Messages.New(ctx, params)
+	if err != nil {
+		return fmt.Errorf("failed to generate project.md: %w", err)
+	}
+
+	// Extract text content from response
+	var projectContent strings.Builder
+	for _, block := range msg.Content {
+		if textBlock := block.OfText; textBlock != nil {
+			projectContent.WriteString(textBlock.Text)
+		}
+	}
+
+	content := strings.TrimSpace(projectContent.String())
+	if content == "" {
+		return fmt.Errorf("empty output from Anthropic API")
 	}
 
 	// Write project.md
-	if err := os.WriteFile(projectMDPath, []byte(projectContent), 0644); err != nil { //nolint:gosec // Project file needs to be readable
+	if err := os.WriteFile(projectMDPath, []byte(content), 0644); err != nil { //nolint:gosec // Project file needs to be readable
 		return fmt.Errorf("failed to write project.md: %w", err)
 	}
 
