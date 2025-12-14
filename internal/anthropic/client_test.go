@@ -48,9 +48,8 @@ func TestNewClientOrNil(t *testing.T) {
 	if err != nil {
 		t.Errorf("NewClientOrNil() should not return error when API key not set, got %v", err)
 	}
-	// Check if client is zero value (empty struct)
-	var zeroClient anthropic.Client
-	if client != zeroClient {
-		t.Error("NewClientOrNil() should return zero client when API key not set")
+	// Check if client has no options (zero value)
+	if len(client.Options) != 0 {
+		t.Error("NewClientOrNil() should return client with no options when API key not set")
 	}
 }
