@@ -20,6 +20,7 @@ func TestSyncToCursor(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
+when-to-use: "When testing"
 ---
 
 ## Content
@@ -126,6 +127,7 @@ func TestSyncToClaudeSkillsSkipsExisting(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
+when-to-use: "When testing"
 ---
 
 ## Content
@@ -258,6 +260,7 @@ func TestSyncToAGENTSMDWithoutProjectMD(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
+when-to-use: "When testing"
 ---
 
 ## Content
@@ -309,6 +312,7 @@ func TestSyncToCLAUDEMDWithoutProjectMD(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
+when-to-use: "When testing"
 ---
 
 ## Content
