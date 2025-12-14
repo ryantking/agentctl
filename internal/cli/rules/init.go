@@ -206,7 +206,7 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 	// Extract text content from response
 	var projectContent strings.Builder
 	for _, block := range msg.Content {
-		if block.Type == "text" {
+		if block.Type == "text" && block.Text != "" {
 			projectContent.WriteString(block.Text)
 		}
 	}
