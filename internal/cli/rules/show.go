@@ -123,18 +123,20 @@ To fix this:
 	}
 
 	// Build error message with available rules
-	errMsg := fmt.Sprintf("rule not found: %s", ruleName)
 	if len(availableRules) > 0 {
-		errMsg += "\n\nAvailable rules:"
+		var ruleList strings.Builder
+		ruleList.WriteString("rule not found: ")
+		ruleList.WriteString(ruleName)
+		ruleList.WriteString("\n\nAvailable rules:")
 		for _, rule := range availableRules {
-			errMsg += fmt.Sprintf("\n  - %s", rule)
+			ruleList.WriteString("\n  - ")
+			ruleList.WriteString(rule)
 		}
-		errMsg += "\n\nRun 'agentctl rules list' to see all rules."
-	} else {
-		errMsg += "\n\nNo rules found. Run 'agentctl rules init' to initialize."
+		ruleList.WriteString("\n\nRun 'agentctl rules list' to see all rules.")
+		return "", fmt.Errorf("%s", ruleList.String()) //nolint:revive // Error message is built dynamically
 	}
 
-	return "", fmt.Errorf(errMsg)
+	return "", fmt.Errorf("rule not found: %s\n\nNo rules found. Run 'agentctl rules init' to initialize.", ruleName) //nolint:revive // Error message is clear
 }
 
 // showRaw outputs the raw rule file content.
