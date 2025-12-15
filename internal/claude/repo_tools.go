@@ -438,11 +438,9 @@ func searchFiles(repoRoot, pattern, searchPath string, caseSensitive bool) (inte
 		if err != nil {
 			return nil, fmt.Errorf("failed to walk directory: %w", err)
 		}
-	} else {
+	} else if !isIgnored(repoRoot, absSearchPath) {
 		// Single file
-		if !isIgnored(repoRoot, absSearchPath) {
-			searchPaths = []string{absSearchPath}
-		}
+		searchPaths = []string{absSearchPath}
 	}
 
 	// Compile pattern (treat as regex)
