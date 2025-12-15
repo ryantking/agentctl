@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/param"
+	"github.com/anthropics/anthropic-sdk-go/packages/param"
 	"github.com/anthropics/anthropic-sdk-go/shared/constant"
 )
 
@@ -58,16 +58,16 @@ func (r *ToolRegistry) RegisterTool(name, description string, inputSchema map[st
 		}
 	}
 
-	inputSchema := anthropic.ToolInputSchemaParam{
-		Type:       constant.Object,
+	schemaParam := anthropic.ToolInputSchemaParam{
+		Type:       constant.Object("object"),
 		Properties: properties,
 		Required:   required,
 	}
 
 	toolParam := anthropic.ToolParam{
 		Name:        name,
-		Description: param.Opt(description),
-		InputSchema: inputSchema,
+		Description: param.NewOpt(description),
+		InputSchema: schemaParam,
 	}
 
 	tool := anthropic.ToolUnionParam{
@@ -205,7 +205,7 @@ func (c *Conversation) Send(ctx context.Context, model anthropic.Model, maxToken
 					toolResults = append(toolResults, anthropic.ContentBlockParamUnion{
 						OfToolResult: &anthropic.ToolResultBlockParam{
 							ToolUseID: toolUseID,
-							IsError:   param.Opt(true),
+							IsError:   param.NewOpt(true),
 							Content: []anthropic.ToolResultBlockParamContentUnion{
 								{
 									OfText: &anthropic.TextBlockParam{
@@ -214,7 +214,7 @@ func (c *Conversation) Send(ctx context.Context, model anthropic.Model, maxToken
 									},
 								},
 							},
-							Type: constant.ToolResult,
+							Type: constant.ToolResult("tool_result"),
 						},
 					})
 					continue
@@ -268,7 +268,7 @@ func (c *Conversation) Send(ctx context.Context, model anthropic.Model, maxToken
 						ID:    block.ID,
 						Name:  block.Name,
 						Input: toolInput,
-						Type:  constant.ToolUse,
+						Type:  constant.ToolUse("tool_use"),
 					},
 				})
 			}
