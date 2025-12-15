@@ -195,7 +195,7 @@ func TestAgentError_Error(t *testing.T) {
 	if !strings.Contains(errStr, "exit 1") {
 		t.Error("Error() should contain exit code")
 	}
-	if !strings.Contains(errStr, "error message") {
-		t.Error("Error() should contain stderr")
+	if !strings.Contains(errStr, "test error") {
+		t.Error("Error() should contain underlying error")
 	}
 }
