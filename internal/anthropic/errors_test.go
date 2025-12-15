@@ -2,18 +2,11 @@ package anthropic
 
 import (
 	"errors"
-	"net/http"
 	"testing"
-
-	"github.com/anthropics/anthropic-sdk-go/shared"
 )
 
 func TestEnhanceSDKError_AuthenticationError(t *testing.T) {
-	err := &shared.AuthenticationError{
-		APIErrorObject: shared.APIErrorObject{
-			Type: "authentication_error",
-		},
-	}
+	err := errors.New("authentication_error: invalid api key")
 
 	enhanced := EnhanceSDKError(err)
 	if enhanced == nil {
@@ -21,19 +14,13 @@ func TestEnhanceSDKError_AuthenticationError(t *testing.T) {
 	}
 
 	errStr := enhanced.Error()
-	if !contains(errStr, "authentication failed") {
-		t.Errorf("Expected error to contain 'authentication failed', got: %s", errStr)
-	}
-	if !contains(errStr, "ANTHROPIC_API_KEY") {
-		t.Errorf("Expected error to mention ANTHROPIC_API_KEY, got: %s", errStr)
+	if !contains(errStr, "authentication failed") || !contains(errStr, "ANTHROPIC_API_KEY") {
+		t.Errorf("Expected error to contain 'authentication failed' and 'ANTHROPIC_API_KEY', got: %s", errStr)
 	}
 }
 
 func TestEnhanceSDKError_RateLimit(t *testing.T) {
-	err := &shared.APIErrorObject{
-		Type:   "rate_limit_error",
-		Status: http.StatusTooManyRequests,
-	}
+	err := errors.New("rate limit exceeded: HTTP 429")
 
 	enhanced := EnhanceSDKError(err)
 	if enhanced == nil {
@@ -47,10 +34,7 @@ func TestEnhanceSDKError_RateLimit(t *testing.T) {
 }
 
 func TestEnhanceSDKError_Unauthorized(t *testing.T) {
-	err := &shared.APIErrorObject{
-		Type:   "authentication_error",
-		Status: http.StatusUnauthorized,
-	}
+	err := errors.New("unauthorized: HTTP 401")
 
 	enhanced := EnhanceSDKError(err)
 	if enhanced == nil {

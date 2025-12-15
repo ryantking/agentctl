@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/shared"
 )
 
@@ -29,34 +28,37 @@ To fix this:
 	}
 
 	// Check for API errors (rate limits, etc.)
-	var apiErr *shared.APIErrorObject
-	if errors.As(err, &apiErr) {
-		// Check for rate limit errors
-		if apiErr.Status == http.StatusTooManyRequests {
-			return fmt.Errorf(`rate limit exceeded: %w
+	// Note: APIErrorObject doesn't have Status field directly, check error message
+	errStr := err.Error()
+	
+	// Check for rate limit errors (429)
+	if strings.Contains(errStr, "429") || strings.Contains(errStr, "rate limit") || strings.Contains(errStr, "too many requests") {
+		return fmt.Errorf(`rate limit exceeded: %w
 
 The API rate limit has been reached. Please:
   - Wait a few moments and try again
   - Check your usage at https://console.anthropic.com/
   - Consider upgrading your plan if you frequently hit limits`, err)
-		}
+	}
 
-		// Check for other API errors
-		if apiErr.Status == http.StatusUnauthorized || apiErr.Status == http.StatusForbidden {
-			return fmt.Errorf(`authorization failed (HTTP %d): %w
+	// Check for unauthorized/forbidden errors (401, 403)
+	if strings.Contains(errStr, "401") || strings.Contains(errStr, "403") || strings.Contains(errStr, "unauthorized") || strings.Contains(errStr, "forbidden") {
+		return fmt.Errorf(`authorization failed: %w
 
 To fix this:
   - Verify your API key is correct: echo $ANTHROPIC_API_KEY
   - Check your API key permissions at https://console.anthropic.com/
-  - Run 'claude status' if you have the Claude CLI installed`, apiErr.Status, err)
-		}
+  - Run 'claude status' if you have the Claude CLI installed`, err)
+	}
 
-		// Generic API error with status code
-		return fmt.Errorf("API error (HTTP %d): %w\n\nCheck https://console.anthropic.com/ for account status and usage limits", apiErr.Status, err)
+	// Check for API error object (generic)
+	var apiErr *shared.APIErrorObject
+	if errors.As(err, &apiErr) {
+		return fmt.Errorf("API error: %w\n\nCheck https://console.anthropic.com/ for account status and usage limits", err)
 	}
 
 	// Check for network errors
-	errStr := err.Error()
+	errStr = err.Error()
 	if strings.Contains(errStr, "timeout") || strings.Contains(errStr, "deadline exceeded") {
 		return fmt.Errorf(`request timeout: %w
 
