@@ -32,7 +32,7 @@ Test content.`
 	}
 
 	// Test sync
-	err := syncToCursor(tmpDir, rulesDir)
+	err := syncToCursor(tmpDir, rulesDir, false)
 	if err != nil {
 		t.Fatalf("syncToCursor() error = %v", err)
 	}
@@ -79,7 +79,7 @@ Test content.`
 	}
 
 	// Test sync
-	err := syncToClaudeSkills(tmpDir, rulesDir, false)
+	err := syncToClaudeSkills(tmpDir, rulesDir, false, false)
 	if err != nil {
 		t.Fatalf("syncToClaudeSkills() error = %v", err)
 	}
@@ -158,7 +158,7 @@ This was manually created.`
 	}
 
 	// Test sync without force (should skip)
-	err := syncToClaudeSkills(tmpDir, rulesDir, false)
+	err := syncToClaudeSkills(tmpDir, rulesDir, false, false)
 	if err != nil {
 		t.Fatalf("syncToClaudeSkills() error = %v", err)
 	}
@@ -174,7 +174,7 @@ This was manually created.`
 	}
 
 	// Test sync with force (should overwrite)
-	err = syncToClaudeSkills(tmpDir, rulesDir, true)
+	err = syncToClaudeSkills(tmpDir, rulesDir, true, false)
 	if err != nil {
 		t.Fatalf("syncToClaudeSkills() with force error = %v", err)
 	}
@@ -218,7 +218,7 @@ Test content.`
 	}
 
 	// Test sync
-	err := syncToAGENTSMD(tmpDir, agentDir, rulesDir)
+	err := syncToAGENTSMD(tmpDir, agentDir, rulesDir, false)
 	if err != nil {
 		t.Fatalf("syncToAGENTSMD() error = %v", err)
 	}
@@ -324,7 +324,7 @@ Test content.`
 	}
 
 	// Test sync without project.md
-	err := syncToCLAUDEMD(tmpDir, agentDir, rulesDir)
+	err := syncToCLAUDEMD(tmpDir, agentDir, rulesDir, false)
 	if err != nil {
 		t.Fatalf("syncToCLAUDEMD() error = %v", err)
 	}
