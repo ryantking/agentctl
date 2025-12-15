@@ -145,6 +145,7 @@ func TestReadFile(t *testing.T) {
 
 	testFile := filepath.Join(repoRoot, "test.txt")
 	testContent := "Hello, world!"
+	//nolint:gosec // Test file permissions are acceptable for temporary test files
 	if err := os.WriteFile(testFile, []byte(testContent), 0644); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
@@ -175,6 +176,7 @@ func TestReadFile_Binary(t *testing.T) {
 	// Create a binary file (with null bytes)
 	binaryFile := filepath.Join(repoRoot, "binary.bin")
 	binaryContent := []byte{0x00, 0x01, 0x02, 0x03}
+	//nolint:gosec // Test file permissions are acceptable for temporary test files
 	if err := os.WriteFile(binaryFile, binaryContent, 0644); err != nil {
 		t.Fatalf("Failed to create binary file: %v", err)
 	}
@@ -233,6 +235,7 @@ func TestToolExecution(t *testing.T) {
 	}
 
 	testFile := filepath.Join(repoRoot, "test.txt")
+	//nolint:gosec // Test file permissions are acceptable for temporary test files
 	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
