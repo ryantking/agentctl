@@ -135,7 +135,7 @@ To fix this:
 			parent := filepath.Dir(agentDir)
 			if parent != agentDir && parent != "/" {
 				if _, err := os.Stat(parent); os.IsNotExist(err) {
-					return fmt.Errorf("AGENTDIR parent directory does not exist: %s", parent)
+					return fmt.Errorf("AGENTDIR parent directory does not exist: %s: %w", parent, err)
 				}
 			}
 		}

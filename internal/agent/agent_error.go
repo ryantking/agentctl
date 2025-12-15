@@ -9,6 +9,7 @@ import (
 )
 
 // AgentError represents an error that occurred during agent execution.
+//nolint:revive // Type name follows exec.ExitError pattern and is clear in context
 type AgentError struct {
 	Program  string   // Program name (e.g., "claude")
 	BinPath  string   // Full path to binary
