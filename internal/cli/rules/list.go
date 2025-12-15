@@ -104,16 +104,24 @@ func validateAgentDir(agentDir string) error {
 	invalidChars := []string{"..", "~", "$", "`"}
 	for _, char := range invalidChars {
 		if strings.Contains(agentDir, char) {
+			var reason string
+			switch char {
+			case "..":
+				reason = `".." could be used for path traversal attacks`
+			case "~", "$", "`":
+				reason = fmt.Sprintf(`"%s" is a shell expansion character that could cause unexpected behavior`, char)
+			default:
+				reason = fmt.Sprintf(`"%s" is not allowed`, char)
+			}
 			return fmt.Errorf(`AGENTDIR contains invalid character sequence: %s
 
 This is not allowed because:
-  - ".." could be used for path traversal attacks
-  - "~", "$", "`" are shell expansion characters that could cause unexpected behavior
+  - %s
 
 To fix this:
   - Use a simple relative path like ".agent" or "custom-agent"
   - Or use an absolute path without these characters
-  - Example: export AGENTDIR=/path/to/agent`, char)
+  - Example: export AGENTDIR=/path/to/agent`, char, reason)
 		}
 	}
 
