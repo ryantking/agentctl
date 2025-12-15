@@ -2,11 +2,8 @@
 package anthropic
 
 import (
-	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/anthropics/anthropic-sdk-go/shared"
 )
 
 // EnhanceSDKError wraps SDK errors with helpful, actionable error messages.
