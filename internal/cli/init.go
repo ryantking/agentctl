@@ -56,7 +56,7 @@ By default, skips existing files.`,
 			// Initialize .agent directory with rules (unless --global)
 			if !globalInstall {
 				noProject := noIndex // Use --no-index flag to skip project.md generation
-				if err := rules.InitRules(target, force, noProject); err != nil {
+				if err := rules.InitRules(target, force, noProject, false); err != nil {
 					// Non-fatal: warn but continue
 					fmt.Printf("  → Rules initialization skipped: %v\n", err)
 				}
