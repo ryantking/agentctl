@@ -51,8 +51,8 @@ func (r *ToolRegistry) RegisterTool(name, description string, inputSchema map[st
 	}
 	if req, ok := inputSchema["required"].([]interface{}); ok {
 		required = make([]string, 0, len(req))
-		for _, r := range req {
-			if s, ok := r.(string); ok {
+		for _, reqItem := range req {
+			if s, ok := reqItem.(string); ok {
 				required = append(required, s)
 			}
 		}
