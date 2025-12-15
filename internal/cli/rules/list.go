@@ -108,8 +108,10 @@ func validateAgentDir(agentDir string) error {
 			switch char {
 			case "..":
 				reason = `".." could be used for path traversal attacks`
-			case "~", "$", "`":
+			case "~", "$":
 				reason = fmt.Sprintf(`"%s" is a shell expansion character that could cause unexpected behavior`, char)
+			case "`":
+				reason = `"` + "`" + `" is a shell expansion character that could cause unexpected behavior`
 			default:
 				reason = fmt.Sprintf(`"%s" is not allowed`, char)
 			}
