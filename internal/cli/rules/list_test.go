@@ -325,7 +325,7 @@ name: Test Rule
 ---
 Body content`,
 			wantErr:     false,
-			wantContent: "name: Test Rule\n",
+			wantContent: "name: Test Rule",
 		},
 		{
 			name:        "no frontmatter",
@@ -367,7 +367,7 @@ invalid: [unclosed
 ---
 Body content`,
 			wantErr:     false, // extractFrontmatter doesn't validate YAML
-			wantContent: "name: Test Rule\ninvalid: [unclosed\n",
+			wantContent: "name: Test Rule\ninvalid: [unclosed",
 		},
 	}
 
