@@ -97,20 +97,45 @@ func (r *ToolRegistry) ExecuteTool(ctx context.Context, name string, input map[s
 
 // Conversation manages a multi-turn conversation with tool use support.
 type Conversation struct {
-	client  anthropic.Client
-	registry *ToolRegistry
-	messages []anthropic.MessageParam
-	system   []anthropic.TextBlockParam
+	client     anthropic.Client
+	registry   *ToolRegistry
+	messages   []anthropic.MessageParam
+	system     []anthropic.TextBlockParam
+	verbose    bool
+	toolCalls  int
+	maxToolCalls int
+	logger     func(string, ...interface{})
 }
 
 // NewConversation creates a new conversation with tool use support.
 func NewConversation(client anthropic.Client, registry *ToolRegistry) *Conversation {
 	return &Conversation{
-		client:   client,
-		registry: registry,
-		messages: []anthropic.MessageParam{},
-		system:   []anthropic.TextBlockParam{},
+		client:      client,
+		registry:    registry,
+		messages:    []anthropic.MessageParam{},
+		system:      []anthropic.TextBlockParam{},
+		verbose:     false,
+		toolCalls:   0,
+		maxToolCalls: 50, // Default max tool calls per session
+		logger:      func(string, ...interface{}) {}, // No-op logger by default
 	}
+}
+
+// SetVerbose enables verbose logging of tool executions.
+func (c *Conversation) SetVerbose(verbose bool) {
+	c.verbose = verbose
+	if verbose {
+		c.logger = func(format string, args ...interface{}) {
+			fmt.Printf("  [tool] "+format+"\n", args...)
+		}
+	} else {
+		c.logger = func(string, ...interface{}) {}
+	}
+}
+
+// SetMaxToolCalls sets the maximum number of tool calls allowed per session.
+func (c *Conversation) SetMaxToolCalls(max int) {
+	c.maxToolCalls = max
 }
 
 // SetSystem sets the system prompt for the conversation.
@@ -141,6 +166,11 @@ func (c *Conversation) Send(ctx context.Context, model anthropic.Model, maxToken
 
 	for iteration < maxIterations {
 		iteration++
+
+		// Check tool call limit
+		if c.toolCalls >= c.maxToolCalls {
+			return "", fmt.Errorf("max tool calls (%d) exceeded", c.maxToolCalls)
+		}
 
 		// Build message request
 		params := anthropic.MessageNewParams{
@@ -198,9 +228,19 @@ func (c *Conversation) Send(ctx context.Context, model anthropic.Model, maxToken
 					toolInput = make(map[string]interface{})
 				}
 
+				// Increment tool call counter
+				c.toolCalls++
+
+				// Log tool execution
+				c.logger("Executing tool: %s (call #%d)", toolName, c.toolCalls)
+				if path, ok := toolInput["path"].(string); ok {
+					c.logger("  Path: %s", path)
+				}
+
 				// Execute tool
 				result, err := c.registry.ExecuteTool(ctx, toolName, toolInput)
 				if err != nil {
+					c.logger("  Error: %v", err)
 					// Return error result
 					toolResults = append(toolResults, anthropic.ContentBlockParamUnion{
 						OfToolResult: &anthropic.ToolResultBlockParam{
@@ -218,6 +258,19 @@ func (c *Conversation) Send(ctx context.Context, model anthropic.Model, maxToken
 						},
 					})
 					continue
+				}
+
+				// Log successful result (summary)
+				if resultMap, ok := result.(map[string]interface{}); ok {
+					if path, ok := resultMap["path"].(string); ok {
+						c.logger("  Result: accessed %s", path)
+					}
+					if items, ok := resultMap["items"].([]map[string]interface{}); ok {
+						c.logger("  Result: listed %d items", len(items))
+					}
+					if size, ok := resultMap["size"].(int); ok {
+						c.logger("  Result: read %d bytes", size)
+					}
 				}
 
 				// Serialize result to JSON

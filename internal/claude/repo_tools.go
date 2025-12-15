@@ -16,6 +16,8 @@ const (
 	MaxFileSize = 1024 * 1024
 	// BinaryCheckSize is the number of bytes to check for binary content
 	BinaryCheckSize = 512
+	// MaxDirectoryDepth is the maximum directory depth for list_directory
+	MaxDirectoryDepth = 10
 )
 
 // RegisterRepoTools registers repository exploration tools (list_directory, read_file).
@@ -148,6 +150,16 @@ func isIgnored(repoRoot, path string) bool {
 
 // listDirectory lists files and directories in the given path.
 func listDirectory(repoRoot, path string) (interface{}, error) {
+	return listDirectoryWithDepth(repoRoot, path, 0)
+}
+
+// listDirectoryWithDepth lists files and directories with depth tracking.
+func listDirectoryWithDepth(repoRoot, path string, depth int) (interface{}, error) {
+	// Check depth limit
+	if depth >= MaxDirectoryDepth {
+		return nil, fmt.Errorf("directory depth limit (%d) exceeded", MaxDirectoryDepth)
+	}
+
 	absPath, err := validatePath(repoRoot, path)
 	if err != nil {
 		return nil, err

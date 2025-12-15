@@ -18,7 +18,7 @@ import (
 
 // InitRules initializes the .agent directory with default rules.
 // This function is exported so it can be called from other packages.
-func InitRules(repoRoot string, force, noProject bool) error {
+func InitRules(repoRoot string, force, noProject, verbose bool) error {
 	// Determine .agent directory location (AGENTDIR env var or default)
 	agentDir, err := getAgentDir(repoRoot)
 	if err != nil {
@@ -48,7 +48,7 @@ func InitRules(repoRoot string, force, noProject bool) error {
 
 	// Generate project.md unless noProject flag
 	if !noProject {
-		if err := generateProjectMD(agentDir, repoRoot, force); err != nil {
+		if err := generateProjectMD(agentDir, repoRoot, force, verbose); err != nil {
 			// Non-fatal: warn but continue
 			fmt.Printf("  → Project.md generation skipped: %v\n", err)
 		}
@@ -60,7 +60,7 @@ func InitRules(repoRoot string, force, noProject bool) error {
 
 // NewRulesInitCmd creates the rules init command.
 func NewRulesInitCmd() *cobra.Command {
-	var force, noProject bool
+	var force, noProject, verbose bool
 
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -79,12 +79,13 @@ Respects AGENTDIR environment variable (defaults to .agent).`,
 				return err
 			}
 
-			return InitRules(repoRoot, force, noProject)
+			return InitRules(repoRoot, force, noProject, verbose)
 		},
 	}
 
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing files")
 	cmd.Flags().BoolVar(&noProject, "no-project", false, "Skip project.md generation")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "Show tool execution details during project.md generation")
 
 	return cmd
 }
