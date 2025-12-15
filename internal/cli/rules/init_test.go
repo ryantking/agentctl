@@ -16,7 +16,7 @@ func TestInitRules(t *testing.T) {
 	}
 
 	// Test initialization
-	err := InitRules(tmpDir, false, true) // force=false, noProject=true
+	err := InitRules(tmpDir, false, true, false) // force=false, noProject=true, verbose=false
 	if err != nil {
 		t.Fatalf("InitRules() error = %v", err)
 	}
@@ -54,13 +54,13 @@ func TestInitRulesWithForce(t *testing.T) {
 	}
 
 	// First initialization
-	err := InitRules(tmpDir, false, true)
+	err := InitRules(tmpDir, false, true, false)
 	if err != nil {
 		t.Fatalf("InitRules() error = %v", err)
 	}
 
 	// Second initialization with force
-	err = InitRules(tmpDir, true, true)
+	err = InitRules(tmpDir, true, true, false)
 	if err != nil {
 		t.Fatalf("InitRules() with force error = %v", err)
 	}

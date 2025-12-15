@@ -56,7 +56,7 @@ func setupTestRepo(t *testing.T, tmpDir string) {
 
 func initRules(t *testing.T, tmpDir string) {
 	t.Helper()
-	err := InitRules(tmpDir, false, true) // force=false, noProject=true
+	err := InitRules(tmpDir, false, true, false) // force=false, noProject=true, verbose=false
 	if err != nil {
 		t.Fatalf("InitRules() error = %v", err)
 	}
