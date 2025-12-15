@@ -148,22 +148,6 @@ func copyDefaultRules(targetDir string, force bool) error {
 	return nil
 }
 
-// getAgentCLIPath returns the agent CLI path from flag or environment variable.
-func getAgentCLIPath(cmd *cobra.Command) string {
-	// Check flag value first
-	if flagPath, err := cmd.Flags().GetString("agent-cli"); err == nil && flagPath != "" && flagPath != "claude" {
-		return flagPath
-	}
-
-	// Check environment variable
-	if envPath := os.Getenv("AGENTCTL_CLI_PATH"); envPath != "" {
-		return envPath
-	}
-
-	// Default to "claude"
-	return "claude"
-}
-
 // generateProjectMD generates .agent/project.md using claude CLI.
 func generateProjectMD(cmd *cobra.Command, agentDir string, _ string, force, _ bool) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
