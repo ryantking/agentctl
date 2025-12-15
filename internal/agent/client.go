@@ -207,12 +207,12 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	output := strings.TrimSpace(stdout.String())
 	if output == "" {
 		logger.Error("agent produced no output",
-			slog.String("program", a.CLIPath),
-			slog.String("bin_path", cliPath),
+			slog.String("type", a.Type),
+			slog.String("binary", binPath),
 			slog.String("stderr", stderr.String()))
 		return "", &AgentError{
-			Program:  a.CLIPath,
-			BinPath:  cliPath,
+			Type:     a.Type,
+			Binary:   binPath,
 			Args:     []string{"--print", prompt},
 			ExitCode: 0,
 			Stdout:   stdout.String(),
@@ -222,8 +222,8 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	}
 
 	logger.Info("agent execution succeeded",
-		slog.String("program", a.CLIPath),
-		slog.String("bin_path", cliPath),
+		slog.String("type", a.Type),
+		slog.String("binary", binPath),
 		slog.Int("output_length", len(output)))
 
 	return output, nil
