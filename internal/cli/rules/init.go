@@ -161,12 +161,17 @@ func generateProjectMD(agentDir, _ string, force bool) error {
 
 	// Check if API key is configured
 	if !anthclient.IsConfigured() {
-		return fmt.Errorf("ANTHROPIC_API_KEY environment variable not set")
+		return fmt.Errorf(`ANTHROPIC_API_KEY environment variable not set
+
+To fix this:
+  - Set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key
+  - Or run 'claude login' if you have the Claude CLI installed
+  - Get your API key at https://console.anthropic.com/`)
 	}
 
 	client, err := anthclient.NewClient()
 	if err != nil {
-		return fmt.Errorf("failed to create Anthropic client: %w", err)
+		return anthclient.EnhanceSDKError(err)
 	}
 
 	prompt := `Analyze this repository and provide a concise overview:
@@ -200,7 +205,7 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 	// Call Messages API
 	msg, err := client.Messages.New(ctx, params)
 	if err != nil {
-		return fmt.Errorf("failed to generate project.md: %w", err)
+		return anthclient.EnhanceSDKError(fmt.Errorf("failed to generate project.md: %w", err))
 	}
 
 	// Extract text content from response
