@@ -22,9 +22,9 @@ type AgentError struct {
 // Error returns a formatted error message.
 func (e *AgentError) Error() string {
 	if e.ExitCode >= 0 {
-		return fmt.Sprintf("agent %q failed (exit %d): %v", e.Program, e.ExitCode, e.Err)
+		return fmt.Sprintf("agent %q failed (exit %d): %v", e.Type, e.ExitCode, e.Err)
 	}
-	return fmt.Sprintf("agent %q failed: %v", e.Program, e.Err)
+	return fmt.Sprintf("agent %q failed: %v", e.Type, e.Err)
 }
 
 // Unwrap returns the underlying error.
