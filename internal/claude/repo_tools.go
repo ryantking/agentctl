@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/ryantking/agentctl/internal/git"
 )
@@ -23,6 +25,13 @@ const (
 // RegisterRepoTools registers repository exploration tools (list_directory, read_file).
 // repoRoot: The root directory of the repository (for path validation)
 func RegisterRepoTools(registry *ToolRegistry, repoRoot string) error {
+	return RegisterRepoToolsWithOptions(registry, repoRoot, false)
+}
+
+// RegisterRepoToolsWithOptions registers repository exploration tools with optional advanced tools.
+// repoRoot: The root directory of the repository (for path validation)
+// enableAdvanced: If true, registers additional analysis tools (search_files, get_file_info, list_git_files)
+func RegisterRepoToolsWithOptions(registry *ToolRegistry, repoRoot string, enableAdvanced bool) error {
 	// Register list_directory tool
 	listDirSchema := map[string]interface{}{
 		"type": "object",
@@ -69,6 +78,108 @@ func RegisterRepoTools(registry *ToolRegistry, repoRoot string) error {
 	})
 	if err != nil {
 		return fmt.Errorf("failed to register read_file tool: %w", err)
+	}
+
+	// Register advanced tools if enabled
+	if enableAdvanced {
+		if err := registerAdvancedTools(registry, repoRoot); err != nil {
+			return fmt.Errorf("failed to register advanced tools: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// registerAdvancedTools registers optional advanced repository analysis tools.
+func registerAdvancedTools(registry *ToolRegistry, repoRoot string) error {
+	// Register search_files tool
+	searchFilesSchema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"pattern": map[string]interface{}{
+				"type":        "string",
+				"description": "Search pattern (regex or plain text)",
+			},
+			"path": map[string]interface{}{
+				"type":        "string",
+				"description": "Directory path to search in (relative to repository root, defaults to root)",
+			},
+			"case_sensitive": map[string]interface{}{
+				"type":        "boolean",
+				"description": "Whether search is case sensitive (default: false)",
+			},
+		},
+		"required": []interface{}{"pattern"},
+	}
+
+	err := registry.RegisterTool("search_files", "Search for text patterns in files (grep-like functionality). Returns file paths and matching lines", searchFilesSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
+		pattern, ok := input["pattern"].(string)
+		if !ok {
+			return nil, fmt.Errorf("pattern must be a string")
+		}
+
+		path := "."
+		if p, ok := input["path"].(string); ok && p != "" {
+			path = p
+		}
+
+		caseSensitive := false
+		if cs, ok := input["case_sensitive"].(bool); ok {
+			caseSensitive = cs
+		}
+
+		return searchFiles(repoRoot, pattern, path, caseSensitive)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to register search_files tool: %w", err)
+	}
+
+	// Register get_file_info tool
+	getFileInfoSchema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"path": map[string]interface{}{
+				"type":        "string",
+				"description": "File path (relative to repository root)",
+			},
+		},
+		"required": []interface{}{"path"},
+	}
+
+	err = registry.RegisterTool("get_file_info", "Get file metadata: size, permissions, last modified time", getFileInfoSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
+		path, ok := input["path"].(string)
+		if !ok {
+			return nil, fmt.Errorf("path must be a string")
+		}
+
+		return getFileInfo(repoRoot, path)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to register get_file_info tool: %w", err)
+	}
+
+	// Register list_git_files tool
+	listGitFilesSchema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"path": map[string]interface{}{
+				"type":        "string",
+				"description": "Directory path to list tracked files in (relative to repository root, defaults to root)",
+			},
+		},
+		"required": []interface{}{},
+	}
+
+	err = registry.RegisterTool("list_git_files", "List only files tracked by git (ignores untracked and ignored files)", listGitFilesSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
+		path := "."
+		if p, ok := input["path"].(string); ok && p != "" {
+			path = p
+		}
+
+		return listGitFiles(repoRoot, path)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to register list_git_files tool: %w", err)
 	}
 
 	return nil
@@ -282,15 +393,242 @@ func readFile(repoRoot, path string) (interface{}, error) {
 	}, nil
 }
 
+// searchFiles searches for a pattern in files within the repository.
+func searchFiles(repoRoot, pattern, searchPath string, caseSensitive bool) (interface{}, error) {
+	absSearchPath, err := validatePath(repoRoot, searchPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if path exists
+	info, err := os.Stat(absSearchPath)
+	if err != nil {
+		return nil, fmt.Errorf("path does not exist: %w", err)
+	}
+
+	var searchPaths []string
+	if info.IsDir() {
+		// Walk directory
+		err = filepath.Walk(absSearchPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// Skip directories
+			if info.IsDir() {
+				return nil
+			}
+
+			// Skip ignored paths
+			if isIgnored(repoRoot, path) {
+				return nil
+			}
+
+			// Skip binary files (check first 512 bytes)
+			if info.Size() > 0 && info.Size() <= MaxFileSize {
+				//nolint:gosec // Path is validated to be within repository root
+				data, err := os.ReadFile(path)
+				if err == nil && !isBinaryFile(data) {
+					searchPaths = append(searchPaths, path)
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to walk directory: %w", err)
+		}
+	} else {
+		// Single file
+		if !isIgnored(repoRoot, absSearchPath) {
+			searchPaths = []string{absSearchPath}
+		}
+	}
+
+	// Compile pattern (treat as regex)
+	var re *regexp.Regexp
+	if caseSensitive {
+		re, err = regexp.Compile(pattern)
+	} else {
+		re, err = regexp.Compile("(?i)" + pattern)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("invalid regex pattern: %w", err)
+	}
+
+	var matches []map[string]interface{}
+	for _, filePath := range searchPaths {
+		// Check file size
+		info, err := os.Stat(filePath)
+		if err != nil || info.Size() > MaxFileSize {
+			continue
+		}
+
+		// Read file
+		//nolint:gosec // Path is validated to be within repository root
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			continue
+		}
+
+		// Skip binary files
+		if isBinaryFile(content) {
+			continue
+		}
+
+		// Search for pattern
+		lines := strings.Split(string(content), "\n")
+		var matchingLines []map[string]interface{}
+		for i, line := range lines {
+			if re.MatchString(line) {
+				matchingLines = append(matchingLines, map[string]interface{}{
+					"line_number": i + 1,
+					"content":     line,
+				})
+			}
+		}
+
+		if len(matchingLines) > 0 {
+			relPath, _ := filepath.Rel(repoRoot, filePath)
+			matches = append(matches, map[string]interface{}{
+				"path":          relPath,
+				"match_count":   len(matchingLines),
+				"matching_lines": matchingLines,
+			})
+		}
+	}
+
+	return map[string]interface{}{
+		"pattern": pattern,
+		"path":    searchPath,
+		"matches": matches,
+		"total":   len(matches),
+	}, nil
+}
+
+// getFileInfo returns file metadata.
+func getFileInfo(repoRoot, path string) (interface{}, error) {
+	absPath, err := validatePath(repoRoot, path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if path exists
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return nil, fmt.Errorf("file does not exist: %w", err)
+	}
+
+	// Check if it's a directory
+	if info.IsDir() {
+		return nil, fmt.Errorf("path is a directory, not a file")
+	}
+
+	// Get file mode (permissions)
+	mode := info.Mode()
+	permissions := fmt.Sprintf("%04o", mode.Perm())
+
+	return map[string]interface{}{
+		"path":        path,
+		"size":        info.Size(),
+		"permissions": permissions,
+		"modified":    info.ModTime().Format(time.RFC3339),
+		"is_readonly": mode&0200 == 0,
+	}, nil
+}
+
+// listGitFiles lists files tracked by git.
+func listGitFiles(repoRoot, path string) (interface{}, error) {
+	absPath, err := validatePath(repoRoot, path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if path exists
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return nil, fmt.Errorf("path does not exist: %w", err)
+	}
+
+	// Use git ls-files to get tracked files
+	relPath, err := filepath.Rel(repoRoot, absPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get relative path: %w", err)
+	}
+
+	// Run git ls-files
+	gitPath := relPath
+	if gitPath == "." {
+		gitPath = ""
+	}
+
+	// Use git.RunGit if available, otherwise fallback to exec
+	var trackedFiles []string
+	if info.IsDir() {
+		// List files in directory
+		output, err := git.RunGit(repoRoot, "ls-files", gitPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list git files: %w", err)
+		}
+
+		lines := strings.Split(strings.TrimSpace(output), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				trackedFiles = append(trackedFiles, line)
+			}
+		}
+	} else {
+		// Single file - check if tracked
+		output, err := git.RunGit(repoRoot, "ls-files", "--error-unmatch", relPath)
+		if err != nil {
+			// File not tracked
+			return map[string]interface{}{
+				"path":  path,
+				"files": []string{},
+				"total": 0,
+			}, nil
+		}
+		trackedFiles = []string{strings.TrimSpace(output)}
+	}
+
+	// Get file info for each tracked file
+	var files []map[string]interface{}
+	for _, file := range trackedFiles {
+		filePath := filepath.Join(repoRoot, file)
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			continue // Skip files that don't exist
+		}
+
+		files = append(files, map[string]interface{}{
+			"path":     file,
+			"size":     fileInfo.Size(),
+			"modified": fileInfo.ModTime().Format(time.RFC3339),
+		})
+	}
+
+	return map[string]interface{}{
+		"path":  path,
+		"files": files,
+		"total": len(files),
+	}, nil
+}
+
 // NewRepoToolRegistry creates a new tool registry with repository exploration tools registered.
 func NewRepoToolRegistry() (*ToolRegistry, string, error) {
+	return NewRepoToolRegistryWithOptions(false)
+}
+
+// NewRepoToolRegistryWithOptions creates a new tool registry with optional advanced tools.
+func NewRepoToolRegistryWithOptions(enableAdvanced bool) (*ToolRegistry, string, error) {
 	repoRoot, err := git.GetRepoRoot()
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get repository root: %w", err)
 	}
 
 	registry := NewToolRegistry()
-	if err := RegisterRepoTools(registry, repoRoot); err != nil {
+	if err := RegisterRepoToolsWithOptions(registry, repoRoot, enableAdvanced); err != nil {
 		return nil, "", fmt.Errorf("failed to register repository tools: %w", err)
 	}
 

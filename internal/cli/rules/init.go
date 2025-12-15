@@ -175,8 +175,10 @@ To fix this:
 	}
 
 	// Create tool registry with repository exploration tools
+	// Check if advanced tools should be enabled (via environment variable)
+	enableAdvanced := os.Getenv("AGENTCTL_ENABLE_ADVANCED_TOOLS") == "true"
 	registry := anthclient.NewToolRegistry()
-	if err := anthclient.RegisterRepoTools(registry, repoRoot); err != nil {
+	if err := anthclient.RegisterRepoToolsWithOptions(registry, repoRoot, enableAdvanced); err != nil {
 		return fmt.Errorf("failed to register repository tools: %w", err)
 	}
 
