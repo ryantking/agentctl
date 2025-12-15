@@ -276,4 +276,4 @@ If you're migrating from the old `agentctl memory` commands:
 4. Remove old AGENTS.md/CLAUDE.md if desired
 5. Use `agentctl rules` commands going forward
 
-See [Migration Guide](migration-memory-to-rules.md) for detailed steps.
+See the [Rules Documentation](rules.md) for complete details.

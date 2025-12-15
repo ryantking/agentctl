@@ -160,7 +160,7 @@ Rules use YAML frontmatter with required fields (`name`, `description`, `when-to
 
 ### Memory Commands (Deprecated)
 
-**Note:** The `agentctl memory` commands are deprecated in favor of the new `agentctl rules` system. See [Migration Guide](docs/migration-memory-to-rules.md) for details.
+**Note:** The `agentctl rules` system provides a modular approach to managing agent instructions. See [Rules Documentation](docs/rules.md) for details.
 
 - `agentctl memory init` - Initialize memory files from templates (deprecated)
 - `agentctl memory show [file]` - Display memory file contents (deprecated)
