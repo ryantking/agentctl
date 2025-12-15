@@ -248,14 +248,15 @@ func (c *Conversation) Send(ctx context.Context, model anthropic.Model, maxToken
 		// Convert ContentBlockUnion to ContentBlockParamUnion for assistant message
 		var assistantBlocks []anthropic.ContentBlockParamUnion
 		for _, block := range msg.Content {
-			if block.Type == "text" {
+			switch block.Type {
+			case "text":
 				assistantBlocks = append(assistantBlocks, anthropic.ContentBlockParamUnion{
 					OfText: &anthropic.TextBlockParam{
 						Text: block.Text,
 						Type: constant.Text("text"),
 					},
 				})
-			} else if block.Type == "tool_use" {
+			case "tool_use":
 				// Convert tool use block
 				var toolInput any
 				if len(block.Input) > 0 {

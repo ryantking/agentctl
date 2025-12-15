@@ -19,7 +19,7 @@ func TestToolRegistry_RegisterTool(t *testing.T) {
 		"required": []interface{}{"path"},
 	}
 
-	err := registry.RegisterTool("read_file", "Read a file from the filesystem", schema, func(ctx context.Context, input map[string]interface{}) (interface{}, error) {
+	err := registry.RegisterTool("read_file", "Read a file from the filesystem", schema, func(_ context.Context, _ map[string]interface{}) (interface{}, error) {
 		return "file content", nil
 	})
 	if err != nil {
@@ -51,7 +51,10 @@ func TestToolRegistry_ExecuteTool(t *testing.T) {
 		},
 	}
 
-	registry.RegisterTool("test_tool", "Test tool", schema, func(ctx context.Context, input map[string]interface{}) (interface{}, error) {
+	err := registry.RegisterTool("test_tool", "Test tool", schema, func(ctx context.Context, input map[string]interface{}) (interface{}, error) {
+		if err != nil {
+			t.Fatalf("RegisterTool() error = %v", err)
+		}
 		value, _ := input["value"].(string)
 		return map[string]interface{}{"result": value}, nil
 	})
