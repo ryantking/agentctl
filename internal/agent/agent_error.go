@@ -5,7 +5,6 @@ package agent
 
 import (
 	"fmt"
-	"strings"
 )
 
 // AgentError represents an error that occurred during agent execution.

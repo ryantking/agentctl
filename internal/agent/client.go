@@ -5,39 +5,36 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 )
 
-// Agent executes prompts using the claude CLI.
+// Agent represents a CLI-based agent executor.
 type Agent struct {
-	CLIPath string
+	CLIPath string // Path to CLI binary (e.g., "claude")
 }
 
 // Option configures an Agent.
 type Option func(*Agent)
 
-// WithCLIPath sets a custom path to the claude binary.
+// WithCLIPath sets the CLI binary path.
 func WithCLIPath(path string) Option {
 	return func(a *Agent) {
 		a.CLIPath = path
 	}
 }
 
-// NewAgent creates a new agent that uses the claude CLI.
-// The CLI handles authentication automatically (Claude Code session or API key).
+// NewAgent creates a new Agent instance.
 func NewAgent(opts ...Option) *Agent {
 	agent := &Agent{
 		CLIPath: "claude",
 	}
-
-	// Apply options
 	for _, opt := range opts {
 		opt(agent)
 	}
-
 	return agent
 }
 
@@ -57,8 +54,22 @@ func (a *Agent) Validate() error {
 // Execute runs a prompt through the claude CLI and returns the response.
 // Uses --print flag for non-interactive output.
 func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
+	return a.ExecuteWithLogger(ctx, prompt, nil)
+}
+
+// ExecuteWithLogger runs a prompt through the claude CLI and returns the response.
+// Uses --print flag for non-interactive output.
+// If logger is nil, uses default logger.
+func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *slog.Logger) (string, error) {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	// Validate binary exists before execution
 	if err := a.Validate(); err != nil {
+		logger.Error("agent binary validation failed",
+			slog.String("cli_path", a.CLIPath),
+			slog.Any("error", err))
 		return "", fmt.Errorf("agent binary validation failed: %w", err)
 	}
 
@@ -72,6 +83,9 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 	// Check if binary exists
 	cliPath, err := exec.LookPath(a.CLIPath)
 	if err != nil {
+		logger.Error("agent binary not found",
+			slog.String("cli_path", a.CLIPath),
+			slog.Any("error", err))
 		return "", &AgentError{
 			Program:  a.CLIPath,
 			BinPath:  a.CLIPath,
@@ -95,10 +109,27 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
+	logger.Info("executing agent command",
+		slog.String("program", a.CLIPath),
+		slog.String("bin_path", cliPath),
+		slog.Strings("args", []string{"--print", prompt}),
+		slog.String("working_dir", wd))
+
 	// Execute command
 	if err := cmd.Run(); err != nil {
+		// Get exit code
+		exitCode := -1
+		if cmd.ProcessState != nil {
+			exitCode = cmd.ProcessState.ExitCode()
+		}
+
 		// Check context errors
 		if ctx.Err() == context.Canceled {
+			logger.Warn("agent execution cancelled",
+				slog.String("program", a.CLIPath),
+				slog.String("bin_path", cliPath),
+				slog.Int("exit_code", exitCode),
+				slog.String("stderr", stderr.String()))
 			return "", &AgentError{
 				Program:  a.CLIPath,
 				BinPath:  cliPath,
@@ -112,6 +143,11 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 		if ctx.Err() == context.DeadlineExceeded {
 			deadline, _ := ctx.Deadline()
 			timeout := time.Until(deadline)
+			logger.Error("agent execution timed out",
+				slog.String("program", a.CLIPath),
+				slog.String("bin_path", cliPath),
+				slog.Duration("timeout", timeout),
+				slog.String("stderr", stderr.String()))
 			return "", &AgentError{
 				Program:  a.CLIPath,
 				BinPath:  cliPath,
@@ -123,11 +159,13 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 			}
 		}
 
-		// Get exit code
-		exitCode := -1
-		if cmd.ProcessState != nil {
-			exitCode = cmd.ProcessState.ExitCode()
-		}
+		logger.Error("agent execution failed",
+			slog.String("program", a.CLIPath),
+			slog.String("bin_path", cliPath),
+			slog.Int("exit_code", exitCode),
+			slog.String("stderr", stderr.String()),
+			slog.String("stdout", stdout.String()),
+			slog.Any("error", err))
 
 		return "", &AgentError{
 			Program:  a.CLIPath,
@@ -143,6 +181,10 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 	// Validate output
 	output := strings.TrimSpace(stdout.String())
 	if output == "" {
+		logger.Error("agent produced no output",
+			slog.String("program", a.CLIPath),
+			slog.String("bin_path", cliPath),
+			slog.String("stderr", stderr.String()))
 		return "", &AgentError{
 			Program:  a.CLIPath,
 			BinPath:  cliPath,
@@ -154,31 +196,45 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 		}
 	}
 
+	logger.Info("agent execution succeeded",
+		slog.String("program", a.CLIPath),
+		slog.String("bin_path", cliPath),
+		slog.Int("output_length", len(output)))
+
 	return output, nil
 }
 
 // ExecuteWithSystem runs a prompt with a system message through the claude CLI.
-// Combines system and user prompts into a single message.
 func (a *Agent) ExecuteWithSystem(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
-	// Combine system and user prompts
-	fullPrompt := fmt.Sprintf("%s\n\n%s", systemPrompt, userPrompt)
-	return a.Execute(ctx, fullPrompt)
+	return a.ExecuteWithSystemLogger(ctx, systemPrompt, userPrompt, nil)
 }
 
-// IsConfigured checks if claude CLI is available or ANTHROPIC_API_KEY is set.
-// The CLI handles auth automatically (Claude Code session or API key).
+// ExecuteWithSystemLogger runs a prompt with a system message through the claude CLI.
+// If logger is nil, uses default logger.
+func (a *Agent) ExecuteWithSystemLogger(ctx context.Context, systemPrompt, userPrompt string, logger *slog.Logger) (string, error) {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	// Combine system and user prompts
+	combinedPrompt := fmt.Sprintf("System: %s\n\nUser: %s", systemPrompt, userPrompt)
+	return a.ExecuteWithLogger(ctx, combinedPrompt, logger)
+}
+
+// IsConfigured checks if the agent is configured (CLI available or API key set).
 func IsConfigured() bool {
-	// Check if CLI is available
-	if _, err := exec.LookPath("claude"); err == nil {
+	// Check for API key first (fastest check)
+	if os.Getenv("ANTHROPIC_API_KEY") != "" {
 		return true
 	}
-	// Fallback: check API key (for environments without CLI)
-	return os.Getenv("ANTHROPIC_API_KEY") != ""
+
+	// Check if CLI is available
+	agent := NewAgent()
+	return agent.Validate() == nil
 }
 
-// NewClientOrNil is kept for backward compatibility with status.go.
-// Returns a zero-value struct since we don't need SDK client anymore.
-//nolint:revive // Function name kept for backward compatibility
+// NewClientOrNil returns a zero-value struct for backward compatibility.
+// Deprecated: Use NewAgent() instead.
 func NewClientOrNil() (struct{}, error) {
 	return struct{}{}, nil
 }

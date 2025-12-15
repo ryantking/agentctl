@@ -99,7 +99,7 @@ func TestAgent_Execute_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	_, err := agent.Execute(ctx, "test prompt")
+	_, err := agent.ExecuteWithLogger(ctx, "test prompt", nil)
 	if err == nil {
 		t.Error("Execute() should return error when context is cancelled")
 	}
@@ -128,7 +128,7 @@ func TestAgent_Execute_Timeout(t *testing.T) {
 	// Wait for timeout
 	time.Sleep(10 * time.Millisecond)
 
-	_, err := agent.Execute(ctx, "test prompt")
+	_, err := agent.ExecuteWithLogger(ctx, "test prompt", nil)
 	if err == nil {
 		t.Error("Execute() should return error when context times out")
 	}
