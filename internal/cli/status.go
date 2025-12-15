@@ -41,7 +41,7 @@ func getStatusInfo() StatusInfo {
 		info.AuthMethod = "API key"
 	} else {
 		// Check if we can create a client (might be authenticated via Claude Code session)
-		client, err := anthclient.NewClientOrNil()
+		client, err := agentclient.NewClientOrNil()
 		if err == nil && len(client.Options) > 0 {
 			info.Authenticated = true
 			info.AuthMethod = "Claude Code session"
@@ -59,7 +59,7 @@ func getStatusInfo() StatusInfo {
 }
 
 func testAPIConnectivity() bool {
-	client, err := anthclient.NewClient()
+	client, err := agentclient.NewClient()
 	if err != nil {
 		return false
 	}

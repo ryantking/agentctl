@@ -160,7 +160,7 @@ func generateProjectMD(agentDir, repoRoot string, force, verbose bool) error {
 	}
 
 	// Check if API key is configured
-	if !anthclient.IsConfigured() {
+	if !agentclient.IsConfigured() {
 		return fmt.Errorf(`ANTHROPIC_API_KEY environment variable not set
 
 To fix this:
@@ -169,28 +169,28 @@ To fix this:
   - Get your API key at https://console.anthropic.com/`)
 	}
 
-	client, err := anthclient.NewClient()
+	client, err := agentclient.NewClient()
 	if err != nil {
-		return anthclient.EnhanceSDKError(err)
+		return agentclient.EnhanceSDKError(err)
 	}
 
 	// Create tool registry with repository exploration tools
 	// Check if advanced tools should be enabled (via environment variable)
 	enableAdvanced := os.Getenv("AGENTCTL_ENABLE_ADVANCED_TOOLS") == "true"
-	registry := anthclient.NewToolRegistry()
-	if err := anthclient.RegisterRepoToolsWithOptions(registry, repoRoot, enableAdvanced); err != nil {
+	registry := agentclient.NewToolRegistry()
+	if err := agentclient.RegisterRepoToolsWithOptions(registry, repoRoot, enableAdvanced); err != nil {
 		return fmt.Errorf("failed to register repository tools: %w", err)
 	}
 
 	// Create conversation with tool use support
 	// Allow more tool calls for repository exploration (project.md generation)
-	opts := []anthclient.ConversationOption{
+	opts := []agentclient.ConversationOption{
 		agentclient.WithMaxToolCalls(50), // Allow more for exploration
 	}
 	if verbose {
-		opts = append(opts, anthclient.WithVerbose(true))
+		opts = append(opts, agentclient.WithVerbose(true))
 	}
-	conv := anthclient.NewConversation(client, registry, opts...)
+	conv := agentclient.NewConversation(client, registry, opts...)
 
 	prompt := `Analyze this repository and provide a concise overview:
 - Main purpose and key technologies
