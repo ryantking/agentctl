@@ -149,7 +149,7 @@ func copyDefaultRules(targetDir string, force bool) error {
 }
 
 // generateProjectMD generates .agent/project.md using claude CLI.
-func generateProjectMD(agentDir, repoRoot string, force, verbose bool) error {
+func generateProjectMD(agentDir string, _ string, force, _ bool) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
 
 	// Check if file exists and skip if not forcing

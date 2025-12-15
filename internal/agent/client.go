@@ -14,11 +14,11 @@ type Agent struct {
 	CLIPath string
 }
 
-// AgentOption configures an Agent.
-type AgentOption func(*Agent)
+// Option configures an Agent.
+type Option func(*Agent)
 
 // WithCLIPath sets a custom path to the claude binary.
-func WithCLIPath(path string) AgentOption {
+func WithCLIPath(path string) Option {
 	return func(a *Agent) {
 		a.CLIPath = path
 	}
@@ -26,7 +26,7 @@ func WithCLIPath(path string) AgentOption {
 
 // NewAgent creates a new agent that uses the claude CLI.
 // The CLI handles authentication automatically (Claude Code session or API key).
-func NewAgent(opts ...AgentOption) *Agent {
+func NewAgent(opts ...Option) *Agent {
 	agent := &Agent{
 		CLIPath: "claude",
 	}
