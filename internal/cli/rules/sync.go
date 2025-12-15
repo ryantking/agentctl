@@ -233,10 +233,11 @@ description: %s
 		relPath, _ := filepath.Rel(repoRoot, skillMDPath)
 
 		// Check if skill already exists
-		existingData, err := os.ReadFile(skillMDPath)
+		existingData, err := os.ReadFile(skillMDPath) //nolint:gosec // Path is validated to be within repository root
 		exists := err == nil
 
-		if exists {
+		switch {
+		case exists:
 			// Skill exists
 			if !force && !dryRun {
 				fmt.Printf("  ⚠ %s (skipped, already exists, use --force to overwrite)\n", relPath)
@@ -253,7 +254,7 @@ description: %s
 			}
 			// Force overwrite
 			fmt.Printf("  • %s (overwritten)\n", relPath)
-		} else if os.IsNotExist(err) {
+		case os.IsNotExist(err):
 			// Skill doesn't exist
 			if dryRun {
 				fmt.Printf("  • %s (would be created)\n", relPath)
@@ -261,7 +262,7 @@ description: %s
 				continue
 			}
 			fmt.Printf("  • %s (synced)\n", relPath)
-		} else {
+		default:
 			// Other error checking file
 			return fmt.Errorf("failed to check skill file %s: %w", skillName, err)
 		}
