@@ -151,7 +151,7 @@ func verifyRuleInList(t *testing.T, rulesDir, filename, expectedName string) {
 
 func verifyAGENTSMD(t *testing.T, tmpDir, agentDir, rulesDir string) {
 	t.Helper()
-	err := syncToAGENTSMD(tmpDir, agentDir, rulesDir)
+	err := syncToAGENTSMD(tmpDir, agentDir, rulesDir, false)
 	if err != nil {
 		t.Fatalf("syncToAGENTSMD() error = %v", err)
 	}
@@ -177,7 +177,7 @@ func verifyAGENTSMD(t *testing.T, tmpDir, agentDir, rulesDir string) {
 
 func verifyCLAUDEMD(t *testing.T, tmpDir, agentDir, rulesDir string) {
 	t.Helper()
-	err := syncToCLAUDEMD(tmpDir, agentDir, rulesDir)
+	err := syncToCLAUDEMD(tmpDir, agentDir, rulesDir, false)
 	if err != nil {
 		t.Fatalf("syncToCLAUDEMD() error = %v", err)
 	}
@@ -200,7 +200,7 @@ func verifyCLAUDEMD(t *testing.T, tmpDir, agentDir, rulesDir string) {
 
 func verifyClaudeSkills(t *testing.T, tmpDir, rulesDir string) {
 	t.Helper()
-	err := syncToClaudeSkills(tmpDir, rulesDir, false)
+	err := syncToClaudeSkills(tmpDir, rulesDir, false, false)
 	if err != nil {
 		t.Fatalf("syncToClaudeSkills() error = %v", err)
 	}
@@ -218,7 +218,7 @@ func verifyClaudeSkills(t *testing.T, tmpDir, rulesDir string) {
 
 func verifyCursorSync(t *testing.T, tmpDir, rulesDir string) {
 	t.Helper()
-	err := syncToCursor(tmpDir, rulesDir)
+	err := syncToCursor(tmpDir, rulesDir, false)
 	if err != nil {
 		t.Fatalf("syncToCursor() error = %v", err)
 	}
