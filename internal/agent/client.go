@@ -151,13 +151,13 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 		// Check context errors
 		if ctx.Err() == context.Canceled {
 			logger.Warn("agent execution cancelled",
-				slog.String("program", a.CLIPath),
-				slog.String("bin_path", cliPath),
+				slog.String("type", a.Type),
+				slog.String("binary", binPath),
 				slog.Int("exit_code", exitCode),
 				slog.String("stderr", stderr.String()))
 			return "", &AgentError{
-				Program:  a.CLIPath,
-				BinPath:  cliPath,
+				Type:     a.Type,
+				Binary:   binPath,
 				Args:     []string{"--print", prompt},
 				ExitCode: -1,
 				Stdout:   stdout.String(),
@@ -169,13 +169,13 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 			deadline, _ := ctx.Deadline()
 			timeout := time.Until(deadline)
 			logger.Error("agent execution timed out",
-				slog.String("program", a.CLIPath),
-				slog.String("bin_path", cliPath),
+				slog.String("type", a.Type),
+				slog.String("binary", binPath),
 				slog.Duration("timeout", timeout),
 				slog.String("stderr", stderr.String()))
 			return "", &AgentError{
-				Program:  a.CLIPath,
-				BinPath:  cliPath,
+				Type:     a.Type,
+				Binary:   binPath,
 				Args:     []string{"--print", prompt},
 				ExitCode: -1,
 				Stdout:   stdout.String(),
@@ -185,16 +185,16 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 		}
 
 		logger.Error("agent execution failed",
-			slog.String("program", a.CLIPath),
-			slog.String("bin_path", cliPath),
+			slog.String("type", a.Type),
+			slog.String("binary", binPath),
 			slog.Int("exit_code", exitCode),
 			slog.String("stderr", stderr.String()),
 			slog.String("stdout", stdout.String()),
 			slog.Any("error", err))
 
 		return "", &AgentError{
-			Program:  a.CLIPath,
-			BinPath:  cliPath,
+			Type:     a.Type,
+			Binary:   binPath,
 			Args:     []string{"--print", prompt},
 			ExitCode: exitCode,
 			Stdout:   stdout.String(),
