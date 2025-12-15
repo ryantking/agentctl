@@ -230,7 +230,7 @@ func (c *Conversation) Send(ctx context.Context, model anthropic.Model, maxToken
 				toolResults = append(toolResults, anthropic.ContentBlockParamUnion{
 					OfToolResult: &anthropic.ToolResultBlockParam{
 						ToolUseID: toolUseID,
-						IsError:   param.Opt(false),
+						IsError:   param.NewOpt(false),
 						Content: []anthropic.ToolResultBlockParamContentUnion{
 							{
 								OfText: &anthropic.TextBlockParam{

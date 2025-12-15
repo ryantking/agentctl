@@ -3,8 +3,6 @@ package anthropic
 import (
 	"context"
 	"testing"
-
-	"github.com/anthropics/anthropic-sdk-go"
 )
 
 func TestToolRegistry_RegisterTool(t *testing.T) {
