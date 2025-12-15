@@ -158,13 +158,13 @@ To fix this:
 // generateRuleContent generates rule content from a prompt using Anthropic SDK.
 func generateRuleContent(prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
 	// Check if API key is configured
-	if !anthclient.IsConfigured() {
-		return "", anthclient.EnhanceSDKError(fmt.Errorf("ANTHROPIC_API_KEY environment variable not set"))
+	if !agentclient.IsConfigured() {
+		return "", agentclient.EnhanceSDKError(fmt.Errorf("ANTHROPIC_API_KEY environment variable not set"))
 	}
 
-	client, err := anthclient.NewClient()
+	client, err := agentclient.NewClient()
 	if err != nil {
-		return "", anthclient.EnhanceSDKError(err)
+		return "", agentclient.EnhanceSDKError(err)
 	}
 
 	systemPrompt := `You are creating a rule file (.mdc format) for an agent rules system. 
@@ -233,7 +233,7 @@ Generate a complete .mdc rule file based on the user's prompt.`
 	// Call Messages API
 	msg, err := client.Messages.New(ctx, params)
 	if err != nil {
-		return "", anthclient.EnhanceSDKError(fmt.Errorf("failed to generate rule content: %w", err))
+		return "", agentclient.EnhanceSDKError(fmt.Errorf("failed to generate rule content: %w", err))
 	}
 
 	// Extract text content from response

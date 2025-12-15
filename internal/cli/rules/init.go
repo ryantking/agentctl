@@ -212,7 +212,7 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 	conv.AddUserMessage(prompt)
 	content, err := conv.Send(ctx, anthropic.ModelClaudeSonnet4_5, 2000)
 	if err != nil {
-		return anthclient.EnhanceSDKError(fmt.Errorf("failed to generate project.md: %w", err))
+		return agentclient.EnhanceSDKError(fmt.Errorf("failed to generate project.md: %w", err))
 	}
 
 	content = strings.TrimSpace(content)
