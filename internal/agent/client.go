@@ -63,12 +63,12 @@ func NewAgent(opts ...Option) *Agent {
 
 // Validate checks if the agent binary exists and is executable.
 func (a *Agent) Validate() error {
-	if a.CLIPath == "" {
+	if a.Binary == "" {
 		return fmt.Errorf("agent binary path not set: %w", ErrValidationFailed)
 	}
 
-	if _, err := exec.LookPath(a.CLIPath); err != nil {
-		return fmt.Errorf("agent binary %q not found in PATH: %w", a.CLIPath, ErrNotFound)
+	if _, err := exec.LookPath(a.Binary); err != nil {
+		return fmt.Errorf("agent binary %q not found in PATH: %w", a.Binary, ErrNotFound)
 	}
 
 	return nil
