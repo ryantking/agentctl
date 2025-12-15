@@ -136,7 +136,7 @@ To fix this:
 		return "", fmt.Errorf("%s", ruleList.String()) //nolint:revive // Error message is built dynamically
 	}
 
-	return "", fmt.Errorf("rule not found: %s. No rules found. Run 'agentctl rules init' to initialize", ruleName)
+	return "", fmt.Errorf("rule not found: %s (no rules found, run 'agentctl rules init' to initialize)", ruleName)
 }
 
 // showRaw outputs the raw rule file content.
