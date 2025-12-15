@@ -59,7 +59,8 @@ Use --dry-run to preview changes without writing files.`,
 			}
 
 			if dryRun {
-				fmt.Println("DRY RUN MODE - No files will be written\n")
+				fmt.Println("DRY RUN MODE - No files will be written")
+				fmt.Println()
 			}
 
 			var errors []string
