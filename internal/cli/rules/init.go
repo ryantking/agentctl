@@ -183,7 +183,7 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 
 	// Get CLI path from flag or environment variable
 	cliPath := getAgentCLIPath(cmd)
-	agent := agentclient.NewAgent(agentclient.WithCLIPath(cliPath))
+	agent := agentclient.NewAgent(agentclient.WithBinary(cliPath))
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
