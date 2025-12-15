@@ -111,7 +111,7 @@ type Conversation struct {
 type ConversationOption func(*Conversation)
 
 // WithMaxToolCalls sets the maximum number of tool calls allowed per session.
-func WithMaxToolCalls(max int) ConversationOption {
+func WithMaxToolCalls(max int) ConversationOption { //nolint:revive // Function name follows Go conventions for option functions
 	return func(c *Conversation) {
 		c.maxToolCalls = max
 	}
