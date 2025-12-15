@@ -5,11 +5,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/shared/constant"
+	anthclient "github.com/ryantking/agentctl/internal/anthropic"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/spf13/cobra"
@@ -110,20 +112,18 @@ Example:
 	return cmd
 }
 
-// generateRuleContent generates rule content from a prompt using Claude CLI.
-// If Claude CLI is not available, falls back to simple template-based generation.
+// generateRuleContent generates rule content from a prompt using Anthropic SDK.
 func generateRuleContent(prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
-	// Try to use Claude CLI if available
-	if _, err := exec.LookPath("claude"); err == nil {
-		return generateRuleContentWithAgent(prompt, name, description, whenToUse, appliesTo)
+	// Check if API key is configured
+	if !anthclient.IsConfigured() {
+		return "", anthclient.EnhanceSDKError(fmt.Errorf("ANTHROPIC_API_KEY environment variable not set"))
 	}
 
-	// Fallback to template-based generation
-	return generateRuleContentTemplate(prompt, name, description, whenToUse, appliesTo)
-}
+	client, err := anthclient.NewClient()
+	if err != nil {
+		return "", anthclient.EnhanceSDKError(err)
+	}
 
-// generateRuleContentWithAgent spawns Claude CLI to generate rule content.
-func generateRuleContentWithAgent(prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
 	systemPrompt := `You are creating a rule file (.mdc format) for an agent rules system. 
 
 The rule file format is:
@@ -162,96 +162,51 @@ Generate a complete .mdc rule file based on the user's prompt.`
 		userPrompt += fmt.Sprintf("\n\nApplies to: %s", strings.Join(appliesTo, ", "))
 	}
 
-	fullPrompt := fmt.Sprintf("%s\n\n%s", systemPrompt, userPrompt)
+	fmt.Print("  → Generating rule content with Anthropic SDK...")
 
-	fmt.Print("  → Generating rule content with Claude CLI...")
-
-	cmdCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(cmdCtx, "claude", "--print", "--output-format", "text", fullPrompt) //nolint:gosec // Claude CLI is user-controlled
-	cmd.Env = os.Environ()
-
-	output, err := cmd.Output()
-	if err != nil {
-		// If Claude CLI fails, fall back to template
-		fmt.Println(" (failed, using template)")
-		return generateRuleContentTemplate(prompt, name, description, whenToUse, appliesTo)
+	// Create message request
+	params := anthropic.MessageNewParams{
+		Model:     anthropic.ModelClaudeSonnet4_5,
+		MaxTokens: 4000,
+		System: []anthropic.TextBlockParam{
+			{
+				Text: systemPrompt,
+				Type: constant.Text,
+			},
+		},
+		Messages: []anthropic.MessageParam{
+			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
+				OfText: &anthropic.TextBlockParam{
+					Text: userPrompt,
+					Type: constant.Text,
+				},
+			}),
+		},
 	}
 
-	ruleContent := strings.TrimSpace(string(output))
-	if ruleContent == "" {
-		// Empty output, fall back to template
-		fmt.Println(" (empty output, using template)")
-		return generateRuleContentTemplate(prompt, name, description, whenToUse, appliesTo)
+	// Call Messages API
+	msg, err := client.Messages.New(ctx, params)
+	if err != nil {
+		return "", anthclient.EnhanceSDKError(fmt.Errorf("failed to generate rule content: %w", err))
+	}
+
+	// Extract text content from response
+	var ruleContent strings.Builder
+	for _, block := range msg.Content {
+		if block.Type == "text" && block.Text != "" {
+			ruleContent.WriteString(block.Text)
+		}
+	}
+
+	content := strings.TrimSpace(ruleContent.String())
+	if content == "" {
+		return "", fmt.Errorf("empty output from Anthropic API")
 	}
 
 	fmt.Println(" (done)")
-	return ruleContent, nil
+	return content, nil
 }
 
-// generateRuleContentTemplate generates rule content using a simple template.
-func generateRuleContentTemplate(prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
-	// If name not provided, extract from prompt
-	if name == "" {
-		words := strings.Fields(prompt)
-		if len(words) > 0 {
-			// Capitalize first letter of first word
-			first := strings.ToLower(words[0])
-			if len(first) > 0 {
-				first = strings.ToUpper(first[:1]) + first[1:]
-			}
-			name = first
-			if len(words) > 1 {
-				// Capitalize first letter of second word
-				second := strings.ToLower(words[1])
-				if len(second) > 0 {
-					second = strings.ToUpper(second[:1]) + second[1:]
-				}
-				name += " " + second
-			}
-		}
-		if name == "" {
-			name = "New Rule"
-		}
-	}
-
-	// If description not provided, use prompt as description
-	if description == "" {
-		description = prompt
-	}
-
-	// If when-to-use not provided, generate a default
-	if whenToUse == "" {
-		whenToUse = fmt.Sprintf("When %s", strings.ToLower(prompt))
-	}
-
-	// Build frontmatter
-	var frontmatter strings.Builder
-	frontmatter.WriteString("---\n")
-	frontmatter.WriteString(fmt.Sprintf("name: \"%s\"\n", name))
-	frontmatter.WriteString(fmt.Sprintf("description: \"%s\"\n", description))
-	frontmatter.WriteString(fmt.Sprintf("when-to-use: \"%s\"\n", whenToUse))
-	
-	if len(appliesTo) > 0 {
-		appliesToStr := strings.Join(appliesTo, ", ")
-		frontmatter.WriteString(fmt.Sprintf("applies-to: [%s]\n", appliesToStr))
-	}
-	
-	frontmatter.WriteString("priority: 2\n")
-	frontmatter.WriteString("tags: []\n")
-	frontmatter.WriteString("version: \"1.0.0\"\n")
-	frontmatter.WriteString("---\n\n")
-
-	// Build body content
-	var body strings.Builder
-	body.WriteString(fmt.Sprintf("## %s\n\n", name))
-	body.WriteString(fmt.Sprintf("%s\n\n", description))
-	body.WriteString("## Guidelines\n\n")
-	body.WriteString("When working with this rule:\n\n")
-	body.WriteString(fmt.Sprintf("- %s\n", prompt))
-	body.WriteString("\n## Examples\n\n")
-	body.WriteString("(Add examples here)\n")
-
-	return frontmatter.String() + body.String(), nil
-}
