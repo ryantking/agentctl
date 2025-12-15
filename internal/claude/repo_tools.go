@@ -32,52 +32,32 @@ func RegisterRepoTools(registry *ToolRegistry, repoRoot string) error {
 // repoRoot: The root directory of the repository (for path validation)
 // enableAdvanced: If true, registers additional analysis tools (search_files, get_file_info, list_git_files)
 func RegisterRepoToolsWithOptions(registry *ToolRegistry, repoRoot string, enableAdvanced bool) error {
-	// Register list_directory tool
-	listDirSchema := map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"path": map[string]interface{}{
-				"type":        "string",
-				"description": "Directory path to list (relative to repository root)",
-			},
+	// Define basic tools
+	basicTools := []struct {
+		name        string
+		description string
+		schema      map[string]interface{}
+		handler     ToolHandler
+	}{
+		{
+			name:        "list_directory",
+			description: "List files and directories in a given path with type indicators (file/directory)",
+			schema:      ListDirectorySchema,
+			handler:     newListDirectoryHandler(repoRoot),
 		},
-		"required": []interface{}{"path"},
-	}
-
-	err := registry.RegisterTool("list_directory", "List files and directories in a given path with type indicators (file/directory)", listDirSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
-		path, ok := input["path"].(string)
-		if !ok {
-			return nil, fmt.Errorf("path must be a string")
-		}
-
-		return listDirectory(repoRoot, path)
-	})
-	if err != nil {
-		return fmt.Errorf("failed to register list_directory tool: %w", err)
-	}
-
-	// Register read_file tool
-	readFileSchema := map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"path": map[string]interface{}{
-				"type":        "string",
-				"description": "File path to read (relative to repository root)",
-			},
+		{
+			name:        "read_file",
+			description: "Read file contents from the repository. Returns error for binary files or files exceeding size limit",
+			schema:      ReadFileSchema,
+			handler:     newReadFileHandler(repoRoot),
 		},
-		"required": []interface{}{"path"},
 	}
 
-	err = registry.RegisterTool("read_file", "Read file contents from the repository. Returns error for binary files or files exceeding size limit", readFileSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
-		path, ok := input["path"].(string)
-		if !ok {
-			return nil, fmt.Errorf("path must be a string")
+	// Register basic tools
+	for _, tool := range basicTools {
+		if err := registry.RegisterTool(tool.name, tool.description, tool.schema, tool.handler); err != nil {
+			return fmt.Errorf("failed to register %s tool: %w", tool.name, err)
 		}
-
-		return readFile(repoRoot, path)
-	})
-	if err != nil {
-		return fmt.Errorf("failed to register read_file tool: %w", err)
 	}
 
 	// Register advanced tools if enabled
