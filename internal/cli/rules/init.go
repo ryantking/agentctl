@@ -9,7 +9,6 @@ import (
 	"time"
 
 	agentclient "github.com/ryantking/agentctl/internal/agent"
-	"github.com/ryantking/agentctl/internal/cli"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/ryantking/agentctl/internal/rules"
@@ -18,7 +17,7 @@ import (
 
 // InitRules initializes the .agent directory with default rules.
 // This function is exported so it can be called from other packages.
-func InitRules(repoRoot string, force, noProject, verbose bool) error {
+func InitRules(cmd *cobra.Command, repoRoot string, force, noProject, verbose bool) error {
 	// Determine .agent directory location (AGENTDIR env var or default)
 	agentDir, err := getAgentDir(repoRoot)
 	if err != nil {
@@ -46,13 +45,13 @@ func InitRules(repoRoot string, force, noProject, verbose bool) error {
 	relResearchPath, _ := filepath.Rel(repoRoot, researchDir)
 	fmt.Printf("  • %s (created)\n", relResearchPath)
 
-	// Generate project.md unless noProject flag
-	if !noProject {
-		if err := generateProjectMD(agentDir, repoRoot, force, verbose); err != nil {
-			// Non-fatal: warn but continue
-			fmt.Printf("  → Project.md generation skipped: %v\n", err)
+		// Generate project.md unless noProject flag
+		if !noProject {
+			if err := generateProjectMD(cmd, agentDir, repoRoot, force, verbose); err != nil {
+				// Non-fatal: warn but continue
+				fmt.Printf("  → Project.md generation skipped: %v\n", err)
+			}
 		}
-	}
 
 	fmt.Println("\n✓ .agent directory initialized successfully")
 	return nil
@@ -69,7 +68,7 @@ func NewRulesInitCmd() *cobra.Command {
 to .agent/rules/. Generates .agent/project.md using claude CLI. Creates .agent/research/ directory.
 
 Respects AGENTDIR environment variable (defaults to .agent).`,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var repoRoot string
 			var err error
 
@@ -79,7 +78,7 @@ Respects AGENTDIR environment variable (defaults to .agent).`,
 				return err
 			}
 
-			return InitRules(repoRoot, force, noProject, verbose)
+			return InitRules(cmd, repoRoot, force, noProject, verbose)
 		},
 	}
 
@@ -149,8 +148,24 @@ func copyDefaultRules(targetDir string, force bool) error {
 	return nil
 }
 
+// getAgentCLIPath returns the agent CLI path from flag or environment variable.
+func getAgentCLIPath(cmd *cobra.Command) string {
+	// Check flag value first
+	if flagPath, err := cmd.Flags().GetString("agent-cli"); err == nil && flagPath != "" && flagPath != "claude" {
+		return flagPath
+	}
+
+	// Check environment variable
+	if envPath := os.Getenv("AGENTCTL_CLI_PATH"); envPath != "" {
+		return envPath
+	}
+
+	// Default to "claude"
+	return "claude"
+}
+
 // generateProjectMD generates .agent/project.md using claude CLI.
-func generateProjectMD(agentDir string, _ string, force, _ bool) error {
+func generateProjectMD(cmd *cobra.Command, agentDir string, _ string, force, _ bool) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
 
 	// Check if file exists and skip if not forcing
@@ -183,7 +198,7 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 	fmt.Print("  → Generating project.md with claude CLI...")
 
 	// Get CLI path from flag or environment variable
-	cliPath := cli.GetAgentCLIPath()
+	cliPath := getAgentCLIPath(cmd)
 	agent := agentclient.NewAgent(agentclient.WithCLIPath(cliPath))
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()

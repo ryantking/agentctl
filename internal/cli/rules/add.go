@@ -11,7 +11,6 @@ import (
 	"time"
 
 	agentclient "github.com/ryantking/agentctl/internal/agent"
-	"github.com/ryantking/agentctl/internal/cli"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/spf13/cobra"
@@ -31,7 +30,7 @@ with proper frontmatter based on your description. Use --name to specify the fil
 Example:
   agentctl rules add "Always use conventional commits" --name git-commits`,
 		Args: cobra.MinimumNArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var repoRoot string
 			var err error
 
@@ -127,7 +126,7 @@ To fix this:
 			// File doesn't exist, which is what we want - continue
 
 			// Generate rule content
-			ruleContent, err := generateRuleContent(prompt, name, description, whenToUse, appliesTo)
+			ruleContent, err := generateRuleContent(cmd, prompt, name, description, whenToUse, appliesTo)
 			if err != nil {
 				return fmt.Errorf("failed to generate rule content: %w", err)
 			}
@@ -154,8 +153,24 @@ To fix this:
 	return cmd
 }
 
+// getAgentCLIPath returns the agent CLI path from flag or environment variable.
+func getAgentCLIPath(cmd *cobra.Command) string {
+	// Check flag value first
+	if flagPath, err := cmd.Flags().GetString("agent-cli"); err == nil && flagPath != "" && flagPath != "claude" {
+		return flagPath
+	}
+
+	// Check environment variable
+	if envPath := os.Getenv("AGENTCTL_CLI_PATH"); envPath != "" {
+		return envPath
+	}
+
+	// Default to "claude"
+	return "claude"
+}
+
 // generateRuleContent generates rule content from a prompt using claude CLI.
-func generateRuleContent(prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
+func generateRuleContent(cmd *cobra.Command, prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
 	// Check if claude CLI is configured
 	if !agentclient.IsConfigured() {
 		return "", fmt.Errorf("claude CLI not found or ANTHROPIC_API_KEY not set\n\nTo fix this:\n  - Install Claude Code: https://claude.ai/code\n  - Or set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key\n  - Get your API key at https://console.anthropic.com/")
@@ -202,7 +217,7 @@ Generate a complete .mdc rule file based on the user's prompt.`
 	fmt.Print("  → Generating rule content with claude CLI...")
 
 	// Get CLI path from flag or environment variable
-	cliPath := cli.GetAgentCLIPath()
+	cliPath := getAgentCLIPath(cmd)
 	agent := agentclient.NewAgent(agentclient.WithCLIPath(cliPath))
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
