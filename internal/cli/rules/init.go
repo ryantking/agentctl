@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/shared/constant"
 	anthclient "github.com/ryantking/agentctl/internal/anthropic"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
@@ -149,8 +148,8 @@ func copyDefaultRules(targetDir string, force bool) error {
 	return nil
 }
 
-// generateProjectMD generates .agent/project.md using Anthropic SDK.
-func generateProjectMD(agentDir, _ string, force bool) error {
+// generateProjectMD generates .agent/project.md using Anthropic SDK with tool use.
+func generateProjectMD(agentDir, repoRoot string, force bool) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
 
 	// Check if file exists and skip if not forcing
@@ -174,6 +173,15 @@ To fix this:
 		return anthclient.EnhanceSDKError(err)
 	}
 
+	// Create tool registry with repository exploration tools
+	registry := NewToolRegistry()
+	if err := RegisterRepoTools(registry, repoRoot); err != nil {
+		return fmt.Errorf("failed to register repository tools: %w", err)
+	}
+
+	// Create conversation with tool use support
+	conv := NewConversation(client, registry)
+
 	prompt := `Analyze this repository and provide a concise overview:
 - Main purpose and key technologies
 - Directory structure (2-3 levels max)
@@ -181,42 +189,23 @@ To fix this:
 - Build/run commands (check for package.json scripts, Makefile targets, Justfile recipes, etc.)
 - Available scripts and automation tools
 
+Use the list_directory and read_file tools to explore the repository structure and key files.
+
 Format as clean markdown starting at heading level 2 (##), keep it brief (under 500 words).`
 
-	fmt.Print("  → Generating project.md with Anthropic SDK...")
+	fmt.Print("  → Generating project.md with Anthropic SDK (using tool use)...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	// Create message request
-	params := anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaudeSonnet4_5,
-		MaxTokens: 2000,
-		Messages: []anthropic.MessageParam{
-			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
-				OfText: &anthropic.TextBlockParam{
-					Text: prompt,
-					Type: constant.Text("text"),
-				},
-			}),
-		},
-	}
-
-	// Call Messages API
-	msg, err := client.Messages.New(ctx, params)
+	// Add user message and send (tool use is handled automatically)
+	conv.AddUserMessage(prompt)
+	content, err := conv.Send(ctx, anthropic.ModelClaudeSonnet4_5, 2000)
 	if err != nil {
 		return anthclient.EnhanceSDKError(fmt.Errorf("failed to generate project.md: %w", err))
 	}
 
-	// Extract text content from response
-	var projectContent strings.Builder
-	for _, block := range msg.Content {
-		if block.Type == "text" && block.Text != "" {
-			projectContent.WriteString(block.Text)
-		}
-	}
-
-	content := strings.TrimSpace(projectContent.String())
+	content = strings.TrimSpace(content)
 	if content == "" {
 		return fmt.Errorf("empty output from Anthropic API")
 	}
