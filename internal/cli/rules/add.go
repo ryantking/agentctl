@@ -174,14 +174,14 @@ Generate a complete .mdc rule file based on the user's prompt.`
 		System: []anthropic.TextBlockParam{
 			{
 				Text: systemPrompt,
-				Type: constant.Text,
+				Type: constant.Text("text"),
 			},
 		},
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
 				OfText: &anthropic.TextBlockParam{
 					Text: userPrompt,
-					Type: constant.Text,
+					Type: constant.Text("text"),
 				},
 			}),
 		},
