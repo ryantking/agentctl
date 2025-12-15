@@ -51,13 +51,13 @@ func TestToolRegistry_ExecuteTool(t *testing.T) {
 		},
 	}
 
-	err := registry.RegisterTool("test_tool", "Test tool", schema, func(ctx context.Context, input map[string]interface{}) (interface{}, error) {
-		if err != nil {
-			t.Fatalf("RegisterTool() error = %v", err)
-		}
+	err := registry.RegisterTool("test_tool", "Test tool", schema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
 		value, _ := input["value"].(string)
 		return map[string]interface{}{"result": value}, nil
 	})
+	if err != nil {
+		t.Fatalf("RegisterTool() error = %v", err)
+	}
 
 	result, err := registry.ExecuteTool(context.Background(), "test_tool", map[string]interface{}{"value": "test"})
 	if err != nil {
