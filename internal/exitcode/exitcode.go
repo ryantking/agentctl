@@ -1,5 +1,5 @@
-// Package errors provides exit code constants following sysexits.h conventions.
-package errors
+// Package exitcode provides exit code constants following sysexits.h conventions.
+package exitcode
 
 // Exit codes following sysexits.h conventions.
 // These are standard exit codes used by Unix/Linux systems.
