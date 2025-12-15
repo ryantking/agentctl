@@ -65,7 +65,11 @@ Use --raw to output raw mdc without pretty-printing frontmatter.`,
 func findRuleFile(rulesDir, ruleName string) (string, error) {
 	// Check if rules directory exists
 	if _, err := os.Stat(rulesDir); os.IsNotExist(err) {
-		return "", fmt.Errorf("rules directory not found: %s\n\nRun 'agentctl rules init' to initialize", rulesDir)
+		return "", fmt.Errorf(`rules directory not found: %s
+
+To fix this:
+  - Run 'agentctl rules init' to create the directory
+  - Or check your AGENTDIR environment variable`, rulesDir)
 	}
 
 	// Try exact filename match first
@@ -88,6 +92,7 @@ func findRuleFile(rulesDir, ruleName string) (string, error) {
 		return "", fmt.Errorf("failed to read rules directory: %w", err)
 	}
 
+	var availableRules []string
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".mdc") {
 			continue
@@ -96,6 +101,9 @@ func findRuleFile(rulesDir, ruleName string) (string, error) {
 		rulePath := filepath.Join(rulesDir, entry.Name())
 		metadata, err := parseRuleMetadata(rulePath)
 		if err != nil {
+			// Still include filename even if metadata parsing fails
+			filenameBase := strings.TrimSuffix(entry.Name(), ".mdc")
+			availableRules = append(availableRules, filenameBase)
 			continue
 		}
 
@@ -109,9 +117,28 @@ func findRuleFile(rulesDir, ruleName string) (string, error) {
 		if strings.EqualFold(filenameBase, ruleName) {
 			return rulePath, nil
 		}
+
+		// Collect available rule names for error message
+		if metadata.Name != "" {
+			availableRules = append(availableRules, filenameBase)
+		} else {
+			availableRules = append(availableRules, filenameBase)
+		}
 	}
 
-	return "", fmt.Errorf("rule not found: %s", ruleName)
+	// Build error message with available rules
+	errMsg := fmt.Sprintf("rule not found: %s", ruleName)
+	if len(availableRules) > 0 {
+		errMsg += "\n\nAvailable rules:"
+		for _, rule := range availableRules {
+			errMsg += fmt.Sprintf("\n  - %s", rule)
+		}
+		errMsg += "\n\nRun 'agentctl rules list' to see all rules."
+	} else {
+		errMsg += "\n\nNo rules found. Run 'agentctl rules init' to initialize."
+	}
+
+	return "", fmt.Errorf(errMsg)
 }
 
 // showRaw outputs the raw rule file content.

@@ -104,7 +104,16 @@ func validateAgentDir(agentDir string) error {
 	invalidChars := []string{"..", "~", "$", "`"}
 	for _, char := range invalidChars {
 		if strings.Contains(agentDir, char) {
-			return fmt.Errorf("AGENTDIR contains invalid character sequence: %s", char)
+			return fmt.Errorf(`AGENTDIR contains invalid character sequence: %s
+
+This is not allowed because:
+  - ".." could be used for path traversal attacks
+  - "~", "$", "`" are shell expansion characters that could cause unexpected behavior
+
+To fix this:
+  - Use a simple relative path like ".agent" or "custom-agent"
+  - Or use an absolute path without these characters
+  - Example: export AGENTDIR=/path/to/agent`, char)
 		}
 	}
 
@@ -129,7 +138,11 @@ func validateAgentDir(agentDir string) error {
 func listRules(rulesDir string) ([]RuleInfo, error) {
 	// Check if rules directory exists
 	if _, err := os.Stat(rulesDir); os.IsNotExist(err) {
-		return nil, fmt.Errorf("rules directory not found: %s\n\nRun 'agentctl rules init' to initialize", rulesDir)
+		return nil, fmt.Errorf(`rules directory not found: %s
+
+To fix this:
+  - Run 'agentctl rules init' to create the directory
+  - Or check your AGENTDIR environment variable`, rulesDir)
 	}
 
 	entries, err := os.ReadDir(rulesDir)
@@ -221,7 +234,11 @@ func validateRuleMetadata(metadata RuleMetadata, rulePath string) error {
 				relPath = rel
 			}
 		}
-		return fmt.Errorf("validation errors in %s:\n  - %s", relPath, strings.Join(errors, "\n  - "))
+		return fmt.Errorf(`validation errors in %s:
+  - %s
+
+Edit the file to fix these issues:
+  vim %s`, relPath, strings.Join(errors, "\n  - "), relPath)
 	}
 
 	return nil

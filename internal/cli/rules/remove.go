@@ -41,7 +41,11 @@ Supports removing multiple rules at once. Prompts for confirmation unless --forc
 
 			// Check if rules directory exists
 			if _, err := os.Stat(rulesDir); os.IsNotExist(err) {
-				return fmt.Errorf("rules directory not found: %s\n\nRun 'agentctl rules init' to initialize", rulesDir)
+				return fmt.Errorf(`rules directory not found: %s
+
+To fix this:
+  - Run 'agentctl rules init' to create the directory
+  - Or check your AGENTDIR environment variable`, rulesDir)
 			}
 
 			var removed []string
@@ -50,6 +54,7 @@ Supports removing multiple rules at once. Prompts for confirmation unless --forc
 			for _, ruleName := range args {
 				rulePath, err := findRuleFile(rulesDir, ruleName)
 				if err != nil {
+					// findRuleFile already provides helpful error messages
 					errors = append(errors, fmt.Sprintf("  ✗ %s: %v", ruleName, err))
 					continue
 				}

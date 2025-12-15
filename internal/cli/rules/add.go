@@ -80,7 +80,13 @@ Example:
 
 			// Check if file already exists
 			if _, err := os.Stat(rulePath); err == nil {
-				return fmt.Errorf("rule file already exists: %s\n\nUse a different --name or remove the existing file", filename)
+				relPath, _ := filepath.Rel(repoRoot, rulePath)
+				return fmt.Errorf(`rule file already exists: %s
+
+To fix this:
+  - Use a different --name: agentctl rules add "%s" --name different-name
+  - Or remove the existing file: agentctl rules remove %s
+  - Or view the existing rule: agentctl rules show %s`, relPath, prompt, filename, strings.TrimSuffix(filename, ".mdc"))
 			}
 			// File doesn't exist, which is what we want - continue
 
