@@ -183,10 +183,14 @@ To fix this:
 	}
 
 	// Create conversation with tool use support
-	conv := anthclient.NewConversation(client, registry)
-	if verbose {
-		conv.SetVerbose(true)
+	// Allow more tool calls for repository exploration (project.md generation)
+	opts := []anthclient.ConversationOption{
+		anthclient.WithMaxToolCalls(50), // Allow more for exploration
 	}
+	if verbose {
+		opts = append(opts, anthclient.WithVerbose(true))
+	}
+	conv := anthclient.NewConversation(client, registry, opts...)
 
 	prompt := `Analyze this repository and provide a concise overview:
 - Main purpose and key technologies

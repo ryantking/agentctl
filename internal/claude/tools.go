@@ -107,9 +107,27 @@ type Conversation struct {
 	logger     func(string, ...interface{})
 }
 
+// ConversationOption configures a Conversation.
+type ConversationOption func(*Conversation)
+
+// WithMaxToolCalls sets the maximum number of tool calls allowed per session.
+func WithMaxToolCalls(max int) ConversationOption {
+	return func(c *Conversation) {
+		c.maxToolCalls = max
+	}
+}
+
+// WithVerbose enables verbose logging of tool executions.
+func WithVerbose(verbose bool) ConversationOption {
+	return func(c *Conversation) {
+		c.SetVerbose(verbose)
+	}
+}
+
 // NewConversation creates a new conversation with tool use support.
-func NewConversation(client anthropic.Client, registry *ToolRegistry) *Conversation {
-	return &Conversation{
+// Options can be provided to configure the conversation (e.g., WithMaxToolCalls, WithVerbose).
+func NewConversation(client anthropic.Client, registry *ToolRegistry, opts ...ConversationOption) *Conversation {
+	conv := &Conversation{
 		client:      client,
 		registry:    registry,
 		messages:    []anthropic.MessageParam{},
@@ -119,6 +137,13 @@ func NewConversation(client anthropic.Client, registry *ToolRegistry) *Conversat
 		maxToolCalls: 50, // Default max tool calls per session
 		logger:      func(string, ...interface{}) {}, // No-op logger by default
 	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt(conv)
+	}
+
+	return conv
 }
 
 // SetVerbose enables verbose logging of tool executions.
