@@ -14,23 +14,46 @@ import (
 
 // Agent represents a CLI-based agent executor.
 type Agent struct {
-	CLIPath string // Path to CLI binary (e.g., "claude")
+	Type    string        // Agent type (e.g., "claude", "codex", "cursor")
+	Binary  string        // Path to binary (defaults to Type)
+	Timeout time.Duration // Execution timeout (default: 5 minutes)
 }
 
 // Option configures an Agent.
 type Option func(*Agent)
 
-// WithCLIPath sets the CLI binary path.
-func WithCLIPath(path string) Option {
+// WithType sets the agent type and updates Binary to match if Binary is still default.
+func WithType(agentType string) Option {
 	return func(a *Agent) {
-		a.CLIPath = path
+		oldType := a.Type
+		a.Type = agentType
+		// Auto-update Binary if it matches the old Type
+		if a.Binary == "" || a.Binary == oldType {
+			a.Binary = agentType
+		}
 	}
 }
 
-// NewAgent creates a new Agent instance.
+// WithBinary sets the CLI binary path.
+func WithBinary(path string) Option {
+	return func(a *Agent) {
+		a.Binary = path
+	}
+}
+
+// WithTimeout sets the execution timeout.
+func WithTimeout(timeout time.Duration) Option {
+	return func(a *Agent) {
+		a.Timeout = timeout
+	}
+}
+
+// NewAgent creates a new Agent instance with defaults.
 func NewAgent(opts ...Option) *Agent {
 	agent := &Agent{
-		CLIPath: "claude",
+		Type:    "claude",
+		Binary:  "claude",
+		Timeout: 5 * time.Minute,
 	}
 	for _, opt := range opts {
 		opt(agent)
