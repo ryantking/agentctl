@@ -150,7 +150,7 @@ func copyDefaultRules(targetDir string, force bool) error {
 }
 
 // generateProjectMD generates .agent/project.md using Anthropic SDK with tool use.
-func generateProjectMD(agentDir, repoRoot string, force bool) error {
+func generateProjectMD(agentDir, repoRoot string, force, verbose bool) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
 
 	// Check if file exists and skip if not forcing
@@ -182,6 +182,9 @@ To fix this:
 
 	// Create conversation with tool use support
 	conv := anthclient.NewConversation(client, registry)
+	if verbose {
+		conv.SetVerbose(true)
+	}
 
 	prompt := `Analyze this repository and provide a concise overview:
 - Main purpose and key technologies
