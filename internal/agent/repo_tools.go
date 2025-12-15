@@ -1,4 +1,4 @@
-// Package anthropic provides Anthropic SDK client initialization and configuration.
+// Package agent provides Anthropic SDK client initialization and configuration.
 package agent
 
 import (

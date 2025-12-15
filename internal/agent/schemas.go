@@ -1,4 +1,4 @@
-// Package anthropic provides tool schema definitions for repository exploration tools.
+// Package agent provides tool schema definitions for repository exploration tools.
 package agent
 
 // Tool schemas for repository exploration tools
