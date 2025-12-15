@@ -91,7 +91,8 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	// Validate binary exists before execution
 	if err := a.Validate(); err != nil {
 		logger.Error("agent binary validation failed",
-			slog.String("cli_path", a.CLIPath),
+			slog.String("type", a.Type),
+			slog.String("binary", a.Binary),
 			slog.Any("error", err))
 		return "", fmt.Errorf("agent binary validation failed: %w", err)
 	}
@@ -99,24 +100,25 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	// Add default timeout if none in context
 	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 5*time.Minute)
+		ctx, cancel = context.WithTimeout(ctx, a.Timeout)
 		defer cancel()
 	}
 
 	// Check if binary exists
-	cliPath, err := exec.LookPath(a.CLIPath)
+	binPath, err := exec.LookPath(a.Binary)
 	if err != nil {
 		logger.Error("agent binary not found",
-			slog.String("cli_path", a.CLIPath),
+			slog.String("type", a.Type),
+			slog.String("binary", a.Binary),
 			slog.Any("error", err))
 		return "", &AgentError{
-			Program:  a.CLIPath,
-			BinPath:  a.CLIPath,
+			Type:     a.Type,
+			Binary:   a.Binary,
 			Args:     []string{"--print", prompt},
 			ExitCode: -1,
 			Stdout:   "",
 			Stderr:   "",
-			Err:      fmt.Errorf("agent binary %q not found in PATH: %w", a.CLIPath, ErrNotFound),
+			Err:      fmt.Errorf("agent binary %q not found in PATH: %w", a.Binary, ErrNotFound),
 		}
 	}
 
