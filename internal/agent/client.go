@@ -79,7 +79,7 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 			ExitCode: -1,
 			Stdout:   "",
 			Stderr:   "",
-			Err:      fmt.Errorf("agent binary %q not found in PATH: %w", a.CLIPath, err),
+			Err:      fmt.Errorf("agent binary %q not found in PATH: %w", a.CLIPath, ErrNotFound),
 		}
 	}
 
@@ -106,7 +106,7 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 				ExitCode: -1,
 				Stdout:   stdout.String(),
 				Stderr:   stderr.String(),
-				Err:      fmt.Errorf("agent execution cancelled by user"),
+				Err:      ErrCanceled,
 			}
 		}
 		if ctx.Err() == context.DeadlineExceeded {
@@ -119,7 +119,7 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 				ExitCode: -1,
 				Stdout:   stdout.String(),
 				Stderr:   stderr.String(),
-				Err:      fmt.Errorf("agent execution timed out after %s", timeout),
+				Err:      fmt.Errorf("agent execution timed out after %s: %w", timeout, ErrTimeout),
 			}
 		}
 
@@ -150,7 +150,7 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 			ExitCode: 0,
 			Stdout:   stdout.String(),
 			Stderr:   stderr.String(),
-			Err:      fmt.Errorf("agent produced no output"),
+			Err:      ErrEmptyOutput,
 		}
 	}
 
