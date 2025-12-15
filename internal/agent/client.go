@@ -1,4 +1,4 @@
-// Package agent provides CLI-based agent execution.
+// Package agent provides CLI-based agent execution using the claude CLI.
 package agent
 
 import (
@@ -49,7 +49,7 @@ func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 	}
 
 	// Build command: claude --print <prompt>
-	cmd := exec.CommandContext(ctx, cliPath, "--print", prompt)
+	cmd := exec.CommandContext(ctx, cliPath, "--print", prompt) //nolint:gosec // claude CLI is a trusted local binary
 	
 	// Set working directory to current directory (CLI will use repo context)
 	wd, _ := os.Getwd()
@@ -90,6 +90,7 @@ func IsConfigured() bool {
 
 // NewClientOrNil is kept for backward compatibility with status.go.
 // Returns a zero-value struct since we don't need SDK client anymore.
+//nolint:revive // Function name kept for backward compatibility
 func NewClientOrNil() (struct{}, error) {
 	return struct{}{}, nil
 }
