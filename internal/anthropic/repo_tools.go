@@ -176,7 +176,6 @@ func listDirectory(repoRoot, path string) (interface{}, error) {
 
 	var items []map[string]interface{}
 	for _, entry := range entries {
-		entryPath := filepath.Join(path, entry.Name())
 		absEntryPath := filepath.Join(absPath, entry.Name())
 
 		// Skip ignored paths
