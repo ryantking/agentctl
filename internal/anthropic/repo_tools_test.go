@@ -11,6 +11,7 @@ import (
 func TestValidatePath(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoRoot := filepath.Join(tmpDir, "repo")
+	//nolint:gosec // Test directory permissions are acceptable for temporary test directories
 	if err := os.MkdirAll(repoRoot, 0755); err != nil {
 		t.Fatalf("Failed to create repo root: %v", err)
 	}
@@ -77,17 +78,20 @@ func TestValidatePath(t *testing.T) {
 func TestListDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoRoot := filepath.Join(tmpDir, "repo")
+	//nolint:gosec // Test directory permissions are acceptable for temporary test directories
 	if err := os.MkdirAll(repoRoot, 0755); err != nil {
 		t.Fatalf("Failed to create repo root: %v", err)
 	}
 
 	// Create test files and directories
 	testDir := filepath.Join(repoRoot, "testdir")
+	//nolint:gosec // Test directory permissions are acceptable for temporary test directories
 	if err := os.MkdirAll(testDir, 0755); err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
 	}
 
 	testFile := filepath.Join(repoRoot, "test.txt")
+	//nolint:gosec // Test file permissions are acceptable for temporary test files
 	if err := os.WriteFile(testFile, []byte("test content"), 0644); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
@@ -134,6 +138,7 @@ func TestListDirectory(t *testing.T) {
 func TestReadFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoRoot := filepath.Join(tmpDir, "repo")
+	//nolint:gosec // Test directory permissions are acceptable for temporary test directories
 	if err := os.MkdirAll(repoRoot, 0755); err != nil {
 		t.Fatalf("Failed to create repo root: %v", err)
 	}
@@ -162,6 +167,7 @@ func TestReadFile(t *testing.T) {
 func TestReadFile_Binary(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoRoot := filepath.Join(tmpDir, "repo")
+	//nolint:gosec // Test directory permissions are acceptable for temporary test directories
 	if err := os.MkdirAll(repoRoot, 0755); err != nil {
 		t.Fatalf("Failed to create repo root: %v", err)
 	}
@@ -185,6 +191,7 @@ func TestReadFile_Binary(t *testing.T) {
 func TestRegisterRepoTools(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoRoot := filepath.Join(tmpDir, "repo")
+	//nolint:gosec // Test directory permissions are acceptable for temporary test directories
 	if err := os.MkdirAll(repoRoot, 0755); err != nil {
 		t.Fatalf("Failed to create repo root: %v", err)
 	}
@@ -220,6 +227,7 @@ func TestRegisterRepoTools(t *testing.T) {
 func TestToolExecution(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoRoot := filepath.Join(tmpDir, "repo")
+	//nolint:gosec // Test directory permissions are acceptable for temporary test directories
 	if err := os.MkdirAll(repoRoot, 0755); err != nil {
 		t.Fatalf("Failed to create repo root: %v", err)
 	}

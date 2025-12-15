@@ -33,7 +33,7 @@ func RegisterRepoTools(registry *ToolRegistry, repoRoot string) error {
 		"required": []interface{}{"path"},
 	}
 
-	err := registry.RegisterTool("list_directory", "List files and directories in a given path with type indicators (file/directory)", listDirSchema, func(ctx context.Context, input map[string]interface{}) (interface{}, error) {
+	err := registry.RegisterTool("list_directory", "List files and directories in a given path with type indicators (file/directory)", listDirSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
 		path, ok := input["path"].(string)
 		if !ok {
 			return nil, fmt.Errorf("path must be a string")
@@ -57,7 +57,7 @@ func RegisterRepoTools(registry *ToolRegistry, repoRoot string) error {
 		"required": []interface{}{"path"},
 	}
 
-	err = registry.RegisterTool("read_file", "Read file contents from the repository. Returns error for binary files or files exceeding size limit", readFileSchema, func(ctx context.Context, input map[string]interface{}) (interface{}, error) {
+	err = registry.RegisterTool("read_file", "Read file contents from the repository. Returns error for binary files or files exceeding size limit", readFileSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
 		path, ok := input["path"].(string)
 		if !ok {
 			return nil, fmt.Errorf("path must be a string")
@@ -109,7 +109,6 @@ func isIgnored(repoRoot, path string) bool {
 	// Check common ignored patterns
 	ignoredPatterns := []string{
 		".git/",
-		".git/",
 		"node_modules/",
 		".claude/scratch/",
 		"vendor/",
@@ -124,17 +123,18 @@ func isIgnored(repoRoot, path string) bool {
 	pathParts := strings.Split(relPath, string(filepath.Separator))
 	for _, part := range pathParts {
 		for _, pattern := range ignoredPatterns {
-			if strings.HasPrefix(pattern, "*") {
+			switch {
+			case strings.HasPrefix(pattern, "*"):
 				// Simple suffix match
 				if strings.HasSuffix(part, strings.TrimPrefix(pattern, "*")) {
 					return true
 				}
-			} else if strings.HasSuffix(pattern, "/") {
+			case strings.HasSuffix(pattern, "/"):
 				// Directory match
 				if part == strings.TrimSuffix(pattern, "/") {
 					return true
 				}
-			} else {
+			default:
 				// Exact match
 				if part == pattern {
 					return true
@@ -251,6 +251,8 @@ func readFile(repoRoot, path string) (interface{}, error) {
 	}
 
 	// Read file
+	// Path is validated by validatePath to be within repo root
+	//nolint:gosec // Path is validated to be within repository root
 	content, err := os.ReadFile(absPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
