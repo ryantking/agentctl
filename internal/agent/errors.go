@@ -1,4 +1,4 @@
-// Package agent provides Anthropic SDK client initialization and configuration.
+// Package agent provides CLI-based agent execution using the claude CLI.
 package agent
 
 import (
@@ -6,75 +6,44 @@ import (
 	"strings"
 )
 
-// EnhanceSDKError wraps SDK errors with helpful, actionable error messages.
+// EnhanceSDKError wraps CLI errors with helpful, actionable error messages.
+// Kept for backward compatibility - now handles CLI execution errors.
 func EnhanceSDKError(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	// Check error message for specific error types
 	errStr := err.Error()
-	
-	// Check for authentication errors
-	if strings.Contains(errStr, "authentication") || strings.Contains(errStr, "invalid api key") || strings.Contains(errStr, "api key") {
-		return fmt.Errorf(`authentication failed: %w
+
+	// Check for CLI not found errors
+	if strings.Contains(errStr, "claude CLI not found") || strings.Contains(errStr, "executable file not found") {
+		return fmt.Errorf(`%w
 
 To fix this:
-  - Set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key
-  - Or run 'claude login' if you have the Claude CLI installed
-  - Verify your API key is valid at https://console.anthropic.com/`, err)
+  - Install Claude Code: https://claude.ai/code
+  - Or set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key
+  - Get your API key at https://console.anthropic.com/`, err)
 	}
 
-	// Check for rate limit errors (429)
-	if strings.Contains(errStr, "429") || strings.Contains(errStr, "rate limit") || strings.Contains(errStr, "too many requests") {
-		return fmt.Errorf(`rate limit exceeded: %w
-
-The API rate limit has been reached. Please:
-  - Wait a few moments and try again
-  - Check your usage at https://console.anthropic.com/
-  - Consider upgrading your plan if you frequently hit limits`, err)
-	}
-
-	// Check for unauthorized/forbidden errors (401, 403)
-	if strings.Contains(errStr, "401") || strings.Contains(errStr, "403") || strings.Contains(errStr, "unauthorized") || strings.Contains(errStr, "forbidden") {
-		return fmt.Errorf(`authorization failed: %w
+	// Check for authentication errors from CLI
+	if strings.Contains(errStr, "authentication") || strings.Contains(errStr, "not authenticated") {
+		return fmt.Errorf(`%w
 
 To fix this:
-  - Verify your API key is correct: echo $ANTHROPIC_API_KEY
-  - Check your API key permissions at https://console.anthropic.com/
-  - Run 'claude status' if you have the Claude CLI installed`, err)
+  - Run 'claude login' to authenticate with Claude Code
+  - Or set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key
+  - Get your API key at https://console.anthropic.com/`, err)
 	}
 
-	// Check for network errors
-	errStr = err.Error()
+	// Check for timeout errors
 	if strings.Contains(errStr, "timeout") || strings.Contains(errStr, "deadline exceeded") {
 		return fmt.Errorf(`request timeout: %w
 
 This may indicate:
   - Network connectivity issues - check your internet connection
-  - API service temporarily unavailable - try again in a moment
-  - Request took too long - the operation may have timed out`, err)
+  - Request took too long - try again or increase timeout`, err)
 	}
 
-	if strings.Contains(errStr, "connection") || strings.Contains(errStr, "network") || strings.Contains(errStr, "dial") {
-		return fmt.Errorf(`network error: %w
-
-This may indicate:
-  - No internet connection - check your network connectivity
-  - Firewall blocking requests - check your firewall settings
-  - DNS resolution issues - verify you can reach api.anthropic.com`, err)
-	}
-
-	// Check for missing API key (before SDK call)
-	if strings.Contains(errStr, "ANTHROPIC_API_KEY") || strings.Contains(errStr, "not set") || strings.Contains(errStr, "not configured") {
-		return fmt.Errorf(`%w
-
-To fix this:
-  - Set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key
-  - Or run 'claude login' if you have the Claude CLI installed
-  - Get your API key at https://console.anthropic.com/`, err)
-	}
-
-	// Generic error - wrap with context
-	return fmt.Errorf("anthropic API error: %w\n\nFor help, check https://docs.anthropic.com/ or verify your API key at https://console.anthropic.com/", err)
+	// Return error as-is (CLI provides good error messages)
+	return err
 }
