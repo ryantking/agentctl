@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -56,6 +57,30 @@ Example:
 
 			prompt := strings.Join(args, " ")
 
+			// Validate prompt
+			if err := validatePrompt(prompt); err != nil {
+				return err
+			}
+
+			// Validate description if provided
+			if description != "" {
+				if err := validateDescription(description); err != nil {
+					return err
+				}
+			}
+
+			// Validate when-to-use if provided
+			if whenToUse != "" {
+				if err := validateWhenToUse(whenToUse); err != nil {
+					return err
+				}
+			}
+
+			// Validate applies-to
+			if err := validateAppliesTo(appliesTo); err != nil {
+				return err
+			}
+
 			// Determine filename
 			filename := name
 			if filename == "" {
@@ -72,6 +97,18 @@ Example:
 					filename = "new-rule"
 				}
 			}
+
+			// Remove .mdc extension if present for validation
+			filenameBase := strings.TrimSuffix(filename, ".mdc")
+			if err := validateRuleName(filenameBase); err != nil {
+				return fmt.Errorf("invalid rule name: %w", err)
+			}
+
+			// Check for name conflicts with existing rules
+			if err := checkNameConflict(rulesDir, filenameBase); err != nil {
+				return err
+			}
+
 			if !strings.HasSuffix(filename, ".mdc") {
 				filename += ".mdc"
 			}
@@ -214,5 +251,112 @@ Generate a complete .mdc rule file based on the user's prompt.`
 
 	fmt.Println(" (done)")
 	return content, nil
+}
+
+// validatePrompt validates the prompt argument.
+func validatePrompt(prompt string) error {
+	prompt = strings.TrimSpace(prompt)
+	if len(prompt) < 10 {
+		return fmt.Errorf("prompt too short (minimum 10 characters)")
+	}
+	if len(prompt) > 1000 {
+		return fmt.Errorf("prompt too long (maximum 1000 characters)")
+	}
+	return nil
+}
+
+// validateRuleName validates a rule name.
+func validateRuleName(name string) error {
+	if name == "" {
+		return fmt.Errorf("rule name cannot be empty")
+	}
+	if len(name) > 50 {
+		return fmt.Errorf("rule name too long (max 50 characters)")
+	}
+	matched, err := regexp.MatchString("^[a-z0-9-]+$", name)
+	if err != nil {
+		return fmt.Errorf("failed to validate rule name: %w", err)
+	}
+	if !matched {
+		return fmt.Errorf("rule name can only contain lowercase letters, numbers, and hyphens")
+	}
+	return nil
+}
+
+// validateDescription validates the description field.
+func validateDescription(description string) error {
+	description = strings.TrimSpace(description)
+	if description == "" {
+		return fmt.Errorf("description cannot be empty or whitespace-only")
+	}
+	if len(description) > 200 {
+		return fmt.Errorf("description too long (max 200 characters)")
+	}
+	return nil
+}
+
+// validateWhenToUse validates the when-to-use field.
+func validateWhenToUse(whenToUse string) error {
+	whenToUse = strings.TrimSpace(whenToUse)
+	if whenToUse == "" {
+		return fmt.Errorf("when-to-use cannot be empty or whitespace-only")
+	}
+	if len(whenToUse) > 300 {
+		return fmt.Errorf("when-to-use too long (max 300 characters)")
+	}
+	return nil
+}
+
+// validateAppliesTo validates the applies-to tools list.
+var knownTools = []string{"claude", "cursor", "windsurf", "aider"}
+
+func validateAppliesTo(tools []string) error {
+	for _, tool := range tools {
+		tool = strings.TrimSpace(strings.ToLower(tool))
+		if tool == "" {
+			return fmt.Errorf("applies-to cannot contain empty values")
+		}
+		found := false
+		for _, known := range knownTools {
+			if tool == known {
+				found = true
+				break
+			}
+		}
+		if !found {
+			fmt.Printf("⚠ Warning: unknown tool '%s' (known tools: %s)\n", tool, strings.Join(knownTools, ", "))
+		}
+	}
+	return nil
+}
+
+// checkNameConflict checks if a rule name conflicts with existing rules.
+func checkNameConflict(rulesDir, name string) error {
+	// Check if rules directory exists
+	if _, err := os.Stat(rulesDir); os.IsNotExist(err) {
+		return nil // No conflicts if directory doesn't exist
+	}
+
+	entries, err := os.ReadDir(rulesDir)
+	if err != nil {
+		return nil // Skip conflict check if we can't read directory
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".mdc") {
+			continue
+		}
+
+		filenameBase := strings.TrimSuffix(entry.Name(), ".mdc")
+		if strings.EqualFold(filenameBase, name) {
+			return fmt.Errorf(`rule name conflicts with existing rule: %s
+
+To fix this:
+  - Use a different --name: agentctl rules add "<prompt>" --name different-name
+  - Or remove the existing rule: agentctl rules remove %s`, entry.Name(), name)
+		}
+	}
+
+	return nil
 }
 
