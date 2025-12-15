@@ -134,7 +134,7 @@ func (c *Conversation) SetVerbose(verbose bool) {
 }
 
 // SetMaxToolCalls sets the maximum number of tool calls allowed per session.
-func (c *Conversation) SetMaxToolCalls(max int) {
+func (c *Conversation) SetMaxToolCalls(max int) { //nolint:revive // Method name is clear
 	c.maxToolCalls = max
 }
 
