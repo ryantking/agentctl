@@ -1,6 +1,8 @@
 // Package agent provides CLI-based agent execution using the claude CLI.
 package agent
 
+//nolint:revive // AgentError is a custom error type following exec.ExitError pattern
+
 import (
 	"fmt"
 	"strings"
