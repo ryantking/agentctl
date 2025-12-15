@@ -2,7 +2,6 @@
 package anthropic
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -72,94 +71,38 @@ func RegisterRepoToolsWithOptions(registry *ToolRegistry, repoRoot string, enabl
 
 // registerAdvancedTools registers optional advanced repository analysis tools.
 func registerAdvancedTools(registry *ToolRegistry, repoRoot string) error {
-	// Register search_files tool
-	searchFilesSchema := map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"pattern": map[string]interface{}{
-				"type":        "string",
-				"description": "Search pattern (regex or plain text)",
-			},
-			"path": map[string]interface{}{
-				"type":        "string",
-				"description": "Directory path to search in (relative to repository root, defaults to root)",
-			},
-			"case_sensitive": map[string]interface{}{
-				"type":        "boolean",
-				"description": "Whether search is case sensitive (default: false)",
-			},
+	// Define advanced tools
+	advancedTools := []struct {
+		name        string
+		description string
+		schema      map[string]interface{}
+		handler     ToolHandler
+	}{
+		{
+			name:        "search_files",
+			description: "Search for text patterns in files (grep-like functionality). Returns file paths and matching lines",
+			schema:      SearchFilesSchema,
+			handler:     newSearchFilesHandler(repoRoot),
 		},
-		"required": []interface{}{"pattern"},
-	}
-
-	err := registry.RegisterTool("search_files", "Search for text patterns in files (grep-like functionality). Returns file paths and matching lines", searchFilesSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
-		pattern, ok := input["pattern"].(string)
-		if !ok {
-			return nil, fmt.Errorf("pattern must be a string")
-		}
-
-		path := "."
-		if p, ok := input["path"].(string); ok && p != "" {
-			path = p
-		}
-
-		caseSensitive := false
-		if cs, ok := input["case_sensitive"].(bool); ok {
-			caseSensitive = cs
-		}
-
-		return searchFiles(repoRoot, pattern, path, caseSensitive)
-	})
-	if err != nil {
-		return fmt.Errorf("failed to register search_files tool: %w", err)
-	}
-
-	// Register get_file_info tool
-	getFileInfoSchema := map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"path": map[string]interface{}{
-				"type":        "string",
-				"description": "File path (relative to repository root)",
-			},
+		{
+			name:        "get_file_info",
+			description: "Get file metadata: size, permissions, last modified time",
+			schema:      GetFileInfoSchema,
+			handler:     newGetFileInfoHandler(repoRoot),
 		},
-		"required": []interface{}{"path"},
-	}
-
-	err = registry.RegisterTool("get_file_info", "Get file metadata: size, permissions, last modified time", getFileInfoSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
-		path, ok := input["path"].(string)
-		if !ok {
-			return nil, fmt.Errorf("path must be a string")
-		}
-
-		return getFileInfo(repoRoot, path)
-	})
-	if err != nil {
-		return fmt.Errorf("failed to register get_file_info tool: %w", err)
-	}
-
-	// Register list_git_files tool
-	listGitFilesSchema := map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"path": map[string]interface{}{
-				"type":        "string",
-				"description": "Directory path to list tracked files in (relative to repository root, defaults to root)",
-			},
+		{
+			name:        "list_git_files",
+			description: "List only files tracked by git (ignores untracked and ignored files)",
+			schema:      ListGitFilesSchema,
+			handler:     newListGitFilesHandler(repoRoot),
 		},
-		"required": []interface{}{},
 	}
 
-	err = registry.RegisterTool("list_git_files", "List only files tracked by git (ignores untracked and ignored files)", listGitFilesSchema, func(_ context.Context, input map[string]interface{}) (interface{}, error) {
-		path := "."
-		if p, ok := input["path"].(string); ok && p != "" {
-			path = p
+	// Register advanced tools
+	for _, tool := range advancedTools {
+		if err := registry.RegisterTool(tool.name, tool.description, tool.schema, tool.handler); err != nil {
+			return fmt.Errorf("failed to register %s tool: %w", tool.name, err)
 		}
-
-		return listGitFiles(repoRoot, path)
-	})
-	if err != nil {
-		return fmt.Errorf("failed to register list_git_files tool: %w", err)
 	}
 
 	return nil
