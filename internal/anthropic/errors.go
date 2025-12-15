@@ -4,7 +4,6 @@ package anthropic
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go/shared"
