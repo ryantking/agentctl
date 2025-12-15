@@ -272,7 +272,7 @@ Test content.`
 	}
 
 	// Test sync without project.md
-	err := syncToAGENTSMD(tmpDir, agentDir, rulesDir)
+	err := syncToAGENTSMD(tmpDir, agentDir, rulesDir, false)
 	if err != nil {
 		t.Fatalf("syncToAGENTSMD() error = %v", err)
 	}
