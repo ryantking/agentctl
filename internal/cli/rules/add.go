@@ -11,7 +11,7 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/shared/constant"
-	anthclient "github.com/ryantking/agentctl/internal/anthropic"
+	anthclient "github.com/ryantking/agentctl/internal/claude"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/spf13/cobra"

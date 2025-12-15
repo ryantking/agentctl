@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	anthclient "github.com/ryantking/agentctl/internal/anthropic"
+	anthclient "github.com/ryantking/agentctl/internal/claude"
 	"github.com/spf13/cobra"
 )
 

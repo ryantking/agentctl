@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	anthclient "github.com/ryantking/agentctl/internal/anthropic"
+	anthclient "github.com/ryantking/agentctl/internal/claude"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/ryantking/agentctl/internal/rules"
