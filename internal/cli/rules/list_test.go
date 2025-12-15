@@ -328,6 +328,16 @@ Body content`,
 			wantContent: "name: Test Rule",
 		},
 		{
+			name: "valid frontmatter with newline",
+			content: `---
+name: Test Rule
+
+---
+Body content`,
+			wantErr:     false,
+			wantContent: "name: Test Rule\n",
+		},
+		{
 			name:        "no frontmatter",
 			content:     "No frontmatter here",
 			wantErr:     true,
@@ -357,7 +367,7 @@ name: Test Rule
 ---
 Body content`,
 			wantErr:     false, // extractFrontmatter finds first ---, doesn't validate position
-			wantContent: "name: Test Rule\n",
+			wantContent: "name: Test Rule",
 		},
 		{
 			name: "malformed YAML",
