@@ -13,7 +13,7 @@ import (
 
 // NewRulesSyncCmd creates the rules sync command.
 func NewRulesSyncCmd() *cobra.Command {
-	var cursor, claude, agents, claudeMD, force bool
+	var cursor, claude, agents, claudeMD, force, dryRun bool
 
 	cmd := &cobra.Command{
 		Use:   "sync",
@@ -24,7 +24,9 @@ func NewRulesSyncCmd() *cobra.Command {
 - AGENTS.md: Generates table of contents listing all rules
 - CLAUDE.md: Generates simple CLAUDE.md with project overview
 
-If no flags are specified, syncs to all formats.`,
+If no flags are specified, syncs to all formats.
+
+Use --dry-run to preview changes without writing files.`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			var repoRoot string
 			var err error
@@ -56,28 +58,32 @@ If no flags are specified, syncs to all formats.`,
 				claudeMD = true
 			}
 
+			if dryRun {
+				fmt.Println("DRY RUN MODE - No files will be written\n")
+			}
+
 			var errors []string
 
 			if cursor {
-				if err := syncToCursor(repoRoot, rulesDir); err != nil {
+				if err := syncToCursor(repoRoot, rulesDir, dryRun); err != nil {
 					errors = append(errors, fmt.Sprintf("Cursor sync: %v", err))
 				}
 			}
 
 			if claude {
-				if err := syncToClaudeSkills(repoRoot, rulesDir, force); err != nil {
+				if err := syncToClaudeSkills(repoRoot, rulesDir, force, dryRun); err != nil {
 					errors = append(errors, fmt.Sprintf("Claude skills sync: %v", err))
 				}
 			}
 
 			if agents {
-				if err := syncToAGENTSMD(repoRoot, agentDir, rulesDir); err != nil {
+				if err := syncToAGENTSMD(repoRoot, agentDir, rulesDir, dryRun); err != nil {
 					errors = append(errors, fmt.Sprintf("AGENTS.md sync: %v", err))
 				}
 			}
 
 			if claudeMD {
-				if err := syncToCLAUDEMD(repoRoot, agentDir, rulesDir); err != nil {
+				if err := syncToCLAUDEMD(repoRoot, agentDir, rulesDir, dryRun); err != nil {
 					errors = append(errors, fmt.Sprintf("CLAUDE.md sync: %v", err))
 				}
 			}
@@ -89,7 +95,11 @@ If no flags are specified, syncs to all formats.`,
 				return fmt.Errorf("some sync operations failed")
 			}
 
-			fmt.Println("\n✓ Sync completed successfully")
+			if dryRun {
+				fmt.Println("\n✓ Dry run completed - no files were written")
+			} else {
+				fmt.Println("\n✓ Sync completed successfully")
+			}
 			return nil
 		},
 	}
@@ -99,12 +109,13 @@ If no flags are specified, syncs to all formats.`,
 	cmd.Flags().BoolVar(&agents, "agents", false, "Generate AGENTS.md table of contents")
 	cmd.Flags().BoolVar(&claudeMD, "claude-md", false, "Generate CLAUDE.md")
 	cmd.Flags().BoolVar(&force, "force", false, "Overwrite existing Claude skills (skipped by default)")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be changed without writing files")
 
 	return cmd
 }
 
 // syncToCursor copies .agent/rules/*.mdc to .cursor/rules/.
-func syncToCursor(repoRoot, rulesDir string) error {
+func syncToCursor(repoRoot, rulesDir string, dryRun bool) error {
 	cursorRulesDir := filepath.Join(repoRoot, ".cursor", "rules")
 	
 	fmt.Println("Syncing to Cursor...")
@@ -135,13 +146,26 @@ func syncToCursor(repoRoot, rulesDir string) error {
 			return fmt.Errorf("failed to read rule file %s: %w", entry.Name(), err)
 		}
 
-		// Write to destination
-		if err := os.WriteFile(destPath, data, 0644); err != nil { //nolint:gosec // Rule files need to be readable
-			return fmt.Errorf("failed to write rule file %s: %w", entry.Name(), err)
-		}
-
 		relPath, _ := filepath.Rel(repoRoot, destPath)
-		fmt.Printf("  • %s (synced)\n", relPath)
+
+		if dryRun {
+			// Check if file exists and show diff
+			if existingData, err := os.ReadFile(destPath); err == nil { //nolint:gosec // Reading for comparison
+				if string(existingData) == string(data) {
+					fmt.Printf("  • %s (unchanged)\n", relPath)
+				} else {
+					fmt.Printf("  • %s (would be updated)\n", relPath)
+				}
+			} else {
+				fmt.Printf("  • %s (would be created)\n", relPath)
+			}
+		} else {
+			// Write to destination
+			if err := os.WriteFile(destPath, data, 0644); err != nil { //nolint:gosec // Rule files need to be readable
+				return fmt.Errorf("failed to write rule file %s: %w", entry.Name(), err)
+			}
+			fmt.Printf("  • %s (synced)\n", relPath)
+		}
 		copied++
 	}
 
@@ -150,7 +174,7 @@ func syncToCursor(repoRoot, rulesDir string) error {
 }
 
 // syncToClaudeSkills converts each .agent/rules/*.mdc to .claude/skills/<name>/SKILL.md.
-func syncToClaudeSkills(repoRoot, rulesDir string, force bool) error {
+func syncToClaudeSkills(repoRoot, rulesDir string, force, dryRun bool) error {
 	claudeSkillsDir := filepath.Join(repoRoot, ".claude", "skills")
 	
 	fmt.Println("Syncing to Claude skills...")
@@ -205,29 +229,46 @@ description: %s
 %s`, metadata.Name, metadata.Description, body)
 
 		skillMDPath := filepath.Join(skillDir, "SKILL.md")
-		
+		relPath, _ := filepath.Rel(repoRoot, skillMDPath)
+
 		// Check if skill already exists
-		if _, err := os.Stat(skillMDPath); err == nil {
+		existingData, err := os.ReadFile(skillMDPath)
+		exists := err == nil
+
+		if exists {
 			// Skill exists
-			if !force {
-				relPath, _ := filepath.Rel(repoRoot, skillMDPath)
+			if !force && !dryRun {
 				fmt.Printf("  ⚠ %s (skipped, already exists, use --force to overwrite)\n", relPath)
 				continue
 			}
+			if dryRun {
+				if string(existingData) == skillContent {
+					fmt.Printf("  • %s (unchanged)\n", relPath)
+				} else {
+					fmt.Printf("  • %s (would be overwritten)\n", relPath)
+				}
+				converted++
+				continue
+			}
 			// Force overwrite
-			relPath, _ := filepath.Rel(repoRoot, skillMDPath)
 			fmt.Printf("  • %s (overwritten)\n", relPath)
 		} else if os.IsNotExist(err) {
-			// Skill doesn't exist, create it
-			relPath, _ := filepath.Rel(repoRoot, skillMDPath)
+			// Skill doesn't exist
+			if dryRun {
+				fmt.Printf("  • %s (would be created)\n", relPath)
+				converted++
+				continue
+			}
 			fmt.Printf("  • %s (synced)\n", relPath)
 		} else {
 			// Other error checking file
 			return fmt.Errorf("failed to check skill file %s: %w", skillName, err)
 		}
-		
-		if err := os.WriteFile(skillMDPath, []byte(skillContent), 0644); err != nil { //nolint:gosec // Skill file needs to be readable
-			return fmt.Errorf("failed to write skill file %s: %w", skillName, err)
+
+		if !dryRun {
+			if err := os.WriteFile(skillMDPath, []byte(skillContent), 0644); err != nil { //nolint:gosec // Skill file needs to be readable
+				return fmt.Errorf("failed to write skill file %s: %w", skillName, err)
+			}
 		}
 		converted++
 	}
@@ -237,7 +278,7 @@ description: %s
 }
 
 // syncToAGENTSMD generates AGENTS.md table of contents listing all rules.
-func syncToAGENTSMD(repoRoot, agentDir, rulesDir string) error {
+func syncToAGENTSMD(repoRoot, agentDir, rulesDir string, dryRun bool) error {
 	fmt.Println("Generating AGENTS.md...")
 
 	// Read project.md if it exists
@@ -345,7 +386,23 @@ func syncToAGENTSMD(repoRoot, agentDir, rulesDir string) error {
 
 	// Write AGENTS.md
 	agentsMDPath := filepath.Join(repoRoot, "AGENTS.md")
-	if err := os.WriteFile(agentsMDPath, []byte(content.String()), 0644); err != nil { //nolint:gosec // AGENTS.md needs to be readable
+	contentStr := content.String()
+
+	if dryRun {
+		// Check if file exists and show diff
+		if existingData, err := os.ReadFile(agentsMDPath); err == nil { //nolint:gosec // Reading for comparison
+			if string(existingData) == contentStr {
+				fmt.Printf("  • AGENTS.md (unchanged)\n")
+			} else {
+				fmt.Printf("  • AGENTS.md (would be updated)\n")
+			}
+		} else {
+			fmt.Printf("  • AGENTS.md (would be created)\n")
+		}
+		return nil
+	}
+
+	if err := os.WriteFile(agentsMDPath, []byte(contentStr), 0644); err != nil { //nolint:gosec // AGENTS.md needs to be readable
 		return fmt.Errorf("failed to write AGENTS.md: %w", err)
 	}
 
@@ -354,7 +411,7 @@ func syncToAGENTSMD(repoRoot, agentDir, rulesDir string) error {
 }
 
 // syncToCLAUDEMD generates simple CLAUDE.md with project overview and skills list.
-func syncToCLAUDEMD(repoRoot, agentDir, rulesDir string) error {
+func syncToCLAUDEMD(repoRoot, agentDir, rulesDir string, dryRun bool) error {
 	fmt.Println("Generating CLAUDE.md...")
 
 	// Read project.md if it exists
@@ -430,7 +487,23 @@ func syncToCLAUDEMD(repoRoot, agentDir, rulesDir string) error {
 
 	// Write CLAUDE.md
 	claudeMDPath := filepath.Join(repoRoot, "CLAUDE.md")
-	if err := os.WriteFile(claudeMDPath, []byte(content.String()), 0644); err != nil { //nolint:gosec // CLAUDE.md needs to be readable
+	contentStr := content.String()
+
+	if dryRun {
+		// Check if file exists and show diff
+		if existingData, err := os.ReadFile(claudeMDPath); err == nil { //nolint:gosec // Reading for comparison
+			if string(existingData) == contentStr {
+				fmt.Printf("  • CLAUDE.md (unchanged)\n")
+			} else {
+				fmt.Printf("  • CLAUDE.md (would be updated)\n")
+			}
+		} else {
+			fmt.Printf("  • CLAUDE.md (would be created)\n")
+		}
+		return nil
+	}
+
+	if err := os.WriteFile(claudeMDPath, []byte(contentStr), 0644); err != nil { //nolint:gosec // CLAUDE.md needs to be readable
 		return fmt.Errorf("failed to write CLAUDE.md: %w", err)
 	}
 
