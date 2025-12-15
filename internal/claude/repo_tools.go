@@ -564,7 +564,8 @@ func listGitFiles(repoRoot, path string) (interface{}, error) {
 
 	// Use git.RunGit if available, otherwise fallback to exec
 	var trackedFiles []string
-	if info.IsDir() {
+	switch {
+	case info.IsDir():
 		// List files in directory
 		output, err := git.RunGit(repoRoot, "ls-files", gitPath)
 		if err != nil {
@@ -578,7 +579,7 @@ func listGitFiles(repoRoot, path string) (interface{}, error) {
 				trackedFiles = append(trackedFiles, line)
 			}
 		}
-	} else {
+	default:
 		// Single file - check if tracked
 		output, err := git.RunGit(repoRoot, "ls-files", "--error-unmatch", relPath)
 		if err != nil {
