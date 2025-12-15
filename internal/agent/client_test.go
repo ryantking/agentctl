@@ -2,8 +2,9 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"os"
-	"os/exec"
+	"strings"
 	"testing"
 	"time"
 )
@@ -181,36 +182,20 @@ func TestAgentError_Error(t *testing.T) {
 		ExitCode: 1,
 		Stdout:   "some output",
 		Stderr:   "error message",
-		Err:      exec.ExitError{ProcessState: &os.ProcessState{}},
+		Err:      fmt.Errorf("test error"),
 	}
 
 	errStr := agentErr.Error()
 	if errStr == "" {
 		t.Error("Error() should return non-empty string")
 	}
-	if !contains(errStr, "claude") {
+	if !strings.Contains(errStr, "claude") {
 		t.Error("Error() should contain program name")
 	}
-	if !contains(errStr, "exit 1") {
+	if !strings.Contains(errStr, "exit 1") {
 		t.Error("Error() should contain exit code")
 	}
-	if !contains(errStr, "error message") {
+	if !strings.Contains(errStr, "error message") {
 		t.Error("Error() should contain stderr")
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || 
-		(len(s) > len(substr) && (s[:len(substr)] == substr || 
-		s[len(s)-len(substr):] == substr || 
-		containsMiddle(s, substr))))
-}
-
-func containsMiddle(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
