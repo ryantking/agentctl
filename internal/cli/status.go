@@ -71,7 +71,7 @@ func testAPIConnectivity() bool {
 	defer cancel()
 
 	// Try a simple test prompt
-	_, err := agent.Execute(ctx, "test")
+	_, err := agent.ExecuteWithLogger(ctx, "test", nil)
 	if err != nil {
 		// If it's just a content error (empty response), CLI is working
 		if strings.Contains(err.Error(), "empty output") {

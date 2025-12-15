@@ -187,7 +187,7 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	content, err := agent.Execute(ctx, prompt)
+	content, err := agent.ExecuteWithLogger(ctx, prompt, nil)
 	if err != nil {
 		return fmt.Errorf("failed to generate project.md: %w", err)
 	}

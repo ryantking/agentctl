@@ -222,7 +222,7 @@ Generate a complete .mdc rule file based on the user's prompt.`
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	content, err := agent.ExecuteWithSystem(ctx, systemPrompt, userPrompt)
+	content, err := agent.ExecuteWithSystemLogger(ctx, systemPrompt, userPrompt, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate rule content: %w", err)
 	}

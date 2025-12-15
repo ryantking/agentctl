@@ -234,6 +234,7 @@ func IsConfigured() bool {
 }
 
 // NewClientOrNil returns a zero-value struct for backward compatibility.
+//
 // Deprecated: Use NewAgent() instead.
 func NewClientOrNil() (struct{}, error) {
 	return struct{}{}, nil
