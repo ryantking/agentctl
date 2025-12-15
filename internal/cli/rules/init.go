@@ -174,13 +174,13 @@ To fix this:
 	}
 
 	// Create tool registry with repository exploration tools
-	registry := NewToolRegistry()
-	if err := RegisterRepoTools(registry, repoRoot); err != nil {
+	registry := anthclient.NewToolRegistry()
+	if err := anthclient.RegisterRepoTools(registry, repoRoot); err != nil {
 		return fmt.Errorf("failed to register repository tools: %w", err)
 	}
 
 	// Create conversation with tool use support
-	conv := NewConversation(client, registry)
+	conv := anthclient.NewConversation(client, registry)
 
 	prompt := `Analyze this repository and provide a concise overview:
 - Main purpose and key technologies
