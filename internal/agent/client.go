@@ -123,7 +123,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	}
 
 	// Build command: claude --print <prompt>
-	cmd := exec.CommandContext(ctx, cliPath, "--print", prompt) //nolint:gosec // claude CLI is a trusted local binary
+	cmd := exec.CommandContext(ctx, binPath, "--print", prompt) //nolint:gosec // claude CLI is a trusted local binary
 
 	// Set working directory to current directory (CLI will use repo context)
 	wd, _ := os.Getwd()
@@ -135,8 +135,8 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	cmd.Stderr = &stderr
 
 	logger.Info("executing agent command",
-		slog.String("program", a.CLIPath),
-		slog.String("bin_path", cliPath),
+		slog.String("type", a.Type),
+		slog.String("binary", binPath),
 		slog.Any("args", []string{"--print", prompt}),
 		slog.String("working_dir", wd))
 
