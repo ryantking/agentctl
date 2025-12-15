@@ -1,5 +1,5 @@
 // Package anthropic provides Anthropic SDK client initialization and configuration.
-package anthropic
+package agent
 
 import (
 	"context"

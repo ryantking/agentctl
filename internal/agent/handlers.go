@@ -1,5 +1,5 @@
 // Package anthropic provides tool handler constructors for repository exploration tools.
-package anthropic
+package agent
 
 import (
 	"context"

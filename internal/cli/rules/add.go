@@ -12,7 +12,7 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/shared/constant"
-	anthclient "github.com/ryantking/agentctl/internal/claude"
+	agentclient "github.com/ryantking/agentctl/internal/agent"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/spf13/cobra"

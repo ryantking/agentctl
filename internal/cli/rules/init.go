@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	anthclient "github.com/ryantking/agentctl/internal/claude"
+	agentclient "github.com/ryantking/agentctl/internal/agent"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/ryantking/agentctl/internal/rules"
@@ -185,7 +185,7 @@ To fix this:
 	// Create conversation with tool use support
 	// Allow more tool calls for repository exploration (project.md generation)
 	opts := []anthclient.ConversationOption{
-		anthclient.WithMaxToolCalls(50), // Allow more for exploration
+		agentclient.WithMaxToolCalls(50), // Allow more for exploration
 	}
 	if verbose {
 		opts = append(opts, anthclient.WithVerbose(true))

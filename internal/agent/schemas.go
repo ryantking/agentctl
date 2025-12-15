@@ -1,5 +1,5 @@
 // Package anthropic provides tool schema definitions for repository exploration tools.
-package anthropic
+package agent
 
 // Tool schemas for repository exploration tools
 

@@ -1,4 +1,4 @@
-package anthropic
+package agent
 
 import (
 	"os"
