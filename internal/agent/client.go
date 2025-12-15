@@ -112,7 +112,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	logger.Info("executing agent command",
 		slog.String("program", a.CLIPath),
 		slog.String("bin_path", cliPath),
-		slog.Strings("args", []string{"--print", prompt}),
+		slog.Any("args", []string{"--print", prompt}),
 		slog.String("working_dir", wd))
 
 	// Execute command
