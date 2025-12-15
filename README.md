@@ -112,7 +112,6 @@ Initialize Claude Code configuration in a repository or globally.
 - `agentctl init` - Initialize Claude Code configuration
   - `--global` - Install to `$HOME/.claude` instead of current repository
   - `--force` - Overwrite existing files
-  - `--no-index` - Skip Claude CLI repository indexing
 
 Installs agents, skills, settings, MCP config, and initializes `.agent/` directory with default rules.
 
@@ -170,7 +169,7 @@ Rules use YAML frontmatter with required fields (`name`, `description`, `when-to
 ### Other Commands
 
 - `agentctl version` - Show the current version
-- `agentctl status` - Show the status of Claude Code installation
+- `agentctl status` - Show authentication status and API connectivity
 - `agentctl completion [bash|zsh|fish|powershell]` - Generate shell completion scripts
 
 ## Development
@@ -184,15 +183,25 @@ Rules use YAML frontmatter with required fields (`name`, `description`, `when-to
 - `govulncheck` (for vulnerability checking)
 - macOS (for full feature support, including notifications)
 
-### Optional: Anthropic API Key
+### Authentication
 
-Some features (like agent-based rule generation) require an Anthropic API key:
+Some features (like agent-based rule generation and project.md generation) require authentication with the Anthropic API. There are two authentication methods:
+
+**Method 1: Claude Code Session (Automatic)**
+If you're already logged into Claude Code, authentication is automatic. No setup needed!
+
+**Method 2: API Key**
+Set the `ANTHROPIC_API_KEY` environment variable:
 
 ```bash
 export ANTHROPIC_API_KEY=your-api-key-here
 ```
 
-If not configured, these features will gracefully fall back to template-based generation.
+Get your API key from [console.anthropic.com](https://console.anthropic.com/).
+
+**Note:** If both are available, `ANTHROPIC_API_KEY` takes precedence over the Claude Code session.
+
+If not configured, features that require authentication will show helpful error messages directing you to set up authentication.
 
 ### Setup
 

@@ -89,7 +89,7 @@ agentctl rules init [--force] [--no-project]
 - Creates `.agent/rules/` directory
 - Copies default rules from agentctl's embedded rules
 - Creates `.agent/research/` directory
-- Generates `.agent/project.md` using Claude CLI (unless `--no-project`)
+- Generates `.agent/project.md` using Anthropic SDK with tool use (unless `--no-project`)
 
 ### list
 
