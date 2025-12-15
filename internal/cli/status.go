@@ -11,6 +11,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// GetAgentCLIPath returns the agent CLI path from flag or environment variable.
+// This is a local helper that calls the root command's GetAgentCLIPath.
+func GetAgentCLIPath() string {
+	// Check environment variable first (works even if flag not parsed yet)
+	if envPath := os.Getenv("AGENTCTL_CLI_PATH"); envPath != "" {
+		return envPath
+	}
+
+	// Use flag value if set (non-default)
+	if agentCLIPath != "" && agentCLIPath != "claude" {
+		return agentCLIPath
+	}
+
+	// Default to "claude"
+	return "claude"
+}
+
 // StatusInfo represents system status information.
 type StatusInfo struct {
 	Authenticated bool   `json:"authenticated"`
@@ -56,7 +73,8 @@ func getStatusInfo() StatusInfo {
 
 func testAPIConnectivity() bool {
 	// Check if claude CLI is available and can execute
-	agent := agentclient.NewAgent()
+	cliPath := GetAgentCLIPath()
+	agent := agentclient.NewAgent(agentclient.WithCLIPath(cliPath))
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

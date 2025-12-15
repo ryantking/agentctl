@@ -9,6 +9,7 @@ import (
 	"time"
 
 	agentclient "github.com/ryantking/agentctl/internal/agent"
+	"github.com/ryantking/agentctl/internal/cli"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/ryantking/agentctl/internal/rules"
@@ -181,7 +182,9 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 
 	fmt.Print("  → Generating project.md with claude CLI...")
 
-	agent := agentclient.NewAgent()
+	// Get CLI path from flag or environment variable
+	cliPath := cli.GetAgentCLIPath()
+	agent := agentclient.NewAgent(agentclient.WithCLIPath(cliPath))
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 

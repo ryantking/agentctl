@@ -11,6 +11,7 @@ import (
 	"time"
 
 	agentclient "github.com/ryantking/agentctl/internal/agent"
+	"github.com/ryantking/agentctl/internal/cli"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
 	"github.com/spf13/cobra"
@@ -200,7 +201,9 @@ Generate a complete .mdc rule file based on the user's prompt.`
 
 	fmt.Print("  → Generating rule content with claude CLI...")
 
-	agent := agentclient.NewAgent()
+	// Get CLI path from flag or environment variable
+	cliPath := cli.GetAgentCLIPath()
+	agent := agentclient.NewAgent(agentclient.WithCLIPath(cliPath))
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
