@@ -2,8 +2,27 @@
 package agent
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+)
+
+// Sentinel errors for agent package.
+var (
+	// ErrNotFound indicates the agent binary was not found in PATH.
+	ErrNotFound = errors.New("agent binary not found")
+
+	// ErrTimeout indicates agent execution timed out.
+	ErrTimeout = errors.New("agent execution timed out")
+
+	// ErrCanceled indicates agent execution was cancelled.
+	ErrCanceled = errors.New("agent execution cancelled")
+
+	// ErrEmptyOutput indicates agent produced no output.
+	ErrEmptyOutput = errors.New("agent produced no output")
+
+	// ErrValidationFailed indicates agent binary validation failed.
+	ErrValidationFailed = errors.New("agent binary validation failed")
 )
 
 // EnhanceSDKError wraps CLI errors with helpful, actionable error messages.
