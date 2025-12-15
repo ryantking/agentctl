@@ -94,6 +94,97 @@ func TestListRulesMissingDirectory(t *testing.T) {
 	}
 }
 
+func TestValidateRuleMetadataEdgeCases(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	tests := []struct {
+		name        string
+		metadata    RuleMetadata
+		wantErr     bool
+		errorContains string
+	}{
+		{
+			name: "priority too high",
+			metadata: RuleMetadata{
+				Name:        "Test",
+				Description: "Test",
+				WhenToUse:   "Test",
+				Priority:    5,
+			},
+			wantErr:       true,
+			errorContains: "priority must be 0-4",
+		},
+		{
+			name: "priority negative",
+			metadata: RuleMetadata{
+				Name:        "Test",
+				Description: "Test",
+				WhenToUse:   "Test",
+				Priority:    -1,
+			},
+			wantErr:       true,
+			errorContains: "priority must be 0-4",
+		},
+		{
+			name: "invalid semver",
+			metadata: RuleMetadata{
+				Name:        "Test",
+				Description: "Test",
+				WhenToUse:   "Test",
+				Version:     "invalid",
+			},
+			wantErr:       true,
+			errorContains: "version should follow semver",
+		},
+		{
+			name: "name with only whitespace",
+			metadata: RuleMetadata{
+				Name:        "   ",
+				Description: "Test",
+				WhenToUse:   "Test",
+			},
+			wantErr:       true,
+			errorContains: "required field 'name' is empty",
+		},
+		{
+			name: "description with only whitespace",
+			metadata: RuleMetadata{
+				Name:        "Test",
+				Description: "   ",
+				WhenToUse:   "Test",
+			},
+			wantErr:       true,
+			errorContains: "required field 'description' is empty",
+		},
+		{
+			name: "when-to-use with only whitespace",
+			metadata: RuleMetadata{
+				Name:        "Test",
+				Description: "Test",
+				WhenToUse:   "   ",
+			},
+			wantErr:       true,
+			errorContains: "required field 'when-to-use' is empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rulePath := filepath.Join(tmpDir, "test.mdc")
+			err := validateRuleMetadata(tt.metadata, rulePath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateRuleMetadata() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err != nil {
+				if !strings.Contains(err.Error(), tt.errorContains) {
+					t.Errorf("validateRuleMetadata() error = %v, want error containing %q", err, tt.errorContains)
+				}
+			}
+		})
+	}
+}
+
 func TestValidateRuleMetadata(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -215,6 +306,80 @@ func TestValidateRuleMetadata(t *testing.T) {
 				if err == nil || !strings.Contains(err.Error(), tt.errorMsg) {
 					t.Errorf("validateRuleMetadata() error = %v, want error containing %q", err, tt.errorMsg)
 				}
+			}
+		})
+	}
+}
+
+func TestExtractFrontmatter(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		wantErr     bool
+		wantContent string
+	}{
+		{
+			name: "valid frontmatter",
+			content: `---
+name: Test Rule
+---
+Body content`,
+			wantErr:     false,
+			wantContent: "name: Test Rule\n",
+		},
+		{
+			name:        "no frontmatter",
+			content:     "No frontmatter here",
+			wantErr:     true,
+			wantContent: "",
+		},
+		{
+			name: "unclosed frontmatter",
+			content: `---
+name: Test Rule
+Body content`,
+			wantErr:     true,
+			wantContent: "",
+		},
+		{
+			name: "empty frontmatter",
+			content: `---
+---
+Body content`,
+			wantErr:     false,
+			wantContent: "",
+		},
+		{
+			name: "frontmatter not at start",
+			content: `Some text
+---
+name: Test Rule
+---
+Body content`,
+			wantErr:     true,
+			wantContent: "",
+		},
+		{
+			name: "malformed YAML",
+			content: `---
+name: Test Rule
+invalid: [unclosed
+---
+Body content`,
+			wantErr:     false, // extractFrontmatter doesn't validate YAML
+			wantContent: "name: Test Rule\ninvalid: [unclosed\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := extractFrontmatter(tt.content)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("extractFrontmatter() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && result != tt.wantContent {
+				t.Errorf("extractFrontmatter() = %q, want %q", result, tt.wantContent)
 			}
 		})
 	}
