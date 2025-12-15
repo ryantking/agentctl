@@ -22,29 +22,10 @@ type AgentError struct {
 
 // Error returns a formatted error message.
 func (e *AgentError) Error() string {
-	var parts []string
-
-	// Main error message
 	if e.ExitCode >= 0 {
-		parts = append(parts, fmt.Sprintf("agent %q failed (exit %d): %v", e.Program, e.ExitCode, e.Err))
-	} else {
-		parts = append(parts, fmt.Sprintf("agent %q failed: %v", e.Program, e.Err))
+		return fmt.Sprintf("agent %q failed (exit %d): %v", e.Program, e.ExitCode, e.Err)
 	}
-
-	// Command details
-	parts = append(parts, fmt.Sprintf("\nCommand: %s %s", e.BinPath, strings.Join(e.Args, " ")))
-
-	// Stderr if available
-	if e.Stderr != "" {
-		parts = append(parts, fmt.Sprintf("\nStderr: %s", e.Stderr))
-	}
-
-	// Stdout if available (for debugging)
-	if e.Stdout != "" && len(e.Stdout) < 200 {
-		parts = append(parts, fmt.Sprintf("\nStdout: %s", e.Stdout))
-	}
-
-	return strings.Join(parts, "")
+	return fmt.Sprintf("agent %q failed: %v", e.Program, e.Err)
 }
 
 // Unwrap returns the underlying error.
