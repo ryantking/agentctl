@@ -2,11 +2,13 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // Agent executes prompts using the claude CLI.
@@ -39,34 +41,120 @@ func NewAgent(opts ...Option) *Agent {
 	return agent
 }
 
+// Validate checks if the agent binary exists and is executable.
+func (a *Agent) Validate() error {
+	if a.CLIPath == "" {
+		return fmt.Errorf("agent binary path not set")
+	}
+
+	if _, err := exec.LookPath(a.CLIPath); err != nil {
+		return fmt.Errorf("agent binary %q not found in PATH: %w", a.CLIPath, err)
+	}
+
+	return nil
+}
+
 // Execute runs a prompt through the claude CLI and returns the response.
 // Uses --print flag for non-interactive output.
 func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
-	// Check if claude CLI is available
+	// Validate binary exists before execution
+	if err := a.Validate(); err != nil {
+		return "", fmt.Errorf("agent binary validation failed: %w", err)
+	}
+
+	// Add default timeout if none in context
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 5*time.Minute)
+		defer cancel()
+	}
+
+	// Check if binary exists
 	cliPath, err := exec.LookPath(a.CLIPath)
 	if err != nil {
-		return "", fmt.Errorf("claude CLI not found: %w\n\nTo fix this:\n  - Install Claude Code: https://claude.ai/code\n  - Or set ANTHROPIC_API_KEY environment variable", err)
+		return "", &AgentError{
+			Program:  a.CLIPath,
+			BinPath:  a.CLIPath,
+			Args:     []string{"--print", prompt},
+			ExitCode: -1,
+			Stdout:   "",
+			Stderr:   "",
+			Err:      fmt.Errorf("agent binary %q not found in PATH: %w", a.CLIPath, err),
+		}
 	}
 
 	// Build command: claude --print <prompt>
 	cmd := exec.CommandContext(ctx, cliPath, "--print", prompt) //nolint:gosec // claude CLI is a trusted local binary
-	
+
 	// Set working directory to current directory (CLI will use repo context)
 	wd, _ := os.Getwd()
 	cmd.Dir = wd
 
-	// Capture output
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("claude CLI execution failed: %w\n\nOutput: %s", err, string(output))
+	// Capture stdout and stderr separately
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// Execute command
+	if err := cmd.Run(); err != nil {
+		// Check context errors
+		if ctx.Err() == context.Canceled {
+			return "", &AgentError{
+				Program:  a.CLIPath,
+				BinPath:  cliPath,
+				Args:     []string{"--print", prompt},
+				ExitCode: -1,
+				Stdout:   stdout.String(),
+				Stderr:   stderr.String(),
+				Err:      fmt.Errorf("agent execution cancelled by user"),
+			}
+		}
+		if ctx.Err() == context.DeadlineExceeded {
+			deadline, _ := ctx.Deadline()
+			timeout := time.Until(deadline)
+			return "", &AgentError{
+				Program:  a.CLIPath,
+				BinPath:  cliPath,
+				Args:     []string{"--print", prompt},
+				ExitCode: -1,
+				Stdout:   stdout.String(),
+				Stderr:   stderr.String(),
+				Err:      fmt.Errorf("agent execution timed out after %s", timeout),
+			}
+		}
+
+		// Get exit code
+		exitCode := -1
+		if cmd.ProcessState != nil {
+			exitCode = cmd.ProcessState.ExitCode()
+		}
+
+		return "", &AgentError{
+			Program:  a.CLIPath,
+			BinPath:  cliPath,
+			Args:     []string{"--print", prompt},
+			ExitCode: exitCode,
+			Stdout:   stdout.String(),
+			Stderr:   stderr.String(),
+			Err:      err,
+		}
 	}
 
-	content := strings.TrimSpace(string(output))
-	if content == "" {
-		return "", fmt.Errorf("empty output from claude CLI")
+	// Validate output
+	output := strings.TrimSpace(stdout.String())
+	if output == "" {
+		return "", &AgentError{
+			Program:  a.CLIPath,
+			BinPath:  cliPath,
+			Args:     []string{"--print", prompt},
+			ExitCode: 0,
+			Stdout:   stdout.String(),
+			Stderr:   stderr.String(),
+			Err:      fmt.Errorf("agent produced no output"),
+		}
 	}
 
-	return content, nil
+	return output, nil
 }
 
 // ExecuteWithSystem runs a prompt with a system message through the claude CLI.
