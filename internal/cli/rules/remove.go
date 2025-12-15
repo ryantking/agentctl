@@ -94,12 +94,8 @@ To fix this:
 			}
 
 			if len(errors) > 0 {
-				// Combine multiple errors into one
-				var errMsgs []string
-				for _, e := range errors {
-					errMsgs = append(errMsgs, e.Error())
-				}
-				return fmt.Errorf("failed to remove %d rule(s): %s", len(errors), strings.Join(errMsgs, "; "))
+				// Combine multiple error messages into one
+				return fmt.Errorf("failed to remove %d rule(s): %s", len(errors), strings.Join(errors, "; "))
 			}
 
 			return nil
