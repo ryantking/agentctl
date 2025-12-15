@@ -119,11 +119,7 @@ To fix this:
 		}
 
 		// Collect available rule names for error message
-		if metadata.Name != "" {
-			availableRules = append(availableRules, filenameBase)
-		} else {
-			availableRules = append(availableRules, filenameBase)
-		}
+		availableRules = append(availableRules, filenameBase)
 	}
 
 	// Build error message with available rules
