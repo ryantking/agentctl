@@ -15,9 +15,11 @@ func EnhanceSDKError(err error) error {
 		return nil
 	}
 
+	// Check error message for specific error types
+	errStr := err.Error()
+	
 	// Check for authentication errors
-	var authErr *shared.AuthenticationError
-	if errors.As(err, &authErr) {
+	if strings.Contains(errStr, "authentication") || strings.Contains(errStr, "invalid api key") || strings.Contains(errStr, "api key") {
 		return fmt.Errorf(`authentication failed: %w
 
 To fix this:
@@ -26,10 +28,6 @@ To fix this:
   - Verify your API key is valid at https://console.anthropic.com/`, err)
 	}
 
-	// Check for API errors (rate limits, etc.)
-	// Note: APIErrorObject doesn't have Status field directly, check error message
-	errStr := err.Error()
-	
 	// Check for rate limit errors (429)
 	if strings.Contains(errStr, "429") || strings.Contains(errStr, "rate limit") || strings.Contains(errStr, "too many requests") {
 		return fmt.Errorf(`rate limit exceeded: %w
@@ -48,12 +46,6 @@ To fix this:
   - Verify your API key is correct: echo $ANTHROPIC_API_KEY
   - Check your API key permissions at https://console.anthropic.com/
   - Run 'claude status' if you have the Claude CLI installed`, err)
-	}
-
-	// Check for API error object (generic)
-	var apiErr *shared.APIErrorObject
-	if errors.As(err, &apiErr) {
-		return fmt.Errorf("API error: %w\n\nCheck https://console.anthropic.com/ for account status and usage limits", err)
 	}
 
 	// Check for network errors
@@ -87,5 +79,5 @@ To fix this:
 	}
 
 	// Generic error - wrap with context
-	return fmt.Errorf("Anthropic API error: %w\n\nFor help, check https://docs.anthropic.com/ or verify your API key at https://console.anthropic.com/", err)
+	return fmt.Errorf("anthropic API error: %w\n\nFor help, check https://docs.anthropic.com/ or verify your API key at https://console.anthropic.com/", err)
 }
