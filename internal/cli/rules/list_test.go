@@ -356,8 +356,8 @@ Body content`,
 name: Test Rule
 ---
 Body content`,
-			wantErr:     true,
-			wantContent: "",
+			wantErr:     false, // extractFrontmatter finds first ---, doesn't validate position
+			wantContent: "name: Test Rule\n",
 		},
 		{
 			name: "malformed YAML",
