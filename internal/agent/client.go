@@ -1,39 +1,95 @@
-// Package agent provides Anthropic SDK client initialization and configuration.
+// Package agent provides CLI-based agent execution.
 package agent
 
 import (
+	"context"
 	"fmt"
 	"os"
-
-	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/option"
+	"os/exec"
+	"strings"
 )
 
-// NewClient creates a new Anthropic SDK client.
-// Reads ANTHROPIC_API_KEY from environment variable.
-// Returns error if API key is not configured.
-func NewClient() (anthropic.Client, error) {
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey == "" {
-		return anthropic.Client{}, fmt.Errorf("ANTHROPIC_API_KEY environment variable not set")
-	}
-
-	client := anthropic.NewClient(option.WithAPIKey(apiKey))
-	return client, nil
+// Agent executes prompts using the claude CLI.
+type Agent struct {
+	CLIPath string
 }
 
-// NewClientOrNil creates a new Anthropic SDK client, or returns zero value if API key is not configured.
-// This allows graceful fallback when SDK features are optional.
-func NewClientOrNil() (anthropic.Client, error) {
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey == "" {
-		return anthropic.Client{}, nil // Graceful fallback - no error
-	}
+// AgentOption configures an Agent.
+type AgentOption func(*Agent)
 
-	return NewClient()
+// WithCLIPath sets a custom path to the claude binary.
+func WithCLIPath(path string) AgentOption {
+	return func(a *Agent) {
+		a.CLIPath = path
+	}
 }
 
-// IsConfigured checks if ANTHROPIC_API_KEY is set.
+// NewAgent creates a new agent that uses the claude CLI.
+// The CLI handles authentication automatically (Claude Code session or API key).
+func NewAgent(opts ...AgentOption) *Agent {
+	agent := &Agent{
+		CLIPath: "claude",
+	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt(agent)
+	}
+
+	return agent
+}
+
+// Execute runs a prompt through the claude CLI and returns the response.
+// Uses --print flag for non-interactive output.
+func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
+	// Check if claude CLI is available
+	cliPath, err := exec.LookPath(a.CLIPath)
+	if err != nil {
+		return "", fmt.Errorf("claude CLI not found: %w\n\nTo fix this:\n  - Install Claude Code: https://claude.ai/code\n  - Or set ANTHROPIC_API_KEY environment variable", err)
+	}
+
+	// Build command: claude --print <prompt>
+	cmd := exec.CommandContext(ctx, cliPath, "--print", prompt)
+	
+	// Set working directory to current directory (CLI will use repo context)
+	wd, _ := os.Getwd()
+	cmd.Dir = wd
+
+	// Capture output
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("claude CLI execution failed: %w\n\nOutput: %s", err, string(output))
+	}
+
+	content := strings.TrimSpace(string(output))
+	if content == "" {
+		return "", fmt.Errorf("empty output from claude CLI")
+	}
+
+	return content, nil
+}
+
+// ExecuteWithSystem runs a prompt with a system message through the claude CLI.
+// Combines system and user prompts into a single message.
+func (a *Agent) ExecuteWithSystem(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+	// Combine system and user prompts
+	fullPrompt := fmt.Sprintf("%s\n\n%s", systemPrompt, userPrompt)
+	return a.Execute(ctx, fullPrompt)
+}
+
+// IsConfigured checks if claude CLI is available or ANTHROPIC_API_KEY is set.
+// The CLI handles auth automatically (Claude Code session or API key).
 func IsConfigured() bool {
+	// Check if CLI is available
+	if _, err := exec.LookPath("claude"); err == nil {
+		return true
+	}
+	// Fallback: check API key (for environments without CLI)
 	return os.Getenv("ANTHROPIC_API_KEY") != ""
+}
+
+// NewClientOrNil is kept for backward compatibility with status.go.
+// Returns a zero-value struct since we don't need SDK client anymore.
+func NewClientOrNil() (struct{}, error) {
+	return struct{}{}, nil
 }

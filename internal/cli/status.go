@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	agentclient "github.com/ryantking/agentctl/internal/agent"
@@ -34,46 +35,41 @@ func NewStatusCmd() *cobra.Command {
 func getStatusInfo() StatusInfo {
 	var info StatusInfo
 
-	// Check if API key is set
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey != "" {
+	// Check if claude CLI is available (handles auth automatically)
+	if agentclient.IsConfigured() {
 		info.Authenticated = true
-		info.AuthMethod = "API key"
-	} else {
-		// Check if we can create a client (might be authenticated via Claude Code session)
-		client, err := agentclient.NewClientOrNil()
-		if err == nil && len(client.Options) > 0 {
-			info.Authenticated = true
-			info.AuthMethod = "Claude Code session"
+		// Determine auth method
+		if os.Getenv("ANTHROPIC_API_KEY") != "" {
+			info.AuthMethod = "API key"
 		} else {
-			info.Authenticated = false
+			info.AuthMethod = "Claude Code session"
 		}
-	}
-
-	// Test API connectivity if authenticated
-	if info.Authenticated {
+		// Test connectivity
 		info.APIConnected = testAPIConnectivity()
+	} else {
+		info.Authenticated = false
+		info.APIConnected = false
 	}
 
 	return info
 }
 
 func testAPIConnectivity() bool {
-	client, err := agentclient.NewClient()
-	if err != nil {
-		return false
-	}
-
-	// Try a simple API call with a short timeout
+	// Check if claude CLI is available and can execute
+	agent := agentclient.NewAgent()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Use a minimal request to test connectivity
-	// We'll just check if we can create a client successfully
-	// A real connectivity test would require an actual API call, but that's expensive
-	// For now, if we can create a client, assume connectivity is good
-	_ = ctx
-	_ = client
+	// Try a simple test prompt
+	_, err := agent.Execute(ctx, "test")
+	if err != nil {
+		// If it's just a content error (empty response), CLI is working
+		if strings.Contains(err.Error(), "empty output") {
+			return true
+		}
+		return false
+	}
+
 	return true
 }
 

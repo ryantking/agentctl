@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anthropics/anthropic-sdk-go"
 	agentclient "github.com/ryantking/agentctl/internal/agent"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
@@ -66,7 +65,7 @@ func NewRulesInitCmd() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize .agent directory with default rules",
 		Long: `Initialize .agent directory structure. Copies default rules from agentctl's rules/ directory
-to .agent/rules/. Generates .agent/project.md using Anthropic SDK. Creates .agent/research/ directory.
+to .agent/rules/. Generates .agent/project.md using claude CLI. Creates .agent/research/ directory.
 
 Respects AGENTDIR environment variable (defaults to .agent).`,
 		RunE: func(_ *cobra.Command, _ []string) error {
@@ -149,7 +148,7 @@ func copyDefaultRules(targetDir string, force bool) error {
 	return nil
 }
 
-// generateProjectMD generates .agent/project.md using Anthropic SDK with tool use.
+// generateProjectMD generates .agent/project.md using claude CLI.
 func generateProjectMD(agentDir, repoRoot string, force, verbose bool) error {
 	projectMDPath := filepath.Join(agentDir, "project.md")
 
@@ -159,38 +158,15 @@ func generateProjectMD(agentDir, repoRoot string, force, verbose bool) error {
 		return nil
 	}
 
-	// Check if API key is configured
+	// Check if claude CLI is configured
 	if !agentclient.IsConfigured() {
-		return fmt.Errorf(`ANTHROPIC_API_KEY environment variable not set
+		return fmt.Errorf(`claude CLI not found or ANTHROPIC_API_KEY not set
 
 To fix this:
-  - Set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key
-  - Or run 'claude login' if you have the Claude CLI installed
+  - Install Claude Code: https://claude.ai/code
+  - Or set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key
   - Get your API key at https://console.anthropic.com/`)
 	}
-
-	client, err := agentclient.NewClient()
-	if err != nil {
-		return agentclient.EnhanceSDKError(err)
-	}
-
-	// Create tool registry with repository exploration tools
-	// Check if advanced tools should be enabled (via environment variable)
-	enableAdvanced := os.Getenv("AGENTCTL_ENABLE_ADVANCED_TOOLS") == "true"
-	registry := agentclient.NewToolRegistry()
-	if err := agentclient.RegisterRepoToolsWithOptions(registry, repoRoot, enableAdvanced); err != nil {
-		return fmt.Errorf("failed to register repository tools: %w", err)
-	}
-
-	// Create conversation with tool use support
-	// Allow more tool calls for repository exploration (project.md generation)
-	opts := []agentclient.ConversationOption{
-		agentclient.WithMaxToolCalls(50), // Allow more for exploration
-	}
-	if verbose {
-		opts = append(opts, agentclient.WithVerbose(true))
-	}
-	conv := agentclient.NewConversation(client, registry, opts...)
 
 	prompt := `Analyze this repository and provide a concise overview:
 - Main purpose and key technologies
@@ -199,25 +175,24 @@ To fix this:
 - Build/run commands (check for package.json scripts, Makefile targets, Justfile recipes, etc.)
 - Available scripts and automation tools
 
-Use the list_directory and read_file tools to explore the repository structure and key files.
+Explore the repository structure and key files to understand the codebase.
 
 Format as clean markdown starting at heading level 2 (##), keep it brief (under 500 words).`
 
-	fmt.Print("  → Generating project.md with Anthropic SDK (using tool use)...")
+	fmt.Print("  → Generating project.md with claude CLI...")
 
+	agent := agentclient.NewAgent()
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	// Add user message and send (tool use is handled automatically)
-	conv.AddUserMessage(prompt)
-	content, err := conv.Send(ctx, anthropic.ModelClaudeSonnet4_5, 2000)
+	content, err := agent.Execute(ctx, prompt)
 	if err != nil {
-		return agentclient.EnhanceSDKError(fmt.Errorf("failed to generate project.md: %w", err))
+		return fmt.Errorf("failed to generate project.md: %w", err)
 	}
 
 	content = strings.TrimSpace(content)
 	if content == "" {
-		return fmt.Errorf("empty output from Anthropic API")
+		return fmt.Errorf("empty output from claude CLI")
 	}
 
 	// Write project.md

@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/shared/constant"
 	agentclient "github.com/ryantking/agentctl/internal/agent"
 	"github.com/ryantking/agentctl/internal/git"
 	"github.com/ryantking/agentctl/internal/output"
@@ -155,16 +153,11 @@ To fix this:
 	return cmd
 }
 
-// generateRuleContent generates rule content from a prompt using Anthropic SDK.
+// generateRuleContent generates rule content from a prompt using claude CLI.
 func generateRuleContent(prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
-	// Check if API key is configured
+	// Check if claude CLI is configured
 	if !agentclient.IsConfigured() {
-		return "", agentclient.EnhanceSDKError(fmt.Errorf("ANTHROPIC_API_KEY environment variable not set"))
-	}
-
-	client, err := agentclient.NewClient()
-	if err != nil {
-		return "", agentclient.EnhanceSDKError(err)
+		return "", fmt.Errorf("claude CLI not found or ANTHROPIC_API_KEY not set\n\nTo fix this:\n  - Install Claude Code: https://claude.ai/code\n  - Or set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key\n  - Get your API key at https://console.anthropic.com/")
 	}
 
 	systemPrompt := `You are creating a rule file (.mdc format) for an agent rules system. 
@@ -205,48 +198,15 @@ Generate a complete .mdc rule file based on the user's prompt.`
 		userPrompt += fmt.Sprintf("\n\nApplies to: %s", strings.Join(appliesTo, ", "))
 	}
 
-	fmt.Print("  → Generating rule content with Anthropic SDK...")
+	fmt.Print("  → Generating rule content with claude CLI...")
 
+	agent := agentclient.NewAgent()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	// Create message request
-	params := anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaudeSonnet4_5,
-		MaxTokens: 4000,
-		System: []anthropic.TextBlockParam{
-			{
-				Text: systemPrompt,
-				Type: constant.Text("text"),
-			},
-		},
-		Messages: []anthropic.MessageParam{
-			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
-				OfText: &anthropic.TextBlockParam{
-					Text: userPrompt,
-					Type: constant.Text("text"),
-				},
-			}),
-		},
-	}
-
-	// Call Messages API
-	msg, err := client.Messages.New(ctx, params)
+	content, err := agent.ExecuteWithSystem(ctx, systemPrompt, userPrompt)
 	if err != nil {
-		return "", agentclient.EnhanceSDKError(fmt.Errorf("failed to generate rule content: %w", err))
-	}
-
-	// Extract text content from response
-	var ruleContent strings.Builder
-	for _, block := range msg.Content {
-		if block.Type == "text" && block.Text != "" {
-			ruleContent.WriteString(block.Text)
-		}
-	}
-
-	content := strings.TrimSpace(ruleContent.String())
-	if content == "" {
-		return "", fmt.Errorf("empty output from Anthropic API")
+		return "", fmt.Errorf("failed to generate rule content: %w", err)
 	}
 
 	fmt.Println(" (done)")
