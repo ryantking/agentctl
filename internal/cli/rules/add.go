@@ -218,7 +218,7 @@ Generate a complete .mdc rule file based on the user's prompt.`
 
 	// Get CLI path from flag or environment variable
 	cliPath := getAgentCLIPath(cmd)
-	agent := agentclient.NewAgent(agentclient.WithCLIPath(cliPath))
+	agent := agentclient.NewAgent(agentclient.WithBinary(cliPath))
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
