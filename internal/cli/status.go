@@ -66,7 +66,7 @@ func getStatusInfo() StatusInfo {
 func testAPIConnectivity() bool {
 	// Check if claude CLI is available and can execute
 	cliPath := getAgentCLIPathFromEnv()
-	agent := agentclient.NewAgent(agentclient.WithCLIPath(cliPath))
+	agent := agentclient.NewAgent(agentclient.WithBinary(cliPath))
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
