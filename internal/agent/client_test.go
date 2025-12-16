@@ -176,8 +176,8 @@ func TestAgentError_Unwrap(t *testing.T) {
 
 func TestAgentError_Error(t *testing.T) {
 	agentErr := &AgentError{
-		Program:  "claude",
-		BinPath:  "/usr/bin/claude",
+		Type:     "claude",
+		Binary:   "/usr/bin/claude",
 		Args:     []string{"--print", "test"},
 		ExitCode: 1,
 		Stdout:   "some output",
@@ -190,7 +190,7 @@ func TestAgentError_Error(t *testing.T) {
 		t.Error("Error() should return non-empty string")
 	}
 	if !strings.Contains(errStr, "claude") {
-		t.Error("Error() should contain program name")
+		t.Error("Error() should contain agent type")
 	}
 	if !strings.Contains(errStr, "exit 1") {
 		t.Error("Error() should contain exit code")
