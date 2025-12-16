@@ -159,8 +159,8 @@ func TestAgent_Execute_EmptyOutput(t *testing.T) {
 func TestAgentError_Unwrap(t *testing.T) {
 	originalErr := ErrNotFound
 	agentErr := &AgentError{
-		Program:  "test",
-		BinPath:  "/bin/test",
+		Type:     "test",
+		Binary:   "/bin/test",
 		Args:     []string{"test"},
 		ExitCode: -1,
 		Stdout:   "",
