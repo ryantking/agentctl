@@ -142,8 +142,8 @@ func TestAgent_Execute_EmptyOutput(t *testing.T) {
 	// This test would require mocking exec.Command, which is complex
 	// For now, we'll test the error type checking functions
 	agentErr := &AgentError{
-		Program:  "test",
-		BinPath:  "/bin/test",
+		Type:     "test",
+		Binary:   "/bin/test",
 		Args:     []string{"--print", "test"},
 		ExitCode: 0,
 		Stdout:   "",
