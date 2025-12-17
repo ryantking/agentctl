@@ -199,3 +199,89 @@ func TestAgentError_Error(t *testing.T) {
 		t.Error("Error() should contain underlying error")
 	}
 }
+
+func TestAgent_buildArgs(t *testing.T) {
+	tests := []struct {
+		name      string
+		agentType string
+		prompt    string
+		want      []string
+		wantErr   error
+	}{
+		{
+			name:      "claude with valid prompt",
+			agentType: "claude",
+			prompt:    "test prompt",
+			want:      []string{"--print", "test prompt"},
+			wantErr:   nil,
+		},
+		{
+			name:      "claude with empty prompt",
+			agentType: "claude",
+			prompt:    "",
+			want:      nil,
+			wantErr:   fmt.Errorf("prompt cannot be empty"),
+		},
+		{
+			name:      "cursor not supported",
+			agentType: "cursor",
+			prompt:    "test",
+			want:      nil,
+			wantErr:   ErrUnsupportedAgent,
+		},
+		{
+			name:      "codex not supported",
+			agentType: "codex",
+			prompt:    "test",
+			want:      nil,
+			wantErr:   ErrUnsupportedAgent,
+		},
+		{
+			name:      "aider not supported",
+			agentType: "aider",
+			prompt:    "test",
+			want:      nil,
+			wantErr:   ErrUnsupportedAgent,
+		},
+		{
+			name:      "unknown agent type",
+			agentType: "unknown-agent",
+			prompt:    "test",
+			want:      nil,
+			wantErr:   ErrUnsupportedAgent,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			agent := NewAgent(WithType(tt.agentType))
+			args, err := agent.buildArgs(tt.prompt)
+
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("buildArgs() expected error, got nil")
+					return
+				}
+				if tt.wantErr == ErrUnsupportedAgent {
+					if !IsUnsupportedAgent(err) {
+						t.Errorf("buildArgs() error should wrap ErrUnsupportedAgent, got %v", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Errorf("buildArgs() unexpected error: %v", err)
+					return
+				}
+				if len(args) != len(tt.want) {
+					t.Errorf("buildArgs() returned %d args, want %d", len(args), len(tt.want))
+					return
+				}
+				for i := range args {
+					if args[i] != tt.want[i] {
+						t.Errorf("buildArgs()[%d] = %q, want %q", i, args[i], tt.want[i])
+					}
+				}
+			}
+		})
+	}
+}
