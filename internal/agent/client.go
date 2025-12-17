@@ -193,7 +193,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 			return "", &AgentError{
 				Type:     a.Type,
 				Binary:   binPath,
-				Args:     []string{"--print", prompt},
+				Args:     args,
 				ExitCode: -1,
 				Stdout:   stdout.String(),
 				Stderr:   stderr.String(),
@@ -211,7 +211,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 			return "", &AgentError{
 				Type:     a.Type,
 				Binary:   binPath,
-				Args:     []string{"--print", prompt},
+				Args:     args,
 				ExitCode: -1,
 				Stdout:   stdout.String(),
 				Stderr:   stderr.String(),
