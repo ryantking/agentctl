@@ -230,7 +230,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 		return "", &AgentError{
 			Type:     a.Type,
 			Binary:   binPath,
-			Args:     []string{"--print", prompt},
+			Args:     args,
 			ExitCode: exitCode,
 			Stdout:   stdout.String(),
 			Stderr:   stderr.String(),
