@@ -8,6 +8,9 @@ import (
 
 //go:embed all:rules
 // FS is the embedded filesystem containing default rule files.
+// Note: .agent/rules/ is the source of truth for rules. The rules/ directory
+// here is kept synchronized with .agent/rules/ for embedding purposes, as Go's
+// embed directive cannot reference paths outside the package directory.
 var FS embed.FS
 
 // GetRule reads a rule file from the embedded filesystem.

@@ -111,7 +111,6 @@ func addTestRule(t *testing.T, rulesDir string) string {
 	testRule := `---
 name: "Integration Test Rule"
 description: "A rule created during integration test"
-when-to-use: "When testing integration"
 applies-to: ["claude"]
 priority: 2
 tags: ["test", "integration"]
@@ -227,9 +226,10 @@ func verifyCursorSync(t *testing.T, tmpDir, rulesDir string) {
 		t.Fatalf("syncToCursor() error = %v", err)
 	}
 
-	cursorRulePath := filepath.Join(tmpDir, ".cursor", "rules", "integration-test.mdc")
+	// Verify rule file was copied (filename based on rule name from metadata)
+	cursorRulePath := filepath.Join(tmpDir, ".cursor", "rules", "Integration Test Rule.mdc")
 	if _, err := os.Stat(cursorRulePath); os.IsNotExist(err) {
-		t.Error("Rule should be copied to .cursor/rules/")
+		t.Error("Rule should be copied to .cursor/rules/ using rule name from metadata")
 	}
 }
 

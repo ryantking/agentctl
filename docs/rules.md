@@ -36,12 +36,18 @@ Rules are Markdown files with YAML frontmatter. The `.mdc` extension indicates "
 
 #### Required Fields
 
-- `name`: Human-readable rule name
-- `description`: One-line description of what this rule covers
-- `when-to-use`: Context for when this rule applies
+- `name`: Unique identifier for the rule (required)
 
 #### Optional Fields
 
+- `description`: When/why this rule applies (optional)
+  - Used in Cursor rule description field
+  - Used in CLAUDE.md/AGENTS.md index for skills/rules
+- `globs`: File patterns where rule is relevant (optional)
+  - Examples: `["**/.beads/**", "**/beads.yaml"]`, `["**/*.py"]`
+  - Used in Cursor rule globs field
+  - Used in skill descriptions
+  - Used in AGENTS.md/CLAUDE.md rules index
 - `applies-to`: List of tools this rule applies to (default: all tools)
   - Examples: `["claude"]`, `["claude", "cursor", "windsurf"]`
 - `priority`: 0-4, where 0 is highest priority (default: 2)
@@ -55,9 +61,8 @@ Rules are Markdown files with YAML frontmatter. The `.mdc` extension indicates "
 
 ```yaml
 ---
-name: "Git Workflow"
+name: "git-workflow"
 description: "Conventional commits, branch management, and PR workflows"
-when-to-use: "When committing changes, creating branches, or managing pull requests"
 applies-to: ["claude", "cursor", "windsurf"]
 priority: 1
 tags: ["git", "workflow", "conventional-commits"]
@@ -103,7 +108,7 @@ agentctl rules list [--json]
 - `--json` - Output as JSON for programmatic access
 
 **Output:**
-- Rule name, description, when-to-use, applies-to
+- Rule name, description, globs, applies-to
 - File name for each rule
 
 ### show
@@ -132,7 +137,7 @@ agentctl rules show git-workflow.mdc
 Add a new rule from a prompt description.
 
 ```bash
-agentctl rules add "<description>" [--name <filename>] [--description <text>] [--when-to-use <text>] [--applies-to <tools>]
+agentctl rules add "<description>" [--name <filename>] [--description <text>] [--applies-to <tools>]
 ```
 
 **Arguments:**
@@ -141,7 +146,6 @@ agentctl rules add "<description>" [--name <filename>] [--description <text>] [-
 **Flags:**
 - `--name` - Filename for the rule (without .mdc extension)
 - `--description` - Rule description (auto-generated from prompt if not provided)
-- `--when-to-use` - When to use this rule (auto-generated if not provided)
 - `--applies-to` - Comma-separated list of tools (default: claude)
 
 **Examples:**
@@ -197,7 +201,7 @@ If no flags are specified, syncs to all formats.
 
 ### Cursor Integration
 
-Rules sync to `.cursor/rules/*.mdc` - Cursor automatically loads these files.
+Rules sync to `.cursor/rules/<rule-name>.mdc` - Each rule file is copied using the rule name from frontmatter. Cursor automatically loads these files with the new schema format (name/description/globs).
 
 ### Claude Code Integration
 
@@ -214,11 +218,12 @@ For Claude Code, `agentctl rules sync --claude-md` generates a simple CLAUDE.md 
 ## Best Practices
 
 1. **Keep rules focused**: Each rule should cover a single topic or workflow
-2. **Use descriptive names**: Rule names should clearly indicate what they cover
-3. **Document when-to-use**: Help agents understand when to apply each rule
-4. **Tag appropriately**: Use tags to categorize and filter rules
-5. **Version rules**: Use version field to track rule evolution
-6. **Sync regularly**: Run `agentctl rules sync` after adding or modifying rules
+2. **Use descriptive names**: Rule names should clearly indicate what they cover (use kebab-case)
+3. **Add descriptions**: Help agents understand when/why to apply each rule
+4. **Use globs for file-specific rules**: Add globs field for rules that apply to specific file patterns
+5. **Tag appropriately**: Use tags to categorize and filter rules
+6. **Version rules**: Use version field to track rule evolution
+7. **Sync regularly**: Run `agentctl rules sync` after adding or modifying rules
 
 ## Examples
 
@@ -266,7 +271,77 @@ agentctl rules sync --claude --agents
 agentctl rules sync
 ```
 
-## Migration from Memory Commands
+## Repository Structure
+
+### Embedded Templates (Source of Truth)
+
+Default rules and templates are embedded in the agentctl binary:
+
+```
+internal/
+├── rules/
+│   └── rules/          # Default rules (embedded in binary)
+│       ├── beads-workflow.mdc
+│       ├── git-workflow.mdc
+│       └── ...
+└── templates/
+    └── templates/      # Default templates (embedded in binary)
+        ├── agents/     # Default agents
+        ├── skills/     # Default skills
+        └── settings.json
+```
+
+**Note:** `.agent/rules/` is the source of truth for rules. The `internal/rules/rules/` directory is kept synchronized for embedding purposes (required due to Go embed constraints).
+
+### User Directory Structure
+
+When you run `agentctl rules init`, the following structure is created:
+
+```
+.agent/
+└── rules/              # User's local rules (copied from embedded defaults)
+    ├── beads-workflow.mdc
+    ├── git-workflow.mdc
+    └── ...
+
+.claude/                # Created by 'agentctl init'
+├── agents/            # Installed agents
+├── skills/            # Installed skills
+└── settings.json      # Claude Code settings
+```
+
+Users can customize their local copies in `.agent/rules/`. To reset to defaults, re-run `agentctl rules init --force`.
+
+## Migration Guide
+
+### Migrating from Old Schema
+
+If you have existing rules with the old `when-to-use` field:
+
+1. **Update frontmatter**: Replace `when-to-use` with `description` and optionally add `globs`
+   ```yaml
+   # Old format
+   ---
+   name: "my-rule"
+   when-to-use: "When doing X"
+   ---
+   
+   # New format
+   ---
+   name: "my-rule"
+   description: "When doing X"
+   globs: ["**/*.relevant"]  # Optional
+   ---
+   ```
+
+2. **Run sync**: After updating, run `agentctl rules sync` to regenerate all formats
+
+3. **Reset to defaults** (optional): To get latest default rules with new schema:
+   ```bash
+   agentctl rules init --force
+   ```
+
+### Migration from Memory Commands
 
 If you're migrating from the old `agentctl memory` commands:
 
@@ -275,5 +350,3 @@ If you're migrating from the old `agentctl memory` commands:
 3. Run `agentctl rules sync` to generate AGENTS.md and CLAUDE.md
 4. Remove old AGENTS.md/CLAUDE.md if desired
 5. Use `agentctl rules` commands going forward
-
-See the [Rules Documentation](rules.md) for complete details.

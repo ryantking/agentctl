@@ -1,7 +1,6 @@
 ---
-name: "Git Workflow"
+name: "git-workflow"
 description: "Conventional commits, branch management, and PR workflows"
-when-to-use: "When committing changes, creating branches, or managing pull requests"
 applies-to: ["claude", "cursor", "windsurf"]
 priority: 1
 tags: ["git", "workflow", "conventional-commits"]

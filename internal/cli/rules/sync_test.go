@@ -20,7 +20,6 @@ func TestSyncToCursor(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
-when-to-use: "When testing"
 ---
 
 ## Content
@@ -37,10 +36,10 @@ Test content.`
 		t.Fatalf("syncToCursor() error = %v", err)
 	}
 
-	// Verify file was copied
-	destPath := filepath.Join(cursorRulesDir, "test-rule.mdc")
+	// Verify file was copied using rule name from metadata
+	destPath := filepath.Join(cursorRulesDir, "Test Rule.mdc")
 	if _, err := os.Stat(destPath); os.IsNotExist(err) {
-		t.Error("Rule file should be copied to .cursor/rules/")
+		t.Error("Rule file should be copied to .cursor/rules/ using rule name")
 	}
 
 	// Verify content matches
@@ -67,7 +66,6 @@ func TestSyncToClaudeSkills(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
-when-to-use: "When testing"
 ---
 
 ## Content
@@ -127,7 +125,6 @@ func TestSyncToClaudeSkillsSkipsExisting(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
-when-to-use: "When testing"
 ---
 
 ## Content
@@ -206,7 +203,6 @@ func TestSyncToAGENTSMD(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
-when-to-use: "When testing"
 ---
 
 ## Content
@@ -242,9 +238,7 @@ Test content.`
 	if !strings.Contains(agentsContent, "A test rule") {
 		t.Error("AGENTS.md should contain rule description")
 	}
-	if !strings.Contains(agentsContent, "When testing") {
-		t.Error("AGENTS.md should contain when-to-use")
-	}
+	// Globs are optional, so we don't check for them
 }
 
 func TestSyncToAGENTSMDWithoutProjectMD(t *testing.T) {
@@ -260,7 +254,6 @@ func TestSyncToAGENTSMDWithoutProjectMD(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
-when-to-use: "When testing"
 ---
 
 ## Content
@@ -312,7 +305,6 @@ func TestSyncToCLAUDEMDWithoutProjectMD(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
-when-to-use: "When testing"
 ---
 
 ## Content

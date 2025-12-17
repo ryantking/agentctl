@@ -1,7 +1,6 @@
 ---
-name: "Workspace Management"
+name: "workspace-management"
 description: "Managing agentctl workspaces for parallel development"
-when-to-use: "When working with multiple branches or parallel Claude Code sessions"
 applies-to: ["claude"]
 priority: 1
 tags: ["workspace", "agentctl", "git-worktrees"]

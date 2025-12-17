@@ -1,7 +1,7 @@
 ---
-name: "Beads Issue Tracking"
+name: "beads-workflow"
 description: "Using bd (beads) for dependency-aware issue tracking"
-when-to-use: "When tracking tasks, creating issues, or managing work items"
+globs: ["**/.beads/**", "**/beads.yaml"]
 applies-to: ["claude"]
 priority: 1
 tags: ["beads", "issue-tracking", "workflow"]

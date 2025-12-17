@@ -1,7 +1,6 @@
 ---
-name: "Tool Selection Guidelines"
+name: "tool-selection"
 description: "When to use specialized tools vs bash commands to avoid permission prompts"
-when-to-use: "When deciding which tool to use for file operations, searching, or reading files"
 applies-to: ["claude"]
 priority: 1
 tags: ["tools", "best-practices", "permissions"]

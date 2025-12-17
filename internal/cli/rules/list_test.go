@@ -20,7 +20,6 @@ func TestListRules(t *testing.T) {
 	testRule := `---
 name: "Test Rule"
 description: "A test rule"
-when-to-use: "When testing"
 applies-to: ["claude"]
 priority: 1
 tags: ["test"]
@@ -108,7 +107,6 @@ func TestValidateRuleMetadataEdgeCases(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "Test",
 				Description: "Test",
-				WhenToUse:   "Test",
 				Priority:    5,
 			},
 			wantErr:       true,
@@ -119,7 +117,6 @@ func TestValidateRuleMetadataEdgeCases(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "Test",
 				Description: "Test",
-				WhenToUse:   "Test",
 				Priority:    -1,
 			},
 			wantErr:       true,
@@ -130,7 +127,6 @@ func TestValidateRuleMetadataEdgeCases(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "Test",
 				Description: "Test",
-				WhenToUse:   "Test",
 				Version:     "invalid",
 			},
 			wantErr:       true,
@@ -141,30 +137,9 @@ func TestValidateRuleMetadataEdgeCases(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "   ",
 				Description: "Test",
-				WhenToUse:   "Test",
 			},
 			wantErr:       true,
 			errorContains: "required field 'name' is empty",
-		},
-		{
-			name: "description with only whitespace",
-			metadata: RuleMetadata{
-				Name:        "Test",
-				Description: "   ",
-				WhenToUse:   "Test",
-			},
-			wantErr:       true,
-			errorContains: "required field 'description' is empty",
-		},
-		{
-			name: "when-to-use with only whitespace",
-			metadata: RuleMetadata{
-				Name:        "Test",
-				Description: "Test",
-				WhenToUse:   "   ",
-			},
-			wantErr:       true,
-			errorContains: "required field 'when-to-use' is empty",
 		},
 	}
 
@@ -197,7 +172,6 @@ func TestValidateRuleMetadata(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "Test Rule",
 				Description: "A test rule",
-				WhenToUse:   "When testing",
 				Priority:    1,
 				Version:     "1.0.0",
 			},
@@ -207,35 +181,23 @@ func TestValidateRuleMetadata(t *testing.T) {
 			name: "missing name",
 			metadata: RuleMetadata{
 				Description: "A test rule",
-				WhenToUse:   "When testing",
 			},
 			wantError: true,
 			errorMsg:  "required field 'name' is empty",
 		},
 		{
-			name: "missing description",
+			name: "missing name",
 			metadata: RuleMetadata{
-				Name:      "Test Rule",
-				WhenToUse: "When testing",
-			},
-			wantError: true,
-			errorMsg:  "required field 'description' is empty",
-		},
-		{
-			name: "missing when-to-use",
-			metadata: RuleMetadata{
-				Name:        "Test Rule",
 				Description: "A test rule",
 			},
 			wantError: true,
-			errorMsg:  "required field 'when-to-use' is empty",
+			errorMsg:  "required field 'name' is empty",
 		},
 		{
 			name: "priority too high",
 			metadata: RuleMetadata{
 				Name:        "Test Rule",
 				Description: "A test rule",
-				WhenToUse:   "When testing",
 				Priority:    5,
 			},
 			wantError: true,
@@ -246,7 +208,6 @@ func TestValidateRuleMetadata(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "Test Rule",
 				Description: "A test rule",
-				WhenToUse:   "When testing",
 				Priority:    -1,
 			},
 			wantError: true,
@@ -257,7 +218,6 @@ func TestValidateRuleMetadata(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "Test Rule",
 				Description: "A test rule",
-				WhenToUse:   "When testing",
 				Version:     "invalid",
 			},
 			wantError: true,
@@ -268,7 +228,6 @@ func TestValidateRuleMetadata(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "Test Rule",
 				Description: "A test rule",
-				WhenToUse:   "When testing",
 				Version:     "v1.0.0",
 			},
 			wantError: false,
@@ -278,7 +237,6 @@ func TestValidateRuleMetadata(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "Test Rule",
 				Description: "A test rule",
-				WhenToUse:   "When testing",
 				Version:     "",
 			},
 			wantError: false,
@@ -288,7 +246,6 @@ func TestValidateRuleMetadata(t *testing.T) {
 			metadata: RuleMetadata{
 				Name:        "   ",
 				Description: "A test rule",
-				WhenToUse:   "When testing",
 			},
 			wantError: true,
 			errorMsg:  "required field 'name' is empty",

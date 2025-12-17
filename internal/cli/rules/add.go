@@ -19,7 +19,7 @@ import (
 
 // NewRulesAddCmd creates the rules add command.
 func NewRulesAddCmd() *cobra.Command {
-	var name, description, whenToUse string
+	var name, description string
 	var appliesTo []string
 
 	cmd := &cobra.Command{
@@ -64,13 +64,6 @@ Example:
 			// Validate description if provided
 			if description != "" {
 				if err := validateDescription(description); err != nil {
-					return err
-				}
-			}
-
-			// Validate when-to-use if provided
-			if whenToUse != "" {
-				if err := validateWhenToUse(whenToUse); err != nil {
 					return err
 				}
 			}
@@ -130,7 +123,7 @@ To fix this:
 			agent := newAgentFromCmdFlags(cmd)
 
 			// Generate rule content
-			ruleContent, err := generateRuleContent(agent, prompt, name, description, whenToUse, appliesTo)
+			ruleContent, err := generateRuleContent(agent, prompt, name, description, appliesTo)
 			if err != nil {
 				return fmt.Errorf("failed to generate rule content: %w", err)
 			}
@@ -151,7 +144,6 @@ To fix this:
 
 	cmd.Flags().StringVar(&name, "name", "", "Filename for the rule (without .mdc extension)")
 	cmd.Flags().StringVar(&description, "description", "", "Description for the rule (auto-generated if not provided)")
-	cmd.Flags().StringVar(&whenToUse, "when-to-use", "", "When to use this rule (auto-generated if not provided)")
 	cmd.Flags().StringSliceVar(&appliesTo, "applies-to", []string{"claude"}, "Tools this rule applies to (comma-separated)")
 
 	return cmd
@@ -177,7 +169,7 @@ func newAgentFromCmdFlags(cmd *cobra.Command) *agentclient.Agent {
 }
 
 // generateRuleContent generates rule content from a prompt using agent CLI.
-func generateRuleContent(agent *agentclient.Agent, prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
+func generateRuleContent(agent *agentclient.Agent, prompt, name, description string, appliesTo []string) (string, error) {
 	// Check if agent CLI is configured
 	if !agentclient.IsConfigured() {
 		return "", fmt.Errorf("agent CLI not found or ANTHROPIC_API_KEY not set\n\nTo fix this:\n  - Install Claude Code: https://claude.ai/code\n  - Or set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key\n  - Get your API key at https://console.anthropic.com/")
@@ -190,9 +182,9 @@ The rule file format is:
 - Markdown body with guidelines and examples
 
 Required frontmatter fields:
-- name: Human-readable rule name
-- description: One-line description
-- when-to-use: Context for when this rule applies
+- name: Unique identifier for the rule (required)
+- description: When/why this rule applies (optional)
+- globs: File patterns where rule is relevant, e.g., ["**/.beads/**"] (optional)
 - applies-to: List of tools (default: ["claude"])
 - priority: 0-4 (default: 2)
 - tags: Array of tags
@@ -213,9 +205,6 @@ Generate a complete .mdc rule file based on the user's prompt.`
 	}
 	if description != "" {
 		userPrompt += fmt.Sprintf("\n\nDescription: %s", description)
-	}
-	if whenToUse != "" {
-		userPrompt += fmt.Sprintf("\n\nWhen to use: %s", whenToUse)
 	}
 	if len(appliesTo) > 0 {
 		userPrompt += fmt.Sprintf("\n\nApplies to: %s", strings.Join(appliesTo, ", "))
@@ -276,18 +265,6 @@ func validateDescription(description string) error {
 	}
 	if len(description) > 200 {
 		return fmt.Errorf("description too long (max 200 characters)")
-	}
-	return nil
-}
-
-// validateWhenToUse validates the when-to-use field.
-func validateWhenToUse(whenToUse string) error {
-	whenToUse = strings.TrimSpace(whenToUse)
-	if whenToUse == "" {
-		return fmt.Errorf("when-to-use cannot be empty or whitespace-only")
-	}
-	if len(whenToUse) > 300 {
-		return fmt.Errorf("when-to-use too long (max 300 characters)")
 	}
 	return nil
 }

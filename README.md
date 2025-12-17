@@ -132,7 +132,6 @@ Manage agent rules in the `.agent/` directory. Rules are modular `.mdc` files wi
 - `agentctl rules add [prompt]` - Add a new rule from a description
   - `--name <filename>` - Specify filename (without .mdc extension)
   - `--description <text>` - Rule description (auto-generated if not provided)
-  - `--when-to-use <text>` - When to use this rule (auto-generated if not provided)
   - `--applies-to <tools>` - Comma-separated list of tools (default: claude)
 
 - `agentctl rules remove [rule-name...]` - Remove rule files
@@ -147,15 +146,21 @@ Manage agent rules in the `.agent/` directory. Rules are modular `.mdc` files wi
   - If no flags specified, syncs to all formats
 
 **Directory Structure:**
-- `.agent/rules/` - Rule files (.mdc format with YAML frontmatter)
+- `.agent/rules/` - Rule files (.mdc format with YAML frontmatter) - source of truth
 - `.agent/research/` - Research artifacts (cached findings)
 - `.agent/project.md` - High-level repository description
+
+**Rule Schema:**
+- `name` (required): Unique identifier for the rule
+- `description` (optional): When/why this rule applies
+- `globs` (optional): File patterns where rule is relevant (e.g., `["**/.beads/**"]`)
+- `applies-to`, `priority`, `tags`, `version` (optional): Additional metadata
 
 **Environment Variable:**
 - `AGENTDIR` - Override default `.agent` location (defaults to `.agent`)
 
 **Rule File Format (.mdc):**
-Rules use YAML frontmatter with required fields (`name`, `description`, `when-to-use`) and optional fields (`applies-to`, `priority`, `tags`, `version`). See [docs/rules.md](docs/rules.md) for full schema documentation.
+Rules use YAML frontmatter with required field (`name`) and optional fields (`description`, `globs`, `applies-to`, `priority`, `tags`, `version`). See [docs/rules.md](docs/rules.md) for full schema documentation.
 
 ### Memory Commands (Deprecated)
 

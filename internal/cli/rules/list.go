@@ -17,7 +17,7 @@ import (
 type RuleMetadata struct {
 	Name        string   `yaml:"name"`
 	Description string   `yaml:"description"`
-	WhenToUse   string   `yaml:"when-to-use"`
+	Globs       []string `yaml:"globs"`
 	AppliesTo   []string `yaml:"applies-to"`
 	Priority    int      `yaml:"priority"`
 	Tags        []string `yaml:"tags"`
@@ -37,7 +37,7 @@ func NewRulesListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all rules in .agent/rules/",
-		Long: `List all rules in the .agent/rules/ directory. Shows rule name, description, and when-to-use
+		Long: `List all rules in the .agent/rules/ directory. Shows rule name, description, and globs
 from frontmatter. Use --json for structured output.`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			var repoRoot string
@@ -218,12 +218,7 @@ func validateRuleMetadata(metadata RuleMetadata, rulePath string) error {
 	if strings.TrimSpace(metadata.Name) == "" {
 		errors = append(errors, "required field 'name' is empty")
 	}
-	if strings.TrimSpace(metadata.Description) == "" {
-		errors = append(errors, "required field 'description' is empty")
-	}
-	if strings.TrimSpace(metadata.WhenToUse) == "" {
-		errors = append(errors, "required field 'when-to-use' is empty")
-	}
+	// Description and globs are optional
 
 	// Priority must be 0-4
 	if metadata.Priority < 0 || metadata.Priority > 4 {
@@ -327,8 +322,8 @@ func outputText(rules []RuleInfo) error {
 		if rule.Metadata.Description != "" {
 			fmt.Printf("  Description: %s\n", rule.Metadata.Description)
 		}
-		if rule.Metadata.WhenToUse != "" {
-			fmt.Printf("  When to use: %s\n", rule.Metadata.WhenToUse)
+		if len(rule.Metadata.Globs) > 0 {
+			fmt.Printf("  Globs: %s\n", strings.Join(rule.Metadata.Globs, ", "))
 		}
 		if len(rule.Metadata.AppliesTo) > 0 {
 			fmt.Printf("  Applies to: %s\n", strings.Join(rule.Metadata.AppliesTo, ", "))

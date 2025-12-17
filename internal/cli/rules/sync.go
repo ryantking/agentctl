@@ -124,7 +124,7 @@ To troubleshoot:
 	return cmd
 }
 
-// syncToCursor copies .agent/rules/*.mdc to .cursor/rules/.
+// syncToCursor copies .agent/rules/*.mdc files to .cursor/rules/ using the new schema format.
 func syncToCursor(repoRoot, rulesDir string, dryRun bool) error {
 	cursorRulesDir := filepath.Join(repoRoot, ".cursor", "rules")
 	
@@ -148,13 +148,23 @@ func syncToCursor(repoRoot, rulesDir string, dryRun bool) error {
 		}
 
 		sourcePath := filepath.Join(rulesDir, entry.Name())
-		destPath := filepath.Join(cursorRulesDir, entry.Name())
+		
+		// Parse metadata to ensure it uses new schema
+		metadata, err := parseRuleMetadata(sourcePath)
+		if err != nil {
+			// Skip files with invalid frontmatter but continue
+			continue
+		}
 
 		// Read source file
 		data, err := os.ReadFile(sourcePath) //nolint:gosec // Reading from controlled source directory
 		if err != nil {
 			return fmt.Errorf("failed to read rule file %s: %w", entry.Name(), err)
 		}
+
+		// Use rule name from metadata for destination filename
+		destFilename := metadata.Name + ".mdc"
+		destPath := filepath.Join(cursorRulesDir, destFilename)
 
 		relPath, _ := filepath.Rel(repoRoot, destPath)
 
@@ -172,7 +182,7 @@ func syncToCursor(repoRoot, rulesDir string, dryRun bool) error {
 		} else {
 			// Write to destination
 			if err := os.WriteFile(destPath, data, 0644); err != nil { //nolint:gosec // Rule files need to be readable
-				return fmt.Errorf("failed to write rule file %s: %w", entry.Name(), err)
+				return fmt.Errorf("failed to write rule file %s: %w", destFilename, err)
 			}
 			fmt.Printf("  • %s (synced)\n", relPath)
 		}
@@ -364,13 +374,13 @@ func syncToAGENTSMD(repoRoot, agentDir, rulesDir string, dryRun bool) error {
 			}
 
 			content.WriteString(fmt.Sprintf("### %s\n\n", priorityLabel))
-			content.WriteString("| Rule | Description | When to Use | Tags |\n")
-			content.WriteString("|------|-------------|-------------|------|\n")
+			content.WriteString("| Rule | Description | Globs | Tags |\n")
+			content.WriteString("|------|-------------|-------|------|\n")
 
 			for _, rule := range rules {
 				name := rule.Metadata.Name
 				desc := rule.Metadata.Description
-				whenToUse := rule.Metadata.WhenToUse
+				globs := strings.Join(rule.Metadata.Globs, ", ")
 				tags := strings.Join(rule.Metadata.Tags, ", ")
 				if tags == "" {
 					tags = "-"
@@ -379,10 +389,13 @@ func syncToAGENTSMD(repoRoot, agentDir, rulesDir string, dryRun bool) error {
 				// Escape pipe characters in markdown table
 				name = strings.ReplaceAll(name, "|", "\\|")
 				desc = strings.ReplaceAll(desc, "|", "\\|")
-				whenToUse = strings.ReplaceAll(whenToUse, "|", "\\|")
+				if globs == "" {
+					globs = "-"
+				}
+				globs = strings.ReplaceAll(globs, "|", "\\|")
 				tags = strings.ReplaceAll(tags, "|", "\\|")
 
-				content.WriteString(fmt.Sprintf("| %s | %s | %s | %s |\n", name, desc, whenToUse, tags))
+				content.WriteString(fmt.Sprintf("| %s | %s | %s | %s |\n", name, desc, globs, tags))
 			}
 			content.WriteString("\n")
 		}
@@ -470,8 +483,8 @@ func syncToCLAUDEMD(repoRoot, agentDir, rulesDir string, dryRun bool) error {
 			content.WriteString(fmt.Sprintf("#### %s\n\n", rule.Metadata.Name))
 			content.WriteString(fmt.Sprintf("%s\n\n", rule.Metadata.Description))
 			
-			if rule.Metadata.WhenToUse != "" {
-				content.WriteString(fmt.Sprintf("**When to use:** %s\n\n", rule.Metadata.WhenToUse))
+			if len(rule.Metadata.Globs) > 0 {
+				content.WriteString(fmt.Sprintf("**Globs:** %s\n\n", strings.Join(rule.Metadata.Globs, ", ")))
 			}
 
 			if len(rule.Metadata.AppliesTo) > 0 {

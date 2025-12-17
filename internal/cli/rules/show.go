@@ -174,8 +174,8 @@ func showPretty(rulePath string) error {
 	if metadata.Description != "" {
 		fmt.Printf("description: %s\n", metadata.Description)
 	}
-	if metadata.WhenToUse != "" {
-		fmt.Printf("when-to-use: %s\n", metadata.WhenToUse)
+	if len(metadata.Globs) > 0 {
+		fmt.Printf("globs: [%s]\n", strings.Join(metadata.Globs, ", "))
 	}
 	if len(metadata.AppliesTo) > 0 {
 		fmt.Printf("applies-to: [%s]\n", strings.Join(metadata.AppliesTo, ", "))

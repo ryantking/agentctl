@@ -191,48 +191,6 @@ func TestValidateDescription(t *testing.T) {
 	}
 }
 
-func TestValidateWhenToUse(t *testing.T) {
-	tests := []struct {
-		name      string
-		whenToUse string
-		wantErr   bool
-	}{
-		{
-			name:      "valid when-to-use",
-			whenToUse: "When committing changes",
-			wantErr:   false,
-		},
-		{
-			name:      "empty",
-			whenToUse: "",
-			wantErr:   true,
-		},
-		{
-			name:      "whitespace only",
-			whenToUse: "   ",
-			wantErr:   true,
-		},
-		{
-			name:      "too long",
-			whenToUse: strings.Repeat("a", 301),
-			wantErr:   true,
-		},
-		{
-			name:      "exactly maximum length",
-			whenToUse: strings.Repeat("a", 300),
-			wantErr:   false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateWhenToUse(tt.whenToUse)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("validateWhenToUse() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
 
 func TestValidateAppliesTo(t *testing.T) {
 	tests := []struct {

@@ -1,7 +1,6 @@
 ---
-name: "Global Hooks"
+name: "global-hooks"
 description: "Context injection and auto-commit behavior in Claude Code"
-when-to-use: "When understanding session context or file commit behavior"
 applies-to: ["claude"]
 priority: 1
 tags: ["hooks", "context", "auto-commit"]
