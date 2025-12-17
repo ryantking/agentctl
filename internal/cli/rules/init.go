@@ -158,9 +158,9 @@ func generateProjectMD(cmd *cobra.Command, agentDir string, _ string, force, _ b
 		return nil
 	}
 
-	// Check if claude CLI is configured
+	// Check if agent CLI is configured
 	if !agentclient.IsConfigured() {
-		return fmt.Errorf(`claude CLI not found or ANTHROPIC_API_KEY not set
+		return fmt.Errorf(`agent CLI not found or ANTHROPIC_API_KEY not set
 
 To fix this:
   - Install Claude Code: https://claude.ai/code
