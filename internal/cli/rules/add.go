@@ -156,6 +156,25 @@ To fix this:
 	return cmd
 }
 
+// newAgentFromCmdFlags creates an Agent from command global flags.
+func newAgentFromCmdFlags(cmd *cobra.Command) *agentclient.Agent {
+	opts := []agentclient.Option{}
+
+	// Get agent type from flag or environment
+	if agentType, err := cmd.Flags().GetString("agent-type"); err == nil && agentType != "" {
+		opts = append(opts, agentclient.WithType(agentType))
+	}
+
+	// Get agent binary from flag or environment (check both --agent-binary and deprecated --agent-cli)
+	if agentBinary, err := cmd.Flags().GetString("agent-binary"); err == nil && agentBinary != "" {
+		opts = append(opts, agentclient.WithBinary(agentBinary))
+	} else if agentCLI, err := cmd.Flags().GetString("agent-cli"); err == nil && agentCLI != "" {
+		opts = append(opts, agentclient.WithBinary(agentCLI))
+	}
+
+	return agentclient.NewAgent(opts...)
+}
+
 // generateRuleContent generates rule content from a prompt using agent CLI.
 func generateRuleContent(agent *agentclient.Agent, prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
 	// Check if agent CLI is configured
