@@ -117,18 +117,11 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	// Build arguments based on agent type
 	args, err := a.buildArgs(prompt)
 	if err != nil {
-		logger.Debug("failed to build arguments",
-			slog.String("type", a.Type),
-			slog.Any("error", err))
 		return "", fmt.Errorf("building args for %s: %w", a.Type, err)
 	}
 
 	// Validate binary exists before execution
 	if err := a.Validate(); err != nil {
-		logger.Debug("agent binary validation failed",
-			slog.String("type", a.Type),
-			slog.String("binary", a.Binary),
-			slog.Any("error", err))
 		return "", fmt.Errorf("agent binary validation failed: %w", err)
 	}
 
@@ -142,10 +135,6 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	// Check if binary exists
 	binPath, err := exec.LookPath(a.Binary)
 	if err != nil {
-		logger.Debug("agent binary not found",
-			slog.String("type", a.Type),
-			slog.String("binary", a.Binary),
-			slog.Any("error", err))
 		return "", &AgentError{
 			Type:     a.Type,
 			Binary:   a.Binary,
@@ -185,11 +174,6 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 
 		// Check context errors
 		if ctx.Err() == context.Canceled {
-			logger.Debug("agent execution cancelled",
-				slog.String("type", a.Type),
-				slog.String("binary", binPath),
-				slog.Int("exit_code", exitCode),
-				slog.String("stderr", stderr.String()))
 			return "", &AgentError{
 				Type:     a.Type,
 				Binary:   binPath,
@@ -203,11 +187,6 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 		if ctx.Err() == context.DeadlineExceeded {
 			deadline, _ := ctx.Deadline()
 			timeout := time.Until(deadline)
-			logger.Debug("agent execution timed out",
-				slog.String("type", a.Type),
-				slog.String("binary", binPath),
-				slog.Duration("timeout", timeout),
-				slog.String("stderr", stderr.String()))
 			return "", &AgentError{
 				Type:     a.Type,
 				Binary:   binPath,
@@ -218,14 +197,6 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 				Err:      fmt.Errorf("agent execution timed out after %s: %w", timeout, ErrTimeout),
 			}
 		}
-
-		logger.Debug("agent execution failed",
-			slog.String("type", a.Type),
-			slog.String("binary", binPath),
-			slog.Int("exit_code", exitCode),
-			slog.String("stderr", stderr.String()),
-			slog.String("stdout", stdout.String()),
-			slog.Any("error", err))
 
 		return "", &AgentError{
 			Type:     a.Type,
@@ -241,10 +212,6 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	// Validate output
 	output := strings.TrimSpace(stdout.String())
 	if output == "" {
-		logger.Debug("agent produced no output",
-			slog.String("type", a.Type),
-			slog.String("binary", binPath),
-			slog.String("stderr", stderr.String()))
 		return "", &AgentError{
 			Type:     a.Type,
 			Binary:   binPath,
