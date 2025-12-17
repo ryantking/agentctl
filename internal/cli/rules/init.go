@@ -193,7 +193,7 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 
 	content = strings.TrimSpace(content)
 	if content == "" {
-		return fmt.Errorf("empty output from claude CLI")
+		return fmt.Errorf("empty output from agent CLI")
 	}
 
 	// Write project.md
