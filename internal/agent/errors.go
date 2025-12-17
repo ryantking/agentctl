@@ -23,6 +23,9 @@ var (
 
 	// ErrValidationFailed indicates agent binary validation failed.
 	ErrValidationFailed = errors.New("agent binary validation failed")
+
+	// ErrUnsupportedAgent indicates the agent type is not yet supported.
+	ErrUnsupportedAgent = errors.New("agent type not supported")
 )
 
 // EnhanceSDKError wraps CLI errors with helpful, actionable error messages.
