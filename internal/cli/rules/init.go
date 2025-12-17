@@ -3,6 +3,7 @@ package rules
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -188,6 +189,9 @@ Format as clean markdown starting at heading level 2 (##), keep it brief (under 
 
 	content, err := agent.ExecuteWithLogger(ctx, prompt, nil)
 	if err != nil {
+		slog.Error("failed to execute agent",
+			slog.String("operation", "generate project.md"),
+			slog.Any("error", err))
 		return fmt.Errorf("failed to generate project.md: %w", err)
 	}
 

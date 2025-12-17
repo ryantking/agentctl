@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -77,6 +78,10 @@ func testAPIConnectivity() bool {
 		if strings.Contains(err.Error(), "empty output") {
 			return true
 		}
+		// Log connectivity test failures at debug level (expected in some cases)
+		slog.Debug("agent connectivity test failed",
+			slog.String("operation", "test API connectivity"),
+			slog.Any("error", err))
 		return false
 	}
 

@@ -4,6 +4,7 @@ package rules
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -227,6 +228,9 @@ Generate a complete .mdc rule file based on the user's prompt.`
 
 	content, err := agent.ExecuteWithSystemLogger(ctx, systemPrompt, userPrompt, nil)
 	if err != nil {
+		slog.Error("failed to execute agent",
+			slog.String("operation", "generate rule content"),
+			slog.Any("error", err))
 		return "", fmt.Errorf("failed to generate rule content: %w", err)
 	}
 

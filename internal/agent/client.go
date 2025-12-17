@@ -117,7 +117,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	// Build arguments based on agent type
 	args, err := a.buildArgs(prompt)
 	if err != nil {
-		logger.Error("failed to build arguments",
+		logger.Debug("failed to build arguments",
 			slog.String("type", a.Type),
 			slog.Any("error", err))
 		return "", fmt.Errorf("building args for %s: %w", a.Type, err)
@@ -125,7 +125,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 
 	// Validate binary exists before execution
 	if err := a.Validate(); err != nil {
-		logger.Error("agent binary validation failed",
+		logger.Debug("agent binary validation failed",
 			slog.String("type", a.Type),
 			slog.String("binary", a.Binary),
 			slog.Any("error", err))
@@ -142,7 +142,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	// Check if binary exists
 	binPath, err := exec.LookPath(a.Binary)
 	if err != nil {
-		logger.Error("agent binary not found",
+		logger.Debug("agent binary not found",
 			slog.String("type", a.Type),
 			slog.String("binary", a.Binary),
 			slog.Any("error", err))
@@ -185,7 +185,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 
 		// Check context errors
 		if ctx.Err() == context.Canceled {
-			logger.Warn("agent execution cancelled",
+			logger.Debug("agent execution cancelled",
 				slog.String("type", a.Type),
 				slog.String("binary", binPath),
 				slog.Int("exit_code", exitCode),
@@ -203,7 +203,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 		if ctx.Err() == context.DeadlineExceeded {
 			deadline, _ := ctx.Deadline()
 			timeout := time.Until(deadline)
-			logger.Error("agent execution timed out",
+			logger.Debug("agent execution timed out",
 				slog.String("type", a.Type),
 				slog.String("binary", binPath),
 				slog.Duration("timeout", timeout),
@@ -219,7 +219,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 			}
 		}
 
-		logger.Error("agent execution failed",
+		logger.Debug("agent execution failed",
 			slog.String("type", a.Type),
 			slog.String("binary", binPath),
 			slog.Int("exit_code", exitCode),
@@ -241,7 +241,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 	// Validate output
 	output := strings.TrimSpace(stdout.String())
 	if output == "" {
-		logger.Error("agent produced no output",
+		logger.Debug("agent produced no output",
 			slog.String("type", a.Type),
 			slog.String("binary", binPath),
 			slog.String("stderr", stderr.String()))
