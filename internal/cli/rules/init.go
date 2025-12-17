@@ -179,11 +179,10 @@ Explore the repository structure and key files to understand the codebase.
 
 Format as clean markdown starting at heading level 2 (##), keep it brief (under 500 words).`
 
-	fmt.Print("  → Generating project.md with claude CLI...")
+	fmt.Print("  → Generating project.md with agent CLI...")
 
-	// Get CLI path from flag or environment variable
-	cliPath := getAgentCLIPath(cmd)
-	agent := agentclient.NewAgent(agentclient.WithBinary(cliPath))
+	// Create agent from global flags
+	agent := newAgentFromCmdFlags(cmd)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
