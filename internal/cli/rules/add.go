@@ -125,8 +125,11 @@ To fix this:
 			}
 			// File doesn't exist, which is what we want - continue
 
+			// Create agent from global flags
+			agent := newAgentFromCmdFlags(cmd)
+
 			// Generate rule content
-			ruleContent, err := generateRuleContent(cmd, prompt, name, description, whenToUse, appliesTo)
+			ruleContent, err := generateRuleContent(agent, prompt, name, description, whenToUse, appliesTo)
 			if err != nil {
 				return fmt.Errorf("failed to generate rule content: %w", err)
 			}
