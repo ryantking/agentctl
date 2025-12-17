@@ -30,6 +30,11 @@ func IsValidationFailed(err error) bool {
 	return errors.Is(err, ErrValidationFailed)
 }
 
+// IsUnsupportedAgent checks if an error is ErrUnsupportedAgent.
+func IsUnsupportedAgent(err error) bool {
+	return errors.Is(err, ErrUnsupportedAgent)
+}
+
 // AsAgentError checks if an error is an AgentError and extracts it.
 func AsAgentError(err error, target **AgentError) bool {
 	var agentErr *AgentError
