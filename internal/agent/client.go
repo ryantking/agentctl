@@ -114,6 +114,15 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 		logger = slog.Default()
 	}
 
+	// Build arguments based on agent type
+	args, err := a.buildArgs(prompt)
+	if err != nil {
+		logger.Error("failed to build arguments",
+			slog.String("type", a.Type),
+			slog.Any("error", err))
+		return "", fmt.Errorf("building args for %s: %w", a.Type, err)
+	}
+
 	// Validate binary exists before execution
 	if err := a.Validate(); err != nil {
 		logger.Error("agent binary validation failed",
@@ -140,7 +149,7 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 		return "", &AgentError{
 			Type:     a.Type,
 			Binary:   a.Binary,
-			Args:     []string{"--print", prompt},
+			Args:     args,
 			ExitCode: -1,
 			Stdout:   "",
 			Stderr:   "",
@@ -148,8 +157,8 @@ func (a *Agent) ExecuteWithLogger(ctx context.Context, prompt string, logger *sl
 		}
 	}
 
-	// Build command: claude --print <prompt>
-	cmd := exec.CommandContext(ctx, binPath, "--print", prompt) //nolint:gosec // claude CLI is a trusted local binary
+	// Build command with agent-specific arguments
+	cmd := exec.CommandContext(ctx, binPath, args...) //nolint:gosec // Agent CLI is a trusted local binary
 
 	// Set working directory to current directory (CLI will use repo context)
 	wd, _ := os.Getwd()
