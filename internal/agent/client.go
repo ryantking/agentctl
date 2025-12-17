@@ -61,6 +61,32 @@ func NewAgent(opts ...Option) *Agent {
 	return agent
 }
 
+// buildArgs constructs command arguments based on agent type.
+func (a *Agent) buildArgs(prompt string) ([]string, error) {
+	switch a.Type {
+	case "claude":
+		return a.buildClaudeArgs(prompt)
+	case "codex":
+		return nil, fmt.Errorf("agent type %q not yet supported: %w", a.Type, ErrUnsupportedAgent)
+	case "cursor":
+		return nil, fmt.Errorf("agent type %q not yet supported: %w", a.Type, ErrUnsupportedAgent)
+	case "aider":
+		return nil, fmt.Errorf("agent type %q not yet supported: %w", a.Type, ErrUnsupportedAgent)
+	default:
+		return nil, fmt.Errorf("unknown agent type %q: %w", a.Type, ErrUnsupportedAgent)
+	}
+}
+
+// buildClaudeArgs constructs arguments for claude CLI.
+func (a *Agent) buildClaudeArgs(prompt string) ([]string, error) {
+	if prompt == "" {
+		return nil, fmt.Errorf("prompt cannot be empty")
+	}
+
+	// Claude CLI format: claude --print <prompt>
+	return []string{"--print", prompt}, nil
+}
+
 // Validate checks if the agent binary exists and is executable.
 func (a *Agent) Validate() error {
 	if a.Binary == "" {
