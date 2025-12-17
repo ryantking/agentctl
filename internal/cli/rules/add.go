@@ -153,30 +153,14 @@ To fix this:
 	return cmd
 }
 
-// getAgentCLIPath returns the agent CLI path from flag or environment variable.
-func getAgentCLIPath(cmd *cobra.Command) string {
-	// Check flag value first
-	if flagPath, err := cmd.Flags().GetString("agent-cli"); err == nil && flagPath != "" && flagPath != "claude" {
-		return flagPath
-	}
-
-	// Check environment variable
-	if envPath := os.Getenv("AGENTCTL_CLI_PATH"); envPath != "" {
-		return envPath
-	}
-
-	// Default to "claude"
-	return "claude"
-}
-
-// generateRuleContent generates rule content from a prompt using claude CLI.
-func generateRuleContent(cmd *cobra.Command, prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
-	// Check if claude CLI is configured
+// generateRuleContent generates rule content from a prompt using agent CLI.
+func generateRuleContent(agent *agentclient.Agent, prompt, name, description, whenToUse string, appliesTo []string) (string, error) {
+	// Check if agent CLI is configured
 	if !agentclient.IsConfigured() {
-		return "", fmt.Errorf("claude CLI not found or ANTHROPIC_API_KEY not set\n\nTo fix this:\n  - Install Claude Code: https://claude.ai/code\n  - Or set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key\n  - Get your API key at https://console.anthropic.com/")
+		return "", fmt.Errorf("agent CLI not found or ANTHROPIC_API_KEY not set\n\nTo fix this:\n  - Install Claude Code: https://claude.ai/code\n  - Or set ANTHROPIC_API_KEY environment variable: export ANTHROPIC_API_KEY=your-key\n  - Get your API key at https://console.anthropic.com/")
 	}
 
-	systemPrompt := `You are creating a rule file (.mdc format) for an agent rules system. 
+	systemPrompt := `You are creating a rule file (.mdc format) for an agent rules system.
 
 The rule file format is:
 - YAML frontmatter with metadata
@@ -199,7 +183,7 @@ The body should include:
 Generate a complete .mdc rule file based on the user's prompt.`
 
 	userPrompt := fmt.Sprintf(`Create a rule file for: %s`, prompt)
-	
+
 	// Add any provided metadata to the prompt
 	if name != "" {
 		userPrompt += fmt.Sprintf("\n\nRule name: %s", name)
@@ -214,11 +198,8 @@ Generate a complete .mdc rule file based on the user's prompt.`
 		userPrompt += fmt.Sprintf("\n\nApplies to: %s", strings.Join(appliesTo, ", "))
 	}
 
-	fmt.Print("  → Generating rule content with claude CLI...")
+	fmt.Print("  → Generating rule content with agent CLI...")
 
-	// Get CLI path from flag or environment variable
-	cliPath := getAgentCLIPath(cmd)
-	agent := agentclient.NewAgent(agentclient.WithBinary(cliPath))
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
