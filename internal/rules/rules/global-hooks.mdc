@@ -1,0 +1,46 @@
+---
+name: "global-hooks"
+description: "Context injection and auto-commit behavior in Claude Code"
+applies-to: ["claude"]
+priority: 1
+tags: ["hooks", "context", "auto-commit"]
+version: "1.0.0"
+---
+
+## Global Hooks
+
+In **ALL** sessions the following hooks provide important functionality. Hooks are provided by `agentctl hooks` commands.
+
+### Context Injection
+
+**When a session starts**, context information is automatically injected about the Git repository and `agentctl` workspace so you know important information WITHOUT having to look it up using commands.
+
+**Example context:**
+
+```
+<context-refresh>
+Path: /Users/ryan/.claude/workspaces/.claude/feat-better-claude-memory
+Current Workspace: feat/better-claude-memory (6 modified, 1 untracked)
+Branch: feat/better-claude-memory (4 staged, 2 modified, 1 untracked)
+Git Branches:
+  feat/better-claude-memory: dirty
+  main: unknown
+Workspaces:
+  feat/better-claude-memory (6 modified, 1 untracked)
+Directory: feat-better-claude-memory/
+  agents/, commands/, justfile, pyproject.toml, skills/, src/, tests/
+</context-refresh>
+```
+
+**Rules:**
+- Always use the information available in the context refresh block
+- Only use the LATEST context refresh block
+- Never acknowledge the context refresh block unless explicitly asked
+
+### Auto-commit
+
+**When you create or modify a file**, it is automatically staged and committed if you're not on the default branch (main or master).
+
+**Rules:**
+- Expect files to be staged/committed when working on feature branches
+- When there are non-auto committed files, analyze them to determine if the changes should be committed
