@@ -19,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         with:
-          go-version: '1.26.0'
+          go-version: '1.26.1'
 
       - name: Install Just
         uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # v3
@@ -30,7 +30,7 @@ jobs:
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9
         with:
-          version: v2.7.1
+          version: v2.11.1
           skip-cache: true
           args: --help  # Prevent automatic run, we'll run it via just ci
 
