@@ -1,0 +1,180 @@
+---
+name: "tool-selection"
+description: "When to use specialized tools vs bash commands to avoid permission prompts"
+applies-to: ["claude"]
+priority: 1
+tags: ["tools", "best-practices", "permissions"]
+version: "1.0.0"
+---
+
+**APPLIES TO**: Main agent AND all subagents (Explore, Plan, engineer, historian, researcher)
+
+## Always prefer specialized tools over Bash
+
+Claude Code provides specialized tools that are pre-approved and don't require permission prompts. Always prefer these over Bash commands when possible:
+
+1. Always use `Read` tool for reading files
+   - Replaces: `cat`, `head`, `tail`, `less`
+   - Supports: line ranges, images, PDFs, notebooks
+   - Example: `Read(file_path="src/main.py", offset=50, limit=100)`
+
+2. Always use `Grep` tool for searching file contents
+   - Replaces: `grep`, `rg`, `ag`, `ack`
+   - Supports: regex, context lines, multiline, file type filtering
+   - Example: `Grep(pattern="def .*:", type="py", output_mode="content", -A=2)`
+
+3. Always use `Glob` tool for finding files by pattern
+   - Replaces: `find`, `ls` with patterns
+   - Supports: recursive wildcards, multiple extensions
+   - Example: `Glob(pattern="**/*.{py,pyx}")`
+
+## When you need to use Bash
+
+Use Bash ONLY for operations that have no tool equivalent:
+
+- Git operations: `git log`, `git show`, `git blame`, `git diff`, `git rm`
+- Multi-stage pipelines: When you need `|`, `xargs`, `sort`, `uniq`
+- Process output: `npm list`, `docker ps`, package manager queries
+- File metadata: File sizes, permissions (when content isn't enough)
+- Simple directory listing: `ls`, `ls -la` (for basic overview)
+
+## When you need to delete files
+
+Always use the safest method for file deletion to avoid permission prompts.
+
+**For tracked files (files in git):**
+- Always use `git rm <relative-path>`
+- Example: `git rm src/module.py`
+- `git rm` is pre-approved via `Bash(git:*)` pattern
+
+**For untracked files (not in git):**
+- Always use relative paths: `rm <relative-path>`
+- Example: `rm .claude/scratch/temp.txt`
+- Never use absolute paths: `rm /Users/...`
+- Absolute paths starting with `/` cannot be safely pre-approved
+
+**To determine if a file is tracked:**
+- Run `git ls-files <path>` - if it returns the path, use `git rm`
+- If file is in `.claude/scratch/`, use relative path `rm`
+- If uncertain, prefer `git rm` (safe even for untracked files)
+
+## When you need to run multiple Bash commands
+
+Chained bash commands break permission matching and trigger prompts.
+
+**For independent operations, use separate parallel Bash tool calls:**
+
+✅ **DO THIS:**
+```
+Tool Call 1: Bash(git status)
+Tool Call 2: Bash(git diff HEAD)
+Tool Call 3: Bash(git log --oneline -5)
+```
+Each command matches pre-approved patterns independently. Zero prompts.
+
+❌ **DON'T DO THIS:**
+```
+Bash(git status && git diff HEAD && git log --oneline -5)
+```
+Chained command doesn't match `Bash(git status:*)` pattern. Triggers prompt.
+
+**When chaining is acceptable:**
+
+Use `&&` chaining ONLY when commands are dependent (later commands need earlier ones to succeed):
+
+✅ **Acceptable chains:**
+- `mkdir -p dir && cp file dir/` (cp depends on dir existing)
+- `git add . && git commit -m "msg" && git push` (each depends on previous)
+- `cd /path && npm install` (npm needs to be in /path)
+
+✅ **Even better - use single commands when possible:**
+- `cp file dir/` (many tools auto-create parent dirs)
+- Use absolute paths: `npm install --prefix /path`
+
+**Operator reference:**
+
+| Operator | Meaning | When to Use | Example |
+|----------|---------|-------------|---------|
+| `&&` | AND (run next if previous succeeds) | Dependent sequence | `mkdir dir && cd dir` |
+| `\|\|` | OR (run next if previous fails) | Fallback behavior | `npm ci \|\| npm install` |
+| `;` | Sequential (run regardless) | Rarely needed | Avoid - use separate calls |
+| `\|` | Pipe (send output to next) | Data transformation | When specialized tools can't help |
+
+**General rule:** If commands don't depend on each other, split into multiple tool calls.
+
+## When you need temporary files and directories
+
+Avoid using `/tmp` for temporary operations as each bash command triggers permission prompts.
+
+Use these alternatives instead:
+
+1. For testing artifacts, use `.claude/scratch/` in working directory
+   - Auto-cleaned after session
+   - No permission prompts
+   - Workspace-isolated
+
+2. For research, use `.claude/research/`
+   - Already established pattern
+   - Version controlled
+   - Persistent across sessions
+
+3. For build/runtime caches, use `.cache/agentctl/` (gitignored)
+   - Follows npm/webpack convention
+   - Persists across sessions
+   - Excluded from git
+
+4. When /tmp is required, use built-in tools, not bash:
+   - ❌ `Bash(mkdir /tmp/test && echo "data" > /tmp/test/file.txt)`
+   - ✅ `Write(file_path="/tmp/test/file.txt", content="data")`
+   - Only use bash for git operations, pipelines, or when absolutely necessary
+
+**Cleanup rules:**
+- Delete `.claude/scratch/` contents when done
+- Never commit `.claude/scratch/` to git
+- Document any persistent artifacts in `.claude/research/`
+
+## Anti-patterns that trigger permission prompts
+
+**Don't chain independent commands:**
+```
+Bash(pytest tests/ && npm run lint && docker ps)
+```
+**Do make parallel tool calls:**
+```
+Tool Call 1: Bash(pytest tests/)
+Tool Call 2: Bash(npm run lint)
+Tool Call 3: Bash(docker ps)
+```
+
+**Don't use /tmp with bash commands:**
+```
+Bash(mkdir /tmp/test-run && python test.py > /tmp/test-run/output.txt)
+```
+**Do use project-local scratch directory:**
+```
+Bash(mkdir .claude/scratch/test-run && python test.py > .claude/scratch/test-run/output.txt)
+```
+
+**Don't use bash for file operations when tools exist:**
+- ❌ `find . -name "*.py" | xargs grep "pattern"` → ✅ `Grep(pattern="pattern", glob="**/*.py")`
+- ❌ `cat src/main.py | grep "import"` → ✅ `Grep(pattern="import", path="src/main.py")`
+- ❌ `find . -name "*.js" -type f` → ✅ `Glob(pattern="**/*.js")`
+- ❌ `head -50 README.md` → ✅ `Read(file_path="README.md", limit=50)`
+
+## Why tool selection matters
+
+- Specialized tools are pre-approved in settings.json, so they don't trigger permission prompts
+- Bash commands use prefix matching only, making it hard to pre-approve complex patterns
+- Complex one-liners (`find | xargs | grep | sort`) are impossible to pre-approve
+- Each unique Bash variant requires a new permission prompt
+
+## Tool Capability Reference
+
+| Need | Tool | Bash Equivalent | Notes |
+|------|------|----------------|-------|
+| Find files by name | `Glob(pattern="**/*.py")` | `find . -name "*.py"` | Faster, cleaner |
+| Search in files | `Grep(pattern="TODO", glob="**/*")` | `grep -r "TODO" .` | Supports context, counts |
+| Read file | `Read(file_path="file.txt")` | `cat file.txt` | Supports ranges, images |
+| Git history | `Bash(git log --oneline)` | N/A | No tool equivalent |
+| Count matches | `Grep(pattern="error", output_mode="count")` | `grep -c "error"` | Built-in counting |
+| Multi-line search | `Grep(pattern="class.*:", multiline=True)` | Complex `grep` | Better than bash |
